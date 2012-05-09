@@ -1,7 +1,0 @@
-c:\users\tetsuro\documents\visual studio 2010\Projects\IronKonoha\KConsole\bin\Debug\KConsole.exe
-c:\users\tetsuro\documents\visual studio 2010\Projects\IronKonoha\KConsole\bin\Debug\KConsole.pdb
-c:\users\tetsuro\documents\visual studio 2010\Projects\IronKonoha\KConsole\bin\Debug\IronKonoha.dll
-c:\users\tetsuro\documents\visual studio 2010\Projects\IronKonoha\KConsole\bin\Debug\IronKonoha.pdb
-c:\users\tetsuro\documents\visual studio 2010\Projects\IronKonoha\KConsole\obj\x86\Debug\ResolveAssemblyReference.cache
-c:\users\tetsuro\documents\visual studio 2010\Projects\IronKonoha\KConsole\obj\x86\Debug\KConsole.exe
-c:\users\tetsuro\documents\visual studio 2010\Projects\IronKonoha\KConsole\obj\x86\Debug\KConsole.pdb

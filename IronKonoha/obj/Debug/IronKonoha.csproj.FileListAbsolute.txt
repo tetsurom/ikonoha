@@ -1,5 +1,0 @@
-c:\users\tetsuro\documents\visual studio 2010\Projects\IronKonoha\IronKonoha\bin\Debug\IronKonoha.dll
-c:\users\tetsuro\documents\visual studio 2010\Projects\IronKonoha\IronKonoha\bin\Debug\IronKonoha.pdb
-c:\users\tetsuro\documents\visual studio 2010\Projects\IronKonoha\IronKonoha\obj\Debug\ResolveAssemblyReference.cache
-c:\users\tetsuro\documents\visual studio 2010\Projects\IronKonoha\IronKonoha\obj\Debug\IronKonoha.dll
-c:\users\tetsuro\documents\visual studio 2010\Projects\IronKonoha\IronKonoha\obj\Debug\IronKonoha.pdb
