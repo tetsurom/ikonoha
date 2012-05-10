@@ -8,11 +8,29 @@ namespace IronKonoha
 {
     class Lexer
     {
-        private StringReader reader;
+        private TextReader reader;
 
-        public Lexer(StringReader reader)
+        public Lexer(TextReader reader)
         {
             this.reader = reader;
+            Tokenize();
         }
+
+        abstract class Token { };
+
+        delegate Token FTokenizer(TextReader reader);
+
+        private Dictionary<char, FTokenizer> tokenizerMatrix;
+        private List<Token> tokens;
+
+        private void Tokenize()
+        {
+            while (reader.Peek() >= 0)
+            {
+                char ch = (char)reader.Read();
+                tokens.Add(tokenizerMatrix[ch](reader));
+            }
+        }
+
     }
 }

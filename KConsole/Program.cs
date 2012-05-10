@@ -29,6 +29,7 @@ namespace KConsole
             {
                 string[] scriptArgs = args.Skip(optionsCount).ToArray();
             }
+
             var konoha = new IronKonoha.Konoha();
             var grobalScope = IronKonoha.Konoha.CreateScope();
             string prompt = ">>> ";

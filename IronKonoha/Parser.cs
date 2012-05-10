@@ -11,7 +11,7 @@ namespace IronKonoha
     /// </summary>
     public class Parser
     {
-        public KonohaExpr ParseExpr(StringReader reader)
+        public KonohaExpr ParseExpr(TextReader reader)
         {
             if (reader == null)
             {
