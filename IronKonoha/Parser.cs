@@ -26,6 +26,6 @@ namespace IronKonoha
         }
 
 
-        public class KonohaExpr{}
+        public abstract class KonohaExpr{}
     }
 }
