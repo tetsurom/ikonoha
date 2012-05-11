@@ -20,6 +20,10 @@ namespace IronKonoha
             public FTokenizer[] tokenizerMatrix { get; set; }
 
             public int TabWidth = 4;
+
+            public int Line { get; set; }
+
+            public int bol { get; set; }
         }
 
         /// <summary>
@@ -61,12 +65,33 @@ namespace IronKonoha
             {
             }
         }
+        internal class SymbolToken : StringToken
+        {
+            public SymbolToken(string sym)
+                : base(sym)
+            {
+            }
+        }
+        internal class OperatorToken : StringToken
+        {
+            public OperatorToken(string op)
+                : base(op)
+            {
+            }
+        }
+        internal class CodeToken : StringToken
+        {
+            public CodeToken(string code)
+                : base(code)
+            {
+            }
+        }
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="ctx"></param>
-        /// <param name="token"></param>
+        /// <param name="token">トークン</param>
         /// <param name="tenv"></param>
         /// <param name="tokStart">トークンの開始位置</param>
         /// <param name="thunk"></param>
@@ -155,44 +180,44 @@ namespace IronKonoha
             /* NULL */ TokenizeSkip,
             /* UNDEF */ TokenizeSkip,
             /* DIGIT */ TokenizeNumber,
-            /* UALPHA */ TokenizeSkip,
-            /* LALPHA */ TokenizeSkip,
-            /* MULTI */ TokenizeSkip,
-            /* NL */ TokenizeSkip,
+            /* UALPHA */ TokenizeSymbol,
+            /* LALPHA */ TokenizeSymbol,
+            /* MULTI */ TokenizeSymbol,
+            /* NL */ TokenizeNextline,
             /* TAB */ TokenizeSkip,
             /* SP */ TokenizeSkip,
-            /* LPAR */ TokenizeSkip,
-            /* RPAR */ TokenizeSkip,
-            /* LSQ */ TokenizeSkip,
-            /* RSQ */ TokenizeSkip,
-            /* LBR */ TokenizeSkip,
-            /* RBR */ TokenizeSkip,
-            /* LT */ TokenizeSkip,
-            /* GT */ TokenizeSkip,
-            /* QUOTE */ TokenizeSkip,
-            /* DQUOTE */ TokenizeSkip,
-            /* BKQUOTE */ TokenizeSkip,
-            /* OKIDOKI */ TokenizeSkip,
-            /* SHARP */ TokenizeSkip,
-            /* DOLLAR */ TokenizeSkip,
-            /* PER */ TokenizeSkip,
-            /* AND */ TokenizeSkip,
-            /* STAR */ TokenizeSkip,
-            /* PLUS */ TokenizeSkip,
-            /* COMMA */ TokenizeSkip,
-            /* MINUS */ TokenizeSkip,
-            /* DOT */ TokenizeSkip,
-            /* SLASH */ TokenizeSkip,
-            /* COLON */ TokenizeSkip,
-            /* SEMICOLON */ TokenizeSkip,
-            /* EQ */ TokenizeSkip,
-            /* QUESTION */ TokenizeSkip,
-            /* AT */ TokenizeSkip,
-            /* VAR */ TokenizeSkip,
-            /* CHILDER */ TokenizeSkip,
-            /* BKSLASH */ TokenizeSkip,
-            /* HAT */ TokenizeSkip,
-            /* UNDER */ TokenizeSkip,
+            /* LPAR */ TokenizeOneCharOperator,
+            /* RPAR */ TokenizeOneCharOperator,
+            /* LSQ */ TokenizeOneCharOperator,
+            /* RSQ */ TokenizeOneCharOperator,
+            /* LBR */ TokenizeBlock,
+            /* RBR */ TokenizeOneCharOperator,
+            /* LT */ TokenizeOperator,
+            /* GT */ TokenizeOperator,
+            /* QUOTE */ TokenizeUndefined,
+            /* DQUOTE */ TokenizeDoubleQuote,
+            /* BKQUOTE */ TokenizeUndefined,
+            /* OKIDOKI */ TokenizeOperator,
+            /* SHARP */ TokenizeOperator,
+            /* DOLLAR */ TokenizeOperator,
+            /* PER */ TokenizeOperator,
+            /* AND */ TokenizeOperator,
+            /* STAR */ TokenizeOperator,
+            /* PLUS */ TokenizeOperator,
+            /* COMMA */ TokenizeOneCharOperator,
+            /* MINUS */ TokenizeOperator,
+            /* DOT */ TokenizeOperator,
+            /* SLASH */ TokenizeSlash,
+            /* COLON */ TokenizeOperator,
+            /* SEMICOLON */ TokenizeOneCharOperator,
+            /* EQ */ TokenizeOperator,
+            /* QUESTION */ TokenizeOperator,
+            /* AT */ TokenizeOneCharOperator,
+            /* VAR */ TokenizeOperator,
+            /* CHILDER */ TokenizeOperator,
+            /* BKSLASH */ TokenizeUndefined,
+            /* HAT */ TokenizeOperator,
+            /* UNDER */ TokenizeSymbol,
         };
 
         static int TokenizeSkip(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
@@ -212,6 +237,11 @@ namespace IronKonoha
         static private bool IsAlphaOrNum(int c)
         {
             return ('0' <= c && c <= '9') | ('A' <= c && c <= 'Z') | ('a' <= c && c <= 'z');
+        }
+
+        static private bool IsSymbolic(int c)
+        {
+            return IsAlphaOrNum(c) || c == '_';
         }
 
         static int TokenizeIndent(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
@@ -239,6 +269,32 @@ namespace IronKonoha
             token = null;
 
             return pos;
+        }
+
+        static int TokenizeNextline(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
+        {
+            int pos = tokStart;
+            string ts = tenv.Source;
+
+            while (pos < ts.Length)
+            {
+                if (ts[pos] == '\r')
+                {
+                    if (ts[pos + 1] == '\n')
+                    {
+                        ++pos;
+                    }
+                    ++pos;
+                }
+                else if (ts[pos] == '\n')
+                {
+                    ++pos;
+                }
+            }
+
+            tenv.Line += 1;
+            tenv.bol = pos;
+            return TokenizeIndent(ctx, out token, tenv, pos, thunk);
         }
 
         static int TokenizeNumber(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
@@ -293,9 +349,184 @@ namespace IronKonoha
             return pos;  // next
         }
 
-        static Token TokenizeSymbol(TextReader reader)
+        static int TokenizeSymbol(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
         {
-            return null;
+            int pos = tokStart;
+            string ts = tenv.Source;
+
+            while (pos < ts.Length && IsSymbolic(ts[pos])) ++pos;
+
+            token = new SymbolToken(ts.Substring(tokStart, pos - tokStart));
+            return pos;
+        }
+
+        static int TokenizeOneCharOperator(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
+        {
+            token = new OperatorToken(tenv.Source.Substring(tokStart, 1));
+            return ++tokStart;
+        }
+
+        static int TokenizeOperator(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
+        {
+            int pos = tokStart;
+            string ts = tenv.Source;
+
+            while (pos < ts.Length)
+            {
+                switch (ts[pos])
+                {
+                    case '<':
+                    case '>':
+                    case '@':
+                    case '$':
+                    case '#':
+                    case '+':
+                    case '-':
+                    case '*':
+                    case '%':
+                    case '/':
+                    case '=':
+                    case '&':
+                    case '?':
+                    case ':':
+                    case '.':
+                    case '^':
+                    case '!':
+                    case '~':
+                    case '|':
+                        ++pos;
+                        continue;
+                }
+                break;
+            }
+            token = new OperatorToken(ts.Substring(tokStart, pos - tokStart));
+            return pos;
+        }
+
+        static int TokenizeLine(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
+        {
+            string ts = tenv.Source;
+            int pos = tokStart;
+            while (ts[pos] != '\n' || ts[pos] != '\r') ++pos;
+            token = null;
+            return pos;
+        }
+
+        static int TokenizeComment(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
+        {
+            string ts = tenv.Source;
+            int pos = tokStart + 2;
+            char ch = '\0';
+            char prev = '\0';
+            int level = 1;
+            token = null;
+
+            while (pos < ts.Length)
+            {
+                ch = ts[pos++];
+                if (ch == '\r')
+                {
+                    tenv.Line += 1;
+                    if(ts[pos] == '\n') ++pos;
+                }else if (ch == '\n')
+                {
+                    tenv.Line += 1;
+                }
+                if (prev == '*' && ch == '/')
+                {
+                    level--;
+                    if (level == 0) return pos;
+                }
+                else if (prev == '/' && ch == '*')
+                {
+                    level++;
+                }
+                prev = ch;
+            }
+
+            return pos;
+        }
+
+        static int TokenizeSlash(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
+        {
+            string ts = tenv.Source;
+            if (ts[tokStart + 1] == '/')
+            {
+                return TokenizeLine(ctx, out token, tenv, tokStart, thunk);
+            }
+            else if (ts[tokStart + 1] == '*')
+            {
+                return TokenizeComment(ctx, out token, tenv, tokStart, thunk);
+            }
+            return TokenizeOperator(ctx, out token, tenv, tokStart, thunk);
+        }
+
+        static int TokenizeDoubleQuote(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
+        {
+            string ts = tenv.Source;
+            char ch = '\0';
+            char prev = '"';
+            int pos = tokStart + 1;
+
+            token = null;
+
+            while (pos < ts.Length)
+            {
+                ch = ts[pos++];
+                if (ch == '\n' || ch == '\r')
+                {
+                    break;
+                }
+                if (ch == '"' && prev != '\\')
+                {
+                    token = new StringToken(ts.Substring(tokStart + 1, (pos - 1) - (tokStart + 1)));
+                    return pos;
+                }
+                prev = ch;
+            }
+            return pos - 1;
+        }
+
+        static int TokenizeUndefined(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
+        {
+            token = null;
+            return tokStart;
+        }
+
+        static int TokenizeBlock(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
+        {
+            string ts = tenv.Source;
+            char ch = '\0';
+            int pos = tokStart + 1;
+            int level = 1;
+            FTokenizer[] fmat = tenv.tokenizerMatrix;
+
+            token = null;
+
+            while (pos < ts.Length)
+            {
+                ch = ts[pos++];
+                if (ch == '}')
+                {
+                    level--;
+                    if (level == 0)
+                    {
+                        token = new CodeToken(ts.Substring(tokStart + 1, ((pos - 2) - (tokStart) + 1)));
+                        return pos + 1;
+                    }
+                    pos++;
+                }
+                else if (ch == '{')
+                {
+                    level++;
+                    pos++;
+                }
+                else
+                {
+                    pos = fmat[ch](ctx, out token, tenv, pos, null);
+                }
+            }
+            return pos;
         }
 
         public Lexer(String str)
@@ -325,7 +556,6 @@ namespace IronKonoha
                 }
             }
         }
-
 
         private TokenizerEnvironment env;
     }
