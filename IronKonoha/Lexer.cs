@@ -4,12 +4,34 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Globalization;
+using System.Diagnostics;
 
 namespace IronKonoha
 {
     class Lexer
     {
+        /// <summary>
+        /// temporaly
+        /// </summary>
+        internal class TokenizerEnvironment
+        {
+            public string Source;
+
+            public FTokenizer[] tokenizerMatrix { get; set; }
+
+            public int TabWidth = 4;
+        }
+
+        /// <summary>
+        /// temporaly
+        /// </summary>
+        internal class Method
+        {
+
+        }
+
         public abstract class Token { };
+
         internal class LiteralToken<T> : Token
         {
             public T Value { get; private set; }
@@ -40,7 +62,16 @@ namespace IronKonoha
             }
         }
 
-        public delegate Token FTokenizer(TextReader reader);
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="token"></param>
+        /// <param name="tenv"></param>
+        /// <param name="tokStart">トークンの開始位置</param>
+        /// <param name="thunk"></param>
+        /// <returns>次のトークンの開始位置</returns>
+        public delegate int FTokenizer(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk);
 
         enum CharType
         {
@@ -164,10 +195,10 @@ namespace IronKonoha
             /* UNDER */ TokenizeSkip,
         };
 
-        static Token TokenizeSkip(TextReader reader)
+        static int TokenizeSkip(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
         {
-            reader.Read();
-            return null;
+            token = null;
+            return ++tokStart;
         }
 
         static private bool IsNumChar(int c)
@@ -183,56 +214,95 @@ namespace IronKonoha
             return ('0' <= c && c <= '9') | ('A' <= c && c <= 'Z') | ('a' <= c && c <= 'z');
         }
 
-        static Token TokenizeNumber(TextReader reader)
+        static int TokenizeIndent(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
         {
-            bool isFloat = false;
-            var sbuild = new StringBuilder();
-            for (int ch = reader.Read(); ch >= 0; ch = reader.Read()){
-		        if (ch == '_') continue; // nothing
-                sbuild.Append((char)ch);
+            int pos = tokStart;
+            string ts = tenv.Source;
+            int indent = 0;
 
-		        if(ch == '.') {
-                    if (!IsNumChar(reader.Peek()))
-                    {
-                        //reader.
-				        break;
-			        }
-			        isFloat = true;
-			        continue;
-		        }
-                if ((ch == 'e' || ch == 'E') && (reader.Peek() == '+' || reader.Peek() == '-'))
-                {
-                    sbuild.Append((char)reader.Read());
-			        continue;
-		        }
-
-                if (!IsAlphaOrNum(ch)) break;
-	        }
-            string str = sbuild.ToString();
-            if (isFloat)
+            if (pos < ts.Length)
             {
-                return new FloatToken(Convert.ToDouble(str));
+                char ch = ts[pos++];
+                if (ch == '\t')
+                {
+                    indent += tenv.TabWidth;
+                }
+                else if (ch == ' ')
+                {
+                    indent += 1;
+                }
+                else
+                {
+                    --pos;
+                }
+            }
+            token = null;
+
+            return pos;
+        }
+
+        static int TokenizeNumber(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
+        {
+            int pos = tokStart;
+            bool dotAppeared = false;
+            string ts = tenv.Source;
+
+            while (pos < ts.Length)
+            {
+                char ch = ts[pos++];
+                if (ch == '_') continue; // nothing
+                if (ch == '.')
+                {
+                    if (!IsNumChar(ts[pos]))
+                    {
+                        --pos;
+                        break;
+                    }
+                    dotAppeared = true;
+                    continue;
+                }
+                if ((ch == 'e' || ch == 'E') && (ts[pos] == '+' || ts[pos] == '-'))
+                {
+                    pos++;
+                    continue;
+                }
+                if (!IsAlphaOrNum(ch))
+                {
+                    --pos;
+                    break;
+                }
+            }
+
+            string str = ts.Substring(tokStart, pos - tokStart).Replace("_", "");
+            if (dotAppeared)
+            {
+                token = new FloatToken(Convert.ToDouble(str));
             }
             else if(str.StartsWith("0x") || str.StartsWith("0X"))
             {
-                return new IntegerToken(Convert.ToInt64(str, 16));
+                token = new IntegerToken(Convert.ToInt64(str, 16));
             }
             else if(str.StartsWith("0"))
             {
-                return new IntegerToken(Convert.ToInt64(str, 8));
+                token = new IntegerToken(Convert.ToInt64(str, 8));
             }
             else
             {
-                return new IntegerToken(Convert.ToInt64(str, 10));
+                token = new IntegerToken(Convert.ToInt64(str, 10));
             }
+            return pos;  // next
+        }
+
+        static Token TokenizeSymbol(TextReader reader)
+        {
             return null;
         }
 
-        private TextReader reader;
-
-        public Lexer(TextReader reader)
+        public Lexer(String str)
         {
-            this.reader = reader;
+            this.env = new TokenizerEnvironment();
+            env.tokenizerMatrix = tokenizerMatrix;
+            env.Source = str;
             Tokenize();
         }
 
@@ -240,9 +310,15 @@ namespace IronKonoha
 
         private void Tokenize()
         {
-            for (int ch = reader.Peek(); ch >= 0; ch = reader.Peek())
+            FTokenizer[] fmat = env.tokenizerMatrix;
+            Token token;
+
+            for (int pos = TokenizeIndent(null, out token, this.env, 0, null); pos < env.Source.Length; )
             {
-                Token token = tokenizerMatrix[(int)charTypeMatrix[ch]](reader);
+                CharType ct = charTypeMatrix[env.Source[pos]];
+                int pos2 = fmat[(int)ct](null, out token, this.env, pos, null);
+                Debug.Assert(pos2 > pos);
+                pos = pos2;
                 if (token != null)
                 {
                     tokens.Add(token);
@@ -250,5 +326,7 @@ namespace IronKonoha
             }
         }
 
+
+        private TokenizerEnvironment env;
     }
 }

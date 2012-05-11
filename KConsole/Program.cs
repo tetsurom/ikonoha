@@ -34,7 +34,7 @@ namespace KConsole
             var grobalScope = IronKonoha.Konoha.CreateScope();
             string prompt = ">>> ";
             string input = null;
-            string exprstr = null;
+            string exprstr = "";
             while (true)
             {
                 Console.Write(prompt);
@@ -45,13 +45,17 @@ namespace KConsole
                     prompt = ">>> ";
                     continue;
                 }
-                else
+                else if (exprstr != "")
                 {
                     exprstr = exprstr + " " + input;
                 }
+                else
+                {
+                    exprstr = input;
+                }
                 try
                 {
-                    var ast = new Parser().ParseExpr(new StringReader(exprstr));
+                    var ast = new Parser().ParseExpr(exprstr);
                 }
                 catch (Exception)
                 {
@@ -64,9 +68,14 @@ namespace KConsole
                 }
                 catch (Exception)
                 {
+
+                }
+                finally
+                {
                     exprstr = "";
                     prompt = ">>> ";
                 }
+
             }
         }
     }

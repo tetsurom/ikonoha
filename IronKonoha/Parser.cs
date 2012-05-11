@@ -11,20 +11,19 @@ namespace IronKonoha
     /// </summary>
     public class Parser
     {
-        public KonohaExpr ParseExpr(TextReader reader)
+        public KonohaExpr ParseExpr(String str)
         {
-            if (reader == null)
+            if (str == null)
             {
-                throw new ArgumentException("Reader must not be null.");
+                throw new ArgumentException("str must not be null.");
             }
-            return ParseExprAux(new Lexer(reader));
+            return ParseExprAux(new Lexer(str));
         }
 
         private KonohaExpr ParseExprAux(Lexer lexer)
         {
             throw new NotImplementedException();
         }
-
 
         public abstract class KonohaExpr{}
     }

@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Converter.cs" />
+    <Compile Include="Context.cs" />
     <Compile Include="Konoha.cs" />
     <Compile Include="Lexer.cs" />
     <Compile Include="Parser.cs" />
