@@ -5,7 +5,7 @@ using System.Text;
 
 namespace IronKonoha
 {
-    class Context
+    public class Context
     {
     }
 }

@@ -53,15 +53,15 @@ namespace KConsole
                 {
                     exprstr = input;
                 }
-                try
-                {
+                //try
+                //{
                     var ast = new Parser().ParseExpr(exprstr);
-                }
-                catch (Exception)
-                {
-                    prompt = "... ";
-                    continue;
-                }
+                //}
+                //catch (Exception e)
+                //{
+                //    prompt = "... ";
+                //    continue;
+                //}
                 try
                 {
                     dynamic res = konoha.ExecuteExpr(exprstr, grobalScope);

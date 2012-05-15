@@ -8,83 +8,130 @@ using System.Diagnostics;
 
 namespace IronKonoha
 {
-    class Lexer
+    /// <summary>
+    /// temporaly
+    /// </summary>
+    internal class Method
+    {
+
+    }
+
+    public enum KeywordType
+    {
+        Err,
+        Expr,
+        Symbol,
+        Usymbol,
+        Text,
+        Int,
+        Float,
+        Type,
+        StmtTypeDecl,
+        Parenthesis,
+        Brancet,
+        Brace,
+        Block,
+        Params,
+        ExprMethodCall,
+        Toks,
+        DOT,
+        DIV,
+        MOD,
+        MUL,
+        ADD,
+        SUB,
+        LT,
+        LTE,
+        GT,
+        GTE,
+        EQ,
+        NEQ,
+        AND,
+        OR,
+        NOT,
+        COLON,
+        LET,
+        COMMA,
+        DOLLAR,
+        Void,
+        StmtMethodDecl,
+        Boolean,
+        Int,
+        Null,
+        True,
+        False,
+        Ff,
+        Else,
+        Return
+    }
+
+    public enum TokenType
+    {
+        NONE,          // KW_Err
+        INDENT,        // KW_Expr
+        SYMBOL,        // KW_Symbol
+        USYMBOL,       // KW_Usymbol
+        TEXT,          // KW_Text
+        INT,           // KW_Int
+        FLOAT,         // KW_Float
+        TYPE,          // KW_Type
+        AST_PARENTHESIS,  // KW_Parenthesis
+        AST_BRANCET,      // KW_Brancet
+        AST_BRACE,        // KW_Brace
+
+        OPERATOR,
+        MSYMBOL,       //
+        ERR,           //
+        CODE,          //
+        WHITESPACE,    //
+        METANAME,
+        MN,
+        AST_OPTIONAL      // for syntax sugar
+    }
+
+    public enum KonohaType{
+
+    }
+
+    [System.Diagnostics.DebuggerDisplay("{Value}")]
+    public class Token
+    {
+
+        public TokenType Type { get; set; }
+        public string Text { get; private set; }
+        public IList<Token> Sub { get; set; }
+        public char TopChar { get { return this.Text[0]; } }
+        public KeywordType KeyWord { get; set; }
+        public KonohaType KType { get; set; }
+        public int Lpos { get; private set; }
+        public int ULine { get; set; }
+
+        public Token(TokenType type, string text, int lpos)
+        {
+            this.Type = type;
+            this.Text = text;
+            this.Lpos = lpos;
+        }
+    };
+
+    class Tokenizer
     {
         /// <summary>
         /// temporaly
         /// </summary>
         internal class TokenizerEnvironment
         {
-            public string Source;
-
-            public FTokenizer[] tokenizerMatrix { get; set; }
-
-            public int TabWidth = 4;
-
+            public string Source { get; set; }
+            public FTokenizer[] TokenizerMatrix { get; set; }
+            public int TabWidth { get; set; }
+            /// <summary>
+            /// 現在の行
+            /// </summary>
             public int Line { get; set; }
-
-            public int bol { get; set; }
-        }
-
-        /// <summary>
-        /// temporaly
-        /// </summary>
-        internal class Method
-        {
-
-        }
-
-        public abstract class Token { };
-
-        internal class LiteralToken<T> : Token
-        {
-            public T Value { get; private set; }
-            public LiteralToken(T val)
-            {
-                Value = val;
-            }
-        }
-        internal class IntegerToken : LiteralToken<long>
-        {
-            public IntegerToken(long val)
-                : base(val)
-            {
-            }
-        }
-        internal class FloatToken : LiteralToken<double>
-        {
-            public FloatToken(double val)
-                : base(val)
-            {
-            }
-        }
-        internal class StringToken : LiteralToken<string>
-        {
-            public StringToken(string val)
-                : base(val)
-            {
-            }
-        }
-        internal class SymbolToken : StringToken
-        {
-            public SymbolToken(string sym)
-                : base(sym)
-            {
-            }
-        }
-        internal class OperatorToken : StringToken
-        {
-            public OperatorToken(string op)
-                : base(op)
-            {
-            }
-        }
-        internal class CodeToken : StringToken
-        {
-            public CodeToken(string code)
-                : base(code)
-            {
-            }
+            /// <summary>
+            /// 現在の行が始まる位置
+            /// </summary>
+            public int Bol { get; set; }
         }
 
         /// <summary>
@@ -97,6 +144,8 @@ namespace IronKonoha
         /// <param name="thunk"></param>
         /// <returns>次のトークンの開始位置</returns>
         public delegate int FTokenizer(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk);
+
+        #region 定数
 
         enum CharType
         {
@@ -220,6 +269,10 @@ namespace IronKonoha
             /* UNDER */ TokenizeSymbol,
         };
 
+        #endregion
+
+        #region トークナイズ関数郡
+
         static int TokenizeSkip(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
         {
             token = null;
@@ -293,7 +346,7 @@ namespace IronKonoha
             }
 
             tenv.Line += 1;
-            tenv.bol = pos;
+            tenv.Bol = pos;
             return TokenizeIndent(ctx, out token, tenv, pos, thunk);
         }
 
@@ -332,19 +385,11 @@ namespace IronKonoha
             string str = ts.Substring(tokStart, pos - tokStart).Replace("_", "");
             if (dotAppeared)
             {
-                token = new FloatToken(Convert.ToDouble(str));
-            }
-            else if(str.StartsWith("0x") || str.StartsWith("0X"))
-            {
-                token = new IntegerToken(Convert.ToInt64(str, 16));
-            }
-            else if(str.StartsWith("0"))
-            {
-                token = new IntegerToken(Convert.ToInt64(str, 8));
+                token = new Token(TokenType.FLOAT, str, tokStart);
             }
             else
             {
-                token = new IntegerToken(Convert.ToInt64(str, 10));
+                token = new Token(TokenType.INT, str, tokStart);
             }
             return pos;  // next
         }
@@ -356,13 +401,13 @@ namespace IronKonoha
 
             while (pos < ts.Length && IsSymbolic(ts[pos])) ++pos;
 
-            token = new SymbolToken(ts.Substring(tokStart, pos - tokStart));
+            token = new Token(TokenType.SYMBOL, ts.Substring(tokStart, pos - tokStart), tokStart);
             return pos;
         }
 
         static int TokenizeOneCharOperator(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, Method thunk)
         {
-            token = new OperatorToken(tenv.Source.Substring(tokStart, 1));
+            token = new Token(TokenType.OPERATOR, tenv.Source.Substring(tokStart, 1), tokStart);
             return ++tokStart;
         }
 
@@ -399,7 +444,7 @@ namespace IronKonoha
                 }
                 break;
             }
-            token = new OperatorToken(ts.Substring(tokStart, pos - tokStart));
+            token = new Token(TokenType.OPERATOR, ts.Substring(tokStart, pos - tokStart), tokStart);
             return pos;
         }
 
@@ -479,7 +524,7 @@ namespace IronKonoha
                 }
                 if (ch == '"' && prev != '\\')
                 {
-                    token = new StringToken(ts.Substring(tokStart + 1, (pos - 1) - (tokStart + 1)));
+                    token = new Token(TokenType.TEXT, ts.Substring(tokStart + 1, (pos - 1) - (tokStart + 1)), tokStart + 1);
                     return pos;
                 }
                 prev = ch;
@@ -499,7 +544,7 @@ namespace IronKonoha
             char ch = '\0';
             int pos = tokStart + 1;
             int level = 1;
-            FTokenizer[] fmat = tenv.tokenizerMatrix;
+            FTokenizer[] fmat = tenv.TokenizerMatrix;
 
             token = null;
 
@@ -511,7 +556,7 @@ namespace IronKonoha
                     level--;
                     if (level == 0)
                     {
-                        token = new CodeToken(ts.Substring(tokStart + 1, ((pos - 2) - (tokStart) + 1)));
+                        token = new Token(TokenType.CODE, ts.Substring(tokStart + 1, pos - 2 - tokStart), tokStart + 1);
                         return pos + 1;
                     }
                     pos++;
@@ -523,40 +568,51 @@ namespace IronKonoha
                 }
                 else
                 {
-                    pos = fmat[ch](ctx, out token, tenv, pos, null);
+                    var f = fmat[(int)charTypeMatrix[ch]];
+                    pos = f(ctx, out token, tenv, pos, null);
                 }
             }
             return pos;
         }
 
-        public Lexer(String str)
+        #endregion
+
+        private Context ctx;
+        private KonohaSpace ks;
+
+        public Tokenizer(Context ctx, KonohaSpace ks)
         {
-            this.env = new TokenizerEnvironment();
-            env.tokenizerMatrix = tokenizerMatrix;
-            env.Source = str;
-            Tokenize();
+            this.ctx = ctx;
+            this.ks = ks;
         }
 
-        private List<Token> tokens = new List<Token>();
-
-        private void Tokenize()
+        public IList<Token> Tokenize(String script)
         {
-            FTokenizer[] fmat = env.tokenizerMatrix;
+            var env = new TokenizerEnvironment()
+            {
+                TokenizerMatrix = tokenizerMatrix,//ks == null ? tokenizerMatrix : ks.TokenizerMatrix,
+                Source = script
+            };
+
+            FTokenizer[] fmat = env.TokenizerMatrix;
+            var tokens = new List<Token>();
             Token token;
 
-            for (int pos = TokenizeIndent(null, out token, this.env, 0, null); pos < env.Source.Length; )
+            for (int pos = TokenizeIndent(this.ctx, out token, env, 0, null); pos < env.Source.Length; )
             {
                 CharType ct = charTypeMatrix[env.Source[pos]];
-                int pos2 = fmat[(int)ct](null, out token, this.env, pos, null);
+                int pos2 = fmat[(int)ct](this.ctx, out token, env, pos, null);
                 Debug.Assert(pos2 > pos);
                 pos = pos2;
                 if (token != null)
                 {
+                    token.ULine = env.Line;
                     tokens.Add(token);
                 }
             }
+
+            return tokens;
         }
 
-        private TokenizerEnvironment env;
     }
 }
