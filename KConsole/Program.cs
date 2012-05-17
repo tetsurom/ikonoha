@@ -53,9 +53,14 @@ namespace KConsole
                 {
                     exprstr = input;
                 }
+                {
+                    var ctx = new Context();
+                    var space = new KonohaSpace(ctx);
+                    space.Eval(exprstr);
+                }
                 //try
                 //{
-                    var ast = new Parser().ParseExpr(exprstr);
+                //var ast = new Parser().ParseExpr(exprstr);
                 //}
                 //catch (Exception e)
                 //{

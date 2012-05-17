@@ -6,6 +6,17 @@ using System.Dynamic;
 
 namespace IronKonoha
 {
+    public class LineInfo
+    {
+        public LineInfo(int line, string file)
+        {
+            this.LineNumber = line;
+            this.Filename = file;
+        }
+        public int LineNumber { get; set; }
+        public string Filename { get; set; }
+    }
+
     public class Konoha{
 
         public Konoha()
