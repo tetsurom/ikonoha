@@ -11,19 +11,21 @@ namespace IronKonoha
         public LineInfo ULine { get; set; }
         public KonohaSpace ks { get; set; }
 
-        public KonohaStatement(LineInfo line)
+        public KonohaStatement(LineInfo line, KonohaSpace ks)
         {
             this.ULine = line;
+            this.ks = ks;
         }
 
+        // static kbool_t Stmt_parseSyntaxRule(CTX, kStmt *stmt, kArray *tls, int s, int e)
         public bool parseSyntaxRule(Context ctx, IList<Token> tls, int s, int e)
         {
 	        bool ret = false;
 	        Syntax syn = this.ks.GetSyntaxRule(tls, s, e);
 	        Debug.Assert(syn != null);
-	        if(syn.syntaxRuleNULL != null) {
+	        if(syn.SyntaxRule != null) {
 		        this.syn = syn;
-		        ret = (matchSyntaxRule(ctx, syn.syntaxRuleNULL, this.ULine, tls, s, e, false) != -1);
+		        ret = (matchSyntaxRule(ctx, syn.SyntaxRule, this.ULine, tls, s, e, false) != -1);
 	        }
 	        else {
 		        ctx.SUGAR_P(ReportLevel.ERR, this.ULine, 0, "undefined syntax rule for '%s'", syn.KeyWord.ToString());
@@ -31,6 +33,7 @@ namespace IronKonoha
 	        return ret;
         }
 
+        // static int matchSyntaxRule(CTX, kStmt *stmt, kArray *rules, kline_t /*parent*/uline, kArray *tls, int s, int e, int optional)
         public int matchSyntaxRule(Context ctx, IList<Token> rules, LineInfo /*parent*/uline, IList<Token> tls, int s, int e, bool optional)
         {
 	        int ri, ti, rule_size = rules.Count;
@@ -65,7 +68,7 @@ namespace IronKonoha
 				        }
 				        ri++;
 			        }
-			        int err_count = ctx.sugar.err_count;
+			        int err_count = ctx.ctxsugar.err_count;
 			        int next = ParseStmt(ctx, syn, rule.nameid, tls, ti, c);
         //			DBG_P("matched '%s' nameid='%s', next=%d=>%d", Pkeyword(rule.KeyWord), Pkeyword(rule->nameid), ti, next);
 			        if(next == -1) {
@@ -113,6 +116,7 @@ namespace IronKonoha
 	        return ti;
         }
 
+        // static int ParseStmt(CTX, ksyntax_t *syn, kStmt *stmt, ksymbol_t name, kArray *tls, int s, int e)
         public int ParseStmt(Context ctx, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
         {
             throw new NotImplementedException();
@@ -132,6 +136,7 @@ namespace IronKonoha
              * */
         }
 
+        // static int lookAheadKeyword(kArray *tls, int s, int e, kToken *rule)
         public int lookAheadKeyword(IList<Token> tls, int s, int e, Token rule)
         {
             int i;
@@ -143,6 +148,7 @@ namespace IronKonoha
             return -1;
         }
 
+        // static int Stmt_addAnnotation(CTX, kStmt *stmt, kArray *tls, int s, int e)
         public int addAnnotation(Context ctx, IList<Token> tls, int s, int e)
         {
 	        int i;

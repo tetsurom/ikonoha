@@ -43,6 +43,7 @@ namespace IronKonoha
             //throw new NotImplementedException();
         }
         */
+
         /// <summary>
         /// トークン列をパースしてブロックを得る
         /// </summary>
@@ -52,6 +53,7 @@ namespace IronKonoha
         /// <param name="end">終了トークンの次の位置</param>
         /// <param name="delim">デリミタ</param>
         /// <returns></returns>
+        // static kBlock *new_Block(CTX, kKonohaSpace *ks, kStmt *parent, kArray *tls, int s, int e, int delim)
         public BlockExpr CreateBlock(KonohaExpr parent, IList<Token> token, int start, int end, char delim)
         {
             BlockExpr block = new BlockExpr();
@@ -66,12 +68,13 @@ namespace IronKonoha
                 int asize = token.Count;
                 if (asize > atop)
                 {
-                    block.AddStatementLine(ctx, token, atop, asize, out error);
+                    block.AddStatementLine(ctx, ks, token, atop, asize, out error);
                 }
             }
             return block;
         }
 
+        // static int selectStmtLine(CTX, kKonohaSpace *ks, int *indent, kArray *tls, int s, int e, int delim, kArray *tlsdst, kToken **tkERRRef)
         private int SelectStatementLine(ref int indent, IList<Token> tokens, int start, int end, char delim, IList<Token>tokensDst, out Token errorToken)
         {
             int i = start;
@@ -147,6 +150,7 @@ namespace IronKonoha
             return i;
         }
 
+        // static int makeTree(CTX, kKonohaSpace *ks, ktoken_t tt, kArray *tls, int s, int e, int closech, kArray *tlsdst, kToken **tkERRRef)
         private int makeTree(TokenType tokentype, IList<Token> tokens, int start, int end, char closeChar, IList<Token> tokensDst, out Token errorToken)
         {
 	        int i, probablyCloseBefore = end - 1;
@@ -194,6 +198,7 @@ namespace IronKonoha
 	        return end;
         }
 
+        //static int appendKeyword(CTX, kKonohaSpace *ks, kArray *tls, int s, int e, kArray *dst, kToken **tkERR)
         private int appendKeyword(IList<Token> tokens, int start, int end, IList<Token> tokensDst, out Token errorToken)
         {
             int next = start; // don't add
@@ -204,11 +209,11 @@ namespace IronKonoha
             }
             if (tk.Type == TokenType.SYMBOL)
             {
-                tk.Resolved();
+                tk.IsResolved(ctx);
             }
             else if (tk.Type == TokenType.USYMBOL)
             {
-                if (!tk.Resolved())
+                if (!tk.IsResolved(ctx))
                 {
                     throw new NotImplementedException();
                     //KonohaClass ct = kKonohaSpace_getCT(ks, null/*FIXME*/, tk.Text, tk.Text.Length, TY_unknown);
@@ -222,7 +227,7 @@ namespace IronKonoha
             }
             else if (tk.Type == TokenType.OPERATOR)
             {
-                if (!tk.Resolved())
+                if (!tk.IsResolved(ctx))
                 {
                     uint errref = ctx.SUGAR_P(ReportLevel.ERR, tk.ULine, tk.Lpos, "undefined token: %s", tk.Text);
                     tk.ConvertToErrorToken(this.ctx, errref);
@@ -278,10 +283,12 @@ namespace IronKonoha
     public class BlockExpr : KonohaExpr
     {
         public List<KonohaStatement> blocks = new List<KonohaStatement>();
-        public void AddStatementLine(Context ctx, IList<Token> tokens, int start, int end, out Token tkERR)
+
+        // static void Block_addStmtLine(CTX, kBlock *bk, kArray *tls, int s, int e, kToken *tkERR)
+        public void AddStatementLine(Context ctx, KonohaSpace ks, IList<Token> tokens, int start, int end, out Token tkERR)
         {
             tkERR = null;
-            KonohaStatement stmt = new KonohaStatement(tokens[start].ULine);//new_W(Stmt, tls->toks[s]->uline);
+            KonohaStatement stmt = new KonohaStatement(tokens[start].ULine, ks);//new_W(Stmt, tls->toks[s]->uline);
             blocks.Add(stmt);
             stmt.parent = this;
             uint estart = ctx.KErrorNo;

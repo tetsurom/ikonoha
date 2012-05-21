@@ -15,15 +15,109 @@ namespace IronKonoha
         DEBUG,
     }
 
-    public class Sugar{
-        public List<object> Errors { get; set; }
-        public int ErrorCount { get; set; }
-        public Sugar()
+    public class KKeyWord : Symbol
+    {
+
+    }
+
+    public class KPackage
+    {
+
+    }
+
+    // struct KDEFINE_SYNTAX
+    public class KDEFINE_SYNTAX
+    {
+    }
+
+    // kmodsugar_t;
+    public class KModSugar : KModShare{
+        public KonohaClass cToken { get; set; }
+        public KonohaClass cExpr { get; set; }
+        public KonohaClass cStmt { get; set; }
+        public KonohaClass cBlock { get; set; }
+        public KonohaClass cKonohaSpace { get; set; }
+        public KonohaClass cGamma { get; set; }
+        public KonohaClass cTokenArray { get; set; }
+
+        public IList<KKeyWord> keywordList { get; set; }
+        public IDictionary<object, KKeyWord> keywordMap;
+
+        public IList<KPackage> packageList { get; set; }
+        public IDictionary<object, KPackage> packageMap;
+
+        public KMethod UndefinedParseExpr { get; set; }
+        public KMethod UndefinedStmtTyCheck { get; set; }
+        public KMethod UndefinedExprTyCheck { get; set; }
+        public KMethod ParseExpr_Term { get; set; }
+        public KMethod ParseExrp_Op { get; set; }
+
+        public Func<Context, string, uint, Symbol, KKeyWord> keyword { get; set; }
+        private Action<Context, KonohaSpace, int, Tokenizer.FTokenizer, KMethod> KonohaSpace_setTokenizer { get; set; }
+
+        public Func<Context, KonohaExpr, KonohaType, KObject, KonohaExpr> Expr_setConstValue { get; set; }
+        public Func<Context, KonohaExpr, KonohaType, uint, KonohaExpr> Expr_setNConstValue { get; set; }
+        public Func<Context, KonohaExpr, KonohaExpr, KonohaType, int, KGamma, KonohaExpr> Expr_setVariable { get; set; }
+
+        public Func<Context, KonohaStatement, KKeyWord, Token, Token> Stmt_token { get; set; }
+        public Func<Context, KonohaStatement, KKeyWord, KonohaExpr, KonohaExpr> Stmt_expr { get; set; }
+        public Func<Context, KonohaStatement, KKeyWord, string, string> Stmt_text { get; set; }
+        public Func<Context, KonohaStatement, KKeyWord, BlockExpr, BlockExpr> Stmt_block { get; set; }
+
+        public Func<Context, KonohaExpr, uint, KGamma, KonohaType, int, KonohaExpr> Expr_tyCheckAt { get; set; }
+        public Func<Context, KonohaStatement, Symbol, KGamma, KonohaType, int, bool> Stmt_tyCheckAt { get; set; }
+        public Func<Context, BlockExpr, KGamma, bool> Block_tyCheckAt { get; set; }
+        public Func<Context, KonohaExpr, KMethod, KGamma, KonohaType, KonohaExpr> Expr_tyCheckCallParams { get; set; }
+        public Func<Context, KonohaType, KMethod, KGamma, int, object[], KonohaExpr> new_TypedMethodCall { get; set; }
+        public Action<Context, KonohaStatement, KMethod, int, object[]> Stmt_toExprCall { get; set; }
+
+        public Func<Context, int, LineInfo, int, string, object[], uint> p { get; set; }
+        public Func<Context, KonohaExpr, int, LineInfo> Expr_uline { get; set; }
+        public Func<Context, KonohaSpace, Symbol, int, Syntax> KonohaSpace_syntax { get; set; }
+        public Action<Context, KonohaSpace, Symbol, KDEFINE_SYNTAX> KonohaSpace_defineSyntax { get; set; }
+
+        public Func<Context, IList<Token>, int, int, IList<object>, bool> makeSyntaxRule{ get; set; }
+        public Func<Context, KonohaSpace, KonohaStatement, IList<Token>, int, int, int, BlockExpr> new_block { get; set; }
+        public Action<Context, BlockExpr, KonohaStatement, KonohaStatement> Block_insertAfter { get; set; }
+
+        public Func<Context, KonohaStatement, IList<Token>, int, int, KonohaExpr> Stmt_newExpr2 { get; set; }
+        public Func<Context, Syntax, int, object[], KonohaExpr> new_ConsExpr { get; set; }
+        public Func<Context, KonohaStatement, KonohaExpr, IList<Token>, int, int, int, KonohaExpr> Stmt_addExprParams { get; set; }
+        public Func<Context, KonohaExpr, KonohaStatement, IList<Token>, int, int, int, KonohaExpr> Expr_rightJoin { get; set; }
+
+        public KModSugar()
         {
-            Errors = new List<object>();
         }
 
+        public Symbol keyword_(string name, Symbol def)
+        {
+            var kw = keywordMap[name];
+            return kw;
+            //return kmap_getcode(kmodsugar->keywordMapNN, kmodsugar->keywordList, name, len, hcode, SPOL_ASCII|SPOL_POOL, def);
+        }
+
+    }
+
+    public class KGamma : KObject
+    {
+
+    }
+
+    public class CTXSugar : KModLocal
+    {
+        public IList<Token> tokens { get; private set; }
+        public IList<Token> cwb { get; private set; }
         public int err_count { get; set; }
+        public List<object> errors { get; private set; }
+        public BlockExpr singleBlock { get; private set; }
+        public KGamma gma { get; private set; }
+        public IList<object> lvarlist { get; private set; }
+        public IList<KMethod> definedMethods { get; private set; }
+
+        public CTXSugar()
+        {
+            errors = new List<object>();
+        }
     }
 
     public class KMemShare
@@ -31,11 +125,12 @@ namespace IronKonoha
 
     }
 
-    public class KmemLocal
+    public class KMemLocal
     {
 
     }
 
+    // struct kmodshare_t;
     public class KModShare
     {
 
@@ -43,7 +138,7 @@ namespace IronKonoha
 
     public class KModLocal
     {
-        public Sugar modsugar { get; set; }
+        public KModSugar modsugar { get; set; }
     }
 
     public class KShare
@@ -143,18 +238,34 @@ namespace IronKonoha
         {
         }
     }
-    
+
+    public enum ModID
+    {
+        Logger =  0,
+        GC     =  1,
+        Code   =  2,
+        Sugar  =  3,
+        Float  = 11,
+        JIT    = 12,
+        IConv  = 13,
+        IO     = 14,
+        LLVM   = 15,
+        REGEX  = 16,
+    }
+
+    // struct kcontext_t
     public class Context
     {
-        public KMemShare memshare { get; private set; }
-        public KmemLocal memlocal { get; private set; }
+        public List<KMemShare> memshare { get; private set; }
+        public List<KMemLocal> memlocal { get; private set; }
         public KShare share { get; private set; }
         public KStack stack { get; private set; }
         public KLogger logger { get; private set; }
-        public KModShare modshare { get; private set; }
-        public KModLocal modlocal { get; private set; }
+        public List<KModShare> modshare { get; private set; }
+        public List<KModLocal> modlocal { get; private set; }
         public uint KErrorNo { get; private set; }
-        public Sugar sugar { get { return modlocal.modsugar; } }
+        public CTXSugar ctxsugar { get { return modlocal[(int)ModID.Sugar] as CTXSugar; } }
+        public KModSugar kmodsugar { get { return modshare[(int)ModID.Sugar] as KModSugar; } }
 
         public Context()
         {
@@ -197,7 +308,7 @@ namespace IronKonoha
             uint errref = unchecked((uint)-1);
             if (msg != null)
             {
-                var sugar = this.sugar;
+                var sugar = this.ctxsugar;
                 if (uline != null)
                 {
                     string file = uline.Filename;
@@ -208,11 +319,11 @@ namespace IronKonoha
                     Console.Write("%s ", msg);
                 }
                 Console.Write(fmt, ap);
-                errref = (uint)sugar.Errors.Count;
-                sugar.Errors.Add(msg);
+                errref = (uint)sugar.errors.Count;
+                sugar.errors.Add(msg);
                 if (pe == ReportLevel.ERR || pe == ReportLevel.CRIT)
                 {
-                    sugar.ErrorCount++;
+                    sugar.err_count++;
                 }
                 ReportError(pe, msg);
             }

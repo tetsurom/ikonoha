@@ -126,9 +126,30 @@ namespace IronKonoha
         }
 
         public bool IsType { get { return KeyWord == KeywordType.Type; } }
-        public bool Resolved()
+
+  
+        // static kbool_t Token_resolved(CTX, kKonohaSpace *ks, struct _kToken *tk)
+        public bool IsResolved(Context ctx)
         {
-            throw new NotImplementedException();
+            Symbol kw = ctx.kmodsugar.keyword_(this.Text, null);
+            /*if (kw != FN_NONAME)
+            {
+                Syntax syn = SYN_(ks, kw);
+                if (syn != NULL)
+                {
+                    if (syn->ty != TY_unknown)
+                    {
+                        this.keyword = KW_Type; tk->ty = syn->ty;
+                    }
+                    else
+                    {
+                        this.keyword = kw;
+                    }
+                    return true;
+                }
+            }
+             * */
+            return false;
         }
 
         internal Token ResolveType(Context ctx, Token tkP)
