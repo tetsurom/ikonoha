@@ -113,9 +113,30 @@ namespace IronKonoha
             return syn;
         }
 
+        public delegate void StmtTyChecker(KonohaStatement stmt, Syntax syn, KGamma gma);
+
+        public void SYN_setTopStmtTyCheck(KeywordType ks, StmtTyChecker checker)
+        {
+            var syn = GetSyntax(ks, true);
+            syn.TopStmtTyCheck = new KMethod();//checker;
+        }
+
+        public void SYN_setStmtTyCheck(KeywordType ks, StmtTyChecker checker)
+        {
+            var syn = GetSyntax(ks, true);
+            syn.StmtTyCheck = new KMethod();//checker;
+        }
+
+        public void SYN_setExprTyCheck(KeywordType ks, StmtTyChecker checker)
+        {
+            var syn = GetSyntax(ks, true);
+            syn.ExprTyCheck = new KMethod();//checker;
+        }
+
         internal Syntax GetSyntax(KeywordType keyword)
         {
-            return GetSyntax(keyword, false);
+            return GetSyntax(keyword, true);
+            //return GetSyntax(keyword, false);
         }
         
         //KonohaSpace_syntax

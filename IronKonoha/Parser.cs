@@ -295,7 +295,7 @@ namespace IronKonoha
             start = stmt.addAnnotation(ctx, tokens, start, end);
             if (!stmt.parseSyntaxRule(ctx, tokens, start, end))
             {
-                stmt.ConvertToErrorToken(ctx, estart);
+                stmt.Stmt_toERR(ctx, estart);
             }
             Debug.Assert(stmt.syn != null);
         }

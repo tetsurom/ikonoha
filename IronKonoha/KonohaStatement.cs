@@ -6,10 +6,12 @@ using System.Diagnostics;
 
 namespace IronKonoha
 {
-    public class KonohaStatement : KonohaExpr{
+    public class KonohaStatement : KObject{
         public Syntax syn { get; set; }
         public LineInfo ULine { get; set; }
         public KonohaSpace ks { get; set; }
+        public BlockExpr parent { get; set; }
+        public ushort build { get; set; }
 
         public KonohaStatement(LineInfo line, KonohaSpace ks)
         {
@@ -173,11 +175,13 @@ namespace IronKonoha
 	        return i;
         }
 
-        public void ConvertToErrorToken(Context ctx, uint estart)
+        // Stmt_toERR
+        public void Stmt_toERR(Context ctx, uint estart)
         {
-            throw new NotImplementedException();
-            //this.Type = TokenType.ERR;
-            //this.Text = ctx.modlocal[MOD_suger].errors.strings[errorcode];
+            //throw new NotImplementedException();
+	        this.syn = new Syntax();//ks.GetSyntax(parent, KeywordType.Err);
+	        //this.build = TSTMT_ERR;
+	        //kObject_setObject(stmt, KW_Err, kstrerror(eno));
         }
     }
 
