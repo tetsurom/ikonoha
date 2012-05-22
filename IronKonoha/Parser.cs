@@ -9,7 +9,7 @@ namespace IronKonoha
 {
     public class Symbol
     {
-
+        public static Symbol NewID = new Symbol();
     }
 
     /// <summary>
@@ -138,7 +138,7 @@ namespace IronKonoha
                 {
                     if (tk.Lpos <= indent)
                     {
-                        Debug.WriteLine(string.Format("tk.Lpos=%d, indent=%d", tk.Lpos, indent));
+                        Debug.WriteLine(string.Format("tk.Lpos={0}, indent={1}", tk.Lpos, indent));
                         errorToken = null;
                         return i + 1;
                     }
@@ -187,8 +187,8 @@ namespace IronKonoha
             }
             if (tk.Type != TokenType.ERR)
             {
-                uint errref = ctx.SUGAR_P(ReportLevel.ERR, tk.ULine, tk.Lpos, "'%c' is expected (probably before %s)", closeChar.ToString(), tokens[probablyCloseBefore].Text);
-                tkP.ConvertToErrorToken(this.ctx, errref);
+                uint errref = ctx.SUGAR_P(ReportLevel.ERR, tk.ULine, tk.Lpos, "'{0}' is expected (probably before {1})", closeChar.ToString(), tokens[probablyCloseBefore].Text);
+                tkP.toERR(this.ctx, errref);
             }
             else
             {
@@ -229,8 +229,8 @@ namespace IronKonoha
             {
                 if (!tk.IsResolved(ctx))
                 {
-                    uint errref = ctx.SUGAR_P(ReportLevel.ERR, tk.ULine, tk.Lpos, "undefined token: %s", tk.Text);
-                    tk.ConvertToErrorToken(this.ctx, errref);
+                    uint errref = ctx.SUGAR_P(ReportLevel.ERR, tk.ULine, tk.Lpos, "undefined token: {0}", tk.Text);
+                    tk.toERR(this.ctx, errref);
                     errorToken = tk;
                     return end;
                 }

@@ -28,7 +28,7 @@ namespace IronKonoha
 		        ret = (matchSyntaxRule(ctx, syn.SyntaxRule, this.ULine, tls, s, e, false) != -1);
 	        }
 	        else {
-		        ctx.SUGAR_P(ReportLevel.ERR, this.ULine, 0, "undefined syntax rule for '%s'", syn.KeyWord.ToString());
+		        ctx.SUGAR_P(ReportLevel.ERR, this.ULine, 0, "undefined syntax rule for '{0}'", syn.KeyWord.ToString());
 	        }
 	        return ret;
         }
@@ -156,7 +156,7 @@ namespace IronKonoha
 		        Token tk = tls[i];
 		        if(tk.Type != TokenType.METANAME) break;
 		        if(i+1 < e) {
-			        string buf = string.Format("@%s", tk.Text);
+			        string buf = "@" + tk.Text;
 			        // what is FN_NEWID?
                     //KeywordType kw = keyword(ctx, buf, tk.Text.Length + 1, FN_NEWID);
 			        Token tk1 = tls[i+1];

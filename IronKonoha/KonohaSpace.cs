@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 
 namespace IronKonoha
 {
@@ -36,7 +37,7 @@ namespace IronKonoha
         public KMethod ExprTyCheck { get; set; }
         public KMethod Op1 { get; set; }
         public KMethod Op2 { get; set; }
-
+        public Syntax Parent { get; set; }
     }
 
     /*
@@ -122,14 +123,13 @@ namespace IronKonoha
         {
             KonohaSpace ks = this;
             Syntax parent = null;
-            KeywordType hcode = keyword;
             while (ks != null)
             {
-                if (ks.syntaxMapNN != null)
+                if (ks.syntaxMap != null)
                 {
-                    if (ks.syntaxMapNN.ContainsKey(hcode))
+                    if (ks.syntaxMap.ContainsKey(keyword))
                     {
-                        parent = ks.syntaxMapNN[hcode];
+                        parent = ks.syntaxMap[keyword];
                     }
                 }
                 ks = ks.parentNULL;
@@ -137,38 +137,39 @@ namespace IronKonoha
             if (isnew == true)
             {
                 //DBG_P("creating new syntax %s old=%p", T_kw(kw), parent);
-                if (this.syntaxMapNN == null)
+                if (this.syntaxMap == null)
                 {
-                    this.syntaxMapNN = new Dictionary<KeywordType, Syntax>();
+                    this.syntaxMap = new Dictionary<KeywordType, Syntax>();
                 }
 
-                this.syntaxMapNN[hcode] = new Syntax();
+                this.syntaxMap[keyword] = new Syntax();
 
                 if (parent != null)
                 {  // TODO: RCGC
-                    this.syntaxMapNN[hcode] = parent;
+                    this.syntaxMap[keyword] = parent;
                 }
                 else
                 {
-                    var syn = this.syntaxMapNN[hcode];
-                    syn.KeyWord = keyword;
-                    /*
-                    syn.Type = TY_unknown;
-                    syn.Op1 = MN_NONAME;
-                    syn.Op2 = MN_NONAME;
-                    KINITv(syn.ParseExpr, kmodsugar->UndefinedParseExpr);
-                    KINITv(syn.TopStmtTyCheck, kmodsugar->UndefinedStmtTyCheck);
-                    KINITv(syn.StmtTyCheck, kmodsugar->UndefinedStmtTyCheck);
-                    KINITv(syn.ExprTyCheck, kmodsugar->UndefinedExprTyCheck);
-                    */
+                    var syn = new Syntax()
+                    {
+                        KeyWord = keyword,
+                        Type = KonohaType.Unknown,
+                        Op1 = null,
+                        Op2 = null,
+                        ParseExpr = ctx.kmodsugar.UndefinedParseExpr,
+                        TopStmtTyCheck = ctx.kmodsugar.UndefinedStmtTyCheck,
+                        StmtTyCheck = ctx.kmodsugar.UndefinedStmtTyCheck,
+                        ExprTyCheck = ctx.kmodsugar.UndefinedExprTyCheck,
+                    };
+                    this.syntaxMap[keyword] = syn;
                 }
-                //syn.parent = parent;
-                return this.syntaxMapNN[hcode];
+                this.syntaxMap[keyword].Parent = parent;
+                return this.syntaxMap[keyword];
             }
             return null;
         }
 
-        public Dictionary<KeywordType, Syntax> syntaxMapNN { get; set; }
+        public Dictionary<KeywordType, Syntax> syntaxMap { get; set; }
 
         public KonohaSpace parentNULL { get; set; }
     }

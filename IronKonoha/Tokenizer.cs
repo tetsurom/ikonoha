@@ -89,11 +89,11 @@ namespace IronKonoha
         AST_OPTIONAL      // for syntax sugar
     }
 
-    public enum KonohaType{
-
+    public class KonohaType{
+        public static readonly KonohaType Unknown = new KonohaType();
     }
 
-    [System.Diagnostics.DebuggerDisplay("{Value}")]
+    [System.Diagnostics.DebuggerDisplay("{Text} [{}]")]
     public class Token
     {
 
@@ -113,16 +113,11 @@ namespace IronKonoha
             this.Lpos = lpos;
         }
 
-        public void ConvertToErrorToken(Context ctx, int errorcode)
+        // static void Token_toERR(CTX, struct _kToken *tk, size_t errref)
+        public void toERR(Context ctx, uint errorcode)
         {
-            throw new NotImplementedException();
             this.Type = TokenType.ERR;
-            //this.Text = ctx.modlocal[MOD_suger].errors.strings[errorcode];
-        }
-
-        internal void ConvertToErrorToken(Context context, uint errref)
-        {
-            throw new NotImplementedException();
+            this.Text = ctx.ctxsugar.errors.strings[(int)errorcode];
         }
 
         public bool IsType { get { return KeyWord == KeywordType.Type; } }

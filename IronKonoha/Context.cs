@@ -30,6 +30,15 @@ namespace IronKonoha
     {
     }
 
+    [Flags]
+    public enum SPOL{
+        TEXT         = (1<<0),
+        ASCII        = (1<<1),
+        UTF8         = (1<<2),
+        POOL         = (1<<3),
+        NOCOPY       = (1<<4),
+    }
+
     // kmodsugar_t;
     public class KModSugar : KModShare{
         public KonohaClass cToken { get; set; }
@@ -40,11 +49,11 @@ namespace IronKonoha
         public KonohaClass cGamma { get; set; }
         public KonohaClass cTokenArray { get; set; }
 
-        public IList<KKeyWord> keywordList { get; set; }
-        public IDictionary<object, KKeyWord> keywordMap;
+        public IList<string> keywordList { get; set; }
+        public IDictionary<string, KKeyWord> keywordMap;
 
-        public IList<KPackage> packageList { get; set; }
-        public IDictionary<object, KPackage> packageMap;
+        public IList<string> packageList { get; set; }
+        public IDictionary<string, KPackage> packageMap;
 
         public KMethod UndefinedParseExpr { get; set; }
         public KMethod UndefinedStmtTyCheck { get; set; }
@@ -87,15 +96,27 @@ namespace IronKonoha
 
         public KModSugar()
         {
+            keywordMap = new Dictionary<string, KKeyWord>();
+            keywordList = new List<string>();
         }
 
         public Symbol keyword_(string name, Symbol def)
         {
-            var kw = keywordMap[name];
-            return kw;
-            //return kmap_getcode(kmodsugar->keywordMapNN, kmodsugar->keywordList, name, len, hcode, SPOL_ASCII|SPOL_POOL, def);
+            return kmap_getcode(name, SPOL.ASCII|SPOL.POOL, def);
         }
 
+        public Symbol kmap_getcode(string name, SPOL spol, Symbol def){
+            if (keywordMap.ContainsKey(name))
+            {
+                return keywordMap[name];
+            }
+            if (def == Symbol.NewID)
+            {
+                keywordList.Add(name);
+                keywordMap.Add(name, null);
+            }
+            return null;
+        }
     }
 
     public class KGamma : KObject
@@ -103,12 +124,23 @@ namespace IronKonoha
 
     }
 
+    public class Errors
+    {
+        public List<string> strings { get; set; }
+        public uint Count { get; set; }
+
+        public Errors()
+        {
+            strings = new List<string>();
+        }
+    }
+
     public class CTXSugar : KModLocal
     {
         public IList<Token> tokens { get; private set; }
         public IList<Token> cwb { get; private set; }
         public int err_count { get; set; }
-        public List<object> errors { get; private set; }
+        public Errors errors { get; private set; }
         public BlockExpr singleBlock { get; private set; }
         public KGamma gma { get; private set; }
         public IList<object> lvarlist { get; private set; }
@@ -116,7 +148,7 @@ namespace IronKonoha
 
         public CTXSugar()
         {
-            errors = new List<object>();
+            errors = new Errors();
         }
     }
 
@@ -269,6 +301,17 @@ namespace IronKonoha
 
         public Context()
         {
+            modshare = new List<KModShare>();
+            modshare.Add(new KModSugar());
+            modshare.Add(new KModSugar());
+            modshare.Add(new KModSugar());
+            modshare.Add(new KModSugar());
+
+            modlocal = new List<KModLocal>();
+            modlocal.Add(new CTXSugar());
+            modlocal.Add(new CTXSugar());
+            modlocal.Add(new CTXSugar());
+            modlocal.Add(new CTXSugar());
         }
 
         public string GetErrorTypeString(ReportLevel pe)
@@ -296,12 +339,13 @@ namespace IronKonoha
             return "(unknown)";
         }
 
+        // static size_t sugar_p(CTX, int pe, kline_t uline, int lpos, const char *fmt, ...)
         public uint SUGAR_P(ReportLevel pe, LineInfo line, int lpos, string format, params object[] param)
         {
-            
             return vperrorf(pe, line, lpos, format, param);
         }
 
+        // static size_t vperrorf(CTX, int pe, kline_t uline, int lpos, const char *fmt, va_list ap)
         uint vperrorf(ReportLevel pe, LineInfo uline, int lpos, string fmt, params object[] ap)
         {
             string msg = GetErrorTypeString(pe);
@@ -312,15 +356,16 @@ namespace IronKonoha
                 if (uline != null)
                 {
                     string file = uline.Filename;
-                    Console.Write("%s (%s:%d) ", msg, file, uline.LineNumber);
+                    if (file == string.Empty) file = "0";
+                    Console.Write("{0} ({1}:{2}) ", msg, file, uline.LineNumber);
                 }
                 else
                 {
-                    Console.Write("%s ", msg);
+                    Console.Write(msg + ' ');
                 }
                 Console.Write(fmt, ap);
                 errref = (uint)sugar.errors.Count;
-                sugar.errors.Add(msg);
+                sugar.errors.strings.Add(msg);
                 if (pe == ReportLevel.ERR || pe == ReportLevel.CRIT)
                 {
                     sugar.err_count++;
