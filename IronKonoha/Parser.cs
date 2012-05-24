@@ -9,7 +9,8 @@ namespace IronKonoha
 {
 	public class Symbol
 	{
-		public static Symbol NewID = new Symbol ();
+		public static readonly Symbol NewID = new Symbol();
+		public static readonly Symbol NONAME = new Symbol();
 	}
 
 	/// <summary>
@@ -21,7 +22,7 @@ namespace IronKonoha
 		private Context ctx;
 		private KonohaSpace ks;
 
-		public Parser (Context ctx, KonohaSpace ks)
+		public Parser(Context ctx, KonohaSpace ks)
 		{
 			this.ctx = ctx;
 			this.ks = ks;
@@ -54,48 +55,55 @@ namespace IronKonoha
 		/// <param name="delim">デリミタ</param>
 		/// <returns></returns>
 		// static kBlock *new_Block(CTX, kKonohaSpace *ks, kStmt *parent, kArray *tls, int s, int e, int delim)
-		public BlockExpr CreateBlock (KonohaExpr parent, IList<Token> token, int start, int end, char delim)
+		public BlockExpr CreateBlock(KonohaExpr parent, IList<Token> token, int start, int end, char delim)
 		{
-			BlockExpr block = new BlockExpr ();
+			BlockExpr block = new BlockExpr();
 			block.parent = parent;
 			int indent = 0;
 			int atop = token.Count;
-			for (int i = start; i < end;) {
+			for (int i = start; i < end; )
+			{
 				Token error;
-				Debug.Assert (atop == token.Count);
-				i = SelectStatementLine (ref indent, token, i, end, delim, token, out error);
+				Debug.Assert(atop == token.Count);
+				i = SelectStatementLine(ref indent, token, i, end, delim, token, out error);
 				int asize = token.Count;
-				if (asize > atop) {
-					block.AddStatementLine (ctx, ks, token, atop, asize, out error);
+				if (asize > atop)
+				{
+					block.AddStatementLine(ctx, ks, token, atop, asize, out error);
 				}
 			}
 			return block;
 		}
 
 		// static int selectStmtLine(CTX, kKonohaSpace *ks, int *indent, kArray *tls, int s, int e, int delim, kArray *tlsdst, kToken **tkERRRef)
-		private int SelectStatementLine (ref int indent, IList<Token> tokens, int start, int end, char delim, IList<Token>tokensDst, out Token errorToken)
+		private int SelectStatementLine(ref int indent, IList<Token> tokens, int start, int end, char delim, IList<Token> tokensDst, out Token errorToken)
 		{
 			int i = start;
-			Debug.Assert (end <= tokens.Count);
-			for (; i < end - 1; i++) {
-				Token tk = tokens [i];
-				Token tk1 = tokens [i + 1];
-				if (tk.KeyWord != 0)
+			Debug.Assert(end <= tokens.Count);
+			for (; i < end - 1; i++)
+			{
+				Token tk = tokens[i];
+				Token tk1 = tokens[i + 1];
+				if (tk.Keyword != 0)
 					break;  // already parsed
-				if (tk.TopChar == '@' && (tk1.Type == TokenType.SYMBOL || tk1.Type == TokenType.USYMBOL)) {
+				if (tk.TopChar == '@' && (tk1.Type == TokenType.SYMBOL || tk1.Type == TokenType.USYMBOL))
+				{
 					tk1.Type = TokenType.METANAME;
-					tk1.KeyWord = 0;
-					tokensDst.Add (tk1);
+					tk1.Keyword = 0;
+					tokensDst.Add(tk1);
 					i++;
-					if (i + 1 < end && tokens [i + 1].TopChar == '(') {
-						i = makeTree (TokenType.AST_PARENTHESIS, tokens, i + 1, end, ')', tokensDst, out errorToken);
+					if (i + 1 < end && tokens[i + 1].TopChar == '(')
+					{
+						i = makeTree(TokenType.AST_PARENTHESIS, tokens, i + 1, end, ')', tokensDst, out errorToken);
 					}
 					continue;
 				}
-				if (tk.Type == TokenType.METANAME) {  // already parsed
-					tokensDst.Add (tk);
-					if (tk1.Type == TokenType.AST_PARENTHESIS) {
-						tokensDst.Add (tk1);
+				if (tk.Type == TokenType.METANAME)
+				{  // already parsed
+					tokensDst.Add(tk);
+					if (tk1.Type == TokenType.AST_PARENTHESIS)
+					{
+						tokensDst.Add(tk1);
 						i++;
 					}
 					continue;
@@ -103,63 +111,80 @@ namespace IronKonoha
 				if (tk.Type != TokenType.INDENT)
 					break;
 				if (indent == 0)
-					indent = tk.Lpos;
+					indent = tk.Text.Length;
 			}
-			for (; i < end; i++) {
-				var tk = tokens [i];
-				if (tk.TopChar == delim && tk.Type == TokenType.OPERATOR) {
+			for (; i < end; i++)
+			{
+				var tk = tokens[i];
+				if (tk.TopChar == delim && tk.Type == TokenType.OPERATOR)
+				{
 					errorToken = null;
 					return i + 1;
 				}
-				if (tk.KeyWord != 0) {
-					tokensDst.Add (tk);
+				if (tk.Keyword != 0)
+				{
+					tokensDst.Add(tk);
 					continue;
-				} else if (tk.TopChar == '(') {
-					i = makeTree (TokenType.AST_PARENTHESIS, tokens, i, end, ')', tokensDst, out errorToken);
+				}
+				else if (tk.TopChar == '(')
+				{
+					i = makeTree(TokenType.AST_PARENTHESIS, tokens, i, end, ')', tokensDst, out errorToken);
 					continue;
-				} else if (tk.TopChar == '[') {
-					i = makeTree (TokenType.AST_BRANCET, tokens, i, end, ']', tokensDst, out errorToken);
+				}
+				else if (tk.TopChar == '[')
+				{
+					i = makeTree(TokenType.AST_BRANCET, tokens, i, end, ']', tokensDst, out errorToken);
 					continue;
-				} else if (tk.Type == TokenType.ERR) {
+				}
+				else if (tk.Type == TokenType.ERR)
+				{
 					errorToken = tk;
 				}
-				if (tk.Type == TokenType.INDENT) {
-					if (tk.Lpos <= indent) {
-						Debug.WriteLine (string.Format ("tk.Lpos={0}, indent={1}", tk.Lpos, indent));
+				if (tk.Type == TokenType.INDENT)
+				{
+					if (tk.Text.Length <= indent)
+					{
+						Debug.WriteLine(string.Format("tk.Lpos={0}, indent={1}", tk.Text.Length, indent));
 						errorToken = null;
 						return i + 1;
 					}
 					continue;
 				}
-				i = appendKeyword (tokens, i, end, tokensDst, out errorToken);
+				i = appendKeyword(tokens, i, end, tokensDst, out errorToken);
 			}
 			errorToken = null;
 			return i;
 		}
 
 		// static int makeTree(CTX, kKonohaSpace *ks, ktoken_t tt, kArray *tls, int s, int e, int closech, kArray *tlsdst, kToken **tkERRRef)
-		private int makeTree (TokenType tokentype, IList<Token> tokens, int start, int end, char closeChar, IList<Token> tokensDst, out Token errorToken)
+		private int makeTree(TokenType tokentype, IList<Token> tokens, int start, int end, char closeChar, IList<Token> tokensDst, out Token errorToken)
 		{
 			int i, probablyCloseBefore = end - 1;
-			Token tk = tokens [start];
-			Debug.Assert (tk.KeyWord == 0);
+			Token tk = tokens[start];
+			Debug.Assert(tk.Keyword == 0);
 
-			Token tkP = new Token (tokentype, tk.Text, closeChar) { KeyWord = (KeywordType)tokentype };
-			tokensDst.Add (tkP);
-			tkP.Sub = new List<Token> ();
-			for (i = start + 1; i < end; i++) {
-				tk = tokens [i];
-				Debug.Assert (tk.KeyWord == 0);
+			Token tkP = new Token(tokentype, tk.Text, closeChar) { Keyword = (KeywordType)tokentype };
+			tokensDst.Add(tkP);
+			tkP.Sub = new List<Token>();
+			for (i = start + 1; i < end; i++)
+			{
+				tk = tokens[i];
+				Debug.Assert(tk.Keyword == 0);
 				if (tk.Type == TokenType.ERR)
 					break;  // ERR
-				Debug.Assert (tk.TopChar != '{');
-				if (tk.TopChar == '(') {
-					i = makeTree (TokenType.AST_PARENTHESIS, tokens, i, end, ')', tkP.Sub, out errorToken);
+				Debug.Assert(tk.TopChar != '{');
+				if (tk.TopChar == '(')
+				{
+					i = makeTree(TokenType.AST_PARENTHESIS, tokens, i, end, ')', tkP.Sub, out errorToken);
 					continue;
-				} else if (tk.TopChar == '[') {
-					i = makeTree (TokenType.AST_BRANCET, tokens, i, end, ']', tkP.Sub, out errorToken);
+				}
+				else if (tk.TopChar == '[')
+				{
+					i = makeTree(TokenType.AST_BRANCET, tokens, i, end, ']', tkP.Sub, out errorToken);
 					continue;
-				} else if (tk.TopChar == closeChar) {
+				}
+				else if (tk.TopChar == closeChar)
+				{
 					errorToken = null;
 					return i;
 				}
@@ -167,12 +192,15 @@ namespace IronKonoha
 					probablyCloseBefore = i;
 				if (tk.Type == TokenType.INDENT && closeChar != '}')
 					continue;  // remove INDENT;
-				i = appendKeyword (tokens, i, end, tkP.Sub, out errorToken);
+				i = appendKeyword(tokens, i, end, tkP.Sub, out errorToken);
 			}
-			if (tk.Type != TokenType.ERR) {
-				uint errref = ctx.SUGAR_P (ReportLevel.ERR, tk.ULine, tk.Lpos, "'{0}' is expected (probably before {1})", closeChar.ToString (), tokens [probablyCloseBefore].Text);
-				tkP.toERR (this.ctx, errref);
-			} else {
+			if (tk.Type != TokenType.ERR)
+			{
+				uint errref = ctx.SUGAR_P(ReportLevel.ERR, tk.ULine, 0, "'{0}' is expected (probably before {1})", closeChar.ToString(), tokens[probablyCloseBefore].Text);
+				tkP.toERR(this.ctx, errref);
+			}
+			else
+			{
 				tkP.Type = TokenType.ERR;
 			}
 			errorToken = tkP;
@@ -180,50 +208,65 @@ namespace IronKonoha
 		}
 
 		//static int appendKeyword(CTX, kKonohaSpace *ks, kArray *tls, int s, int e, kArray *dst, kToken **tkERR)
-		private int appendKeyword (IList<Token> tokens, int start, int end, IList<Token> tokensDst, out Token errorToken)
+		private int appendKeyword(IList<Token> tokens, int start, int end, IList<Token> tokensDst, out Token errorToken)
 		{
 			int next = start; // don't add
-			Token tk = tokens [start];
-			if (tk.Type < TokenType.OPERATOR) {
-				tk.KeyWord = (KeywordType)tk.Type;
+			Token tk = tokens[start];
+			if (tk.Type < TokenType.OPERATOR)
+			{
+				tk.Keyword = (KeywordType)tk.Type;
 			}
-			if (tk.Type == TokenType.SYMBOL) {
-				tk.IsResolved (ctx);
-			} else if (tk.Type == TokenType.USYMBOL) {
-				if (!tk.IsResolved (ctx)) {
-					throw new NotImplementedException ();
+			if (tk.Type == TokenType.SYMBOL)
+			{
+				tk.IsResolved(ctx, ks);
+			}
+			else if (tk.Type == TokenType.USYMBOL)
+			{
+				if (!tk.IsResolved(ctx, ks))
+				{
+					throw new NotImplementedException();
 					//KonohaClass ct = kKonohaSpace_getCT(ks, null/*FIXME*/, tk.Text, tk.Text.Length, TY_unknown);
 					object ct = null;
-					if (ct != null) {
-						tk.KeyWord = KeywordType.Type;
+					if (ct != null)
+					{
+						tk.Keyword = KeywordType.Type;
 						//tk.Type = ct->cid;
 					}
 				}
-			} else if (tk.Type == TokenType.OPERATOR) {
-				if (!tk.IsResolved (ctx)) {
-					uint errref = ctx.SUGAR_P (ReportLevel.ERR, tk.ULine, tk.Lpos, "undefined token: {0}", tk.Text);
-					tk.toERR (this.ctx, errref);
+			}
+			else if (tk.Type == TokenType.OPERATOR)
+			{
+				if (!tk.IsResolved(ctx, ks))
+				{
+					uint errref = ctx.SUGAR_P(ReportLevel.ERR, tk.ULine, 0, "undefined token: {0}", tk.Text);
+					tk.toERR(this.ctx, errref);
 					errorToken = tk;
 					return end;
 				}
-			} else if (tk.Type == TokenType.CODE) {
-				tk.KeyWord = KeywordType.Brace;
 			}
-			if (tk.IsType) {
-				while (next + 1 < end) {
-					Token tkN = tokens [next + 1];
+			else if (tk.Type == TokenType.CODE)
+			{
+				tk.Keyword = KeywordType.Brace;
+			}
+			if (tk.IsType)
+			{
+				while (next + 1 < end)
+				{
+					Token tkN = tokens[next + 1];
 					if (tkN.TopChar != '[')
 						break;
-					List<Token> abuf = new List<Token> ();
+					List<Token> abuf = new List<Token>();
 					int atop = abuf.Count;
-					next = makeTree (TokenType.AST_BRANCET, tokens, next + 1, end, ']', abuf, out errorToken);
-					if (abuf.Count > atop) {
-						tk.ResolveType (this.ctx, abuf [atop]);
+					next = makeTree(TokenType.AST_BRANCET, tokens, next + 1, end, ']', abuf, out errorToken);
+					if (abuf.Count > atop)
+					{
+						tk.ResolveType(this.ctx, abuf[atop]);
 					}
 				}
 			}
-			if (tk.KeyWord > KeywordType.Expr) {
-				tokensDst.Add (tk);
+			if (tk.Keyword > KeywordType.Expr)
+			{
+				tokensDst.Add(tk);
 			}
 			errorToken = null;
 			return next;
@@ -246,27 +289,28 @@ namespace IronKonoha
 	}
 
 	public abstract class KonohaExpr
-	{ 
+	{
 		public KonohaExpr parent { get; set; }
 	}
 
 	public class BlockExpr : KonohaExpr
 	{
-		public List<KonohaStatement> blocks = new List<KonohaStatement> ();
+		public List<KStatement> blocks = new List<KStatement>();
 
 		// static void Block_addStmtLine(CTX, kBlock *bk, kArray *tls, int s, int e, kToken *tkERR)
-		public void AddStatementLine (Context ctx, KonohaSpace ks, IList<Token> tokens, int start, int end, out Token tkERR)
+		public void AddStatementLine(Context ctx, KonohaSpace ks, IList<Token> tokens, int start, int end, out Token tkERR)
 		{
 			tkERR = null;
-			KonohaStatement stmt = new KonohaStatement (tokens [start].ULine, ks);//new_W(Stmt, tls->toks[s]->uline);
-			blocks.Add (stmt);
+			KStatement stmt = new KStatement(tokens[start].ULine, ks);//new_W(Stmt, tls->toks[s]->uline);
+			blocks.Add(stmt);
 			stmt.parent = this;
 			uint estart = ctx.KErrorNo;
-			start = stmt.addAnnotation (ctx, tokens, start, end);
-			if (!stmt.parseSyntaxRule (ctx, tokens, start, end)) {
-				stmt.Stmt_toERR (ctx, estart);
+			start = stmt.addAnnotation(ctx, tokens, start, end);
+			if (!stmt.parseSyntaxRule(ctx, tokens, start, end))
+			{
+				stmt.toERR(ctx, estart);
 			}
-			Debug.Assert (stmt.syn != null);
+			Debug.Assert(stmt.syn != null);
 		}
 	}
 }

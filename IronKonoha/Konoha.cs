@@ -8,7 +8,7 @@ namespace IronKonoha
 {
 	public class LineInfo
 	{
-		public LineInfo (int line, string file)
+		public LineInfo(int line, string file)
 		{
 			this.LineNumber = line;
 			this.Filename = file;
@@ -22,8 +22,15 @@ namespace IronKonoha
 	public class Konoha
 	{
 
-		public Konoha ()
+		Context ctx;
+		KonohaSpace space;
+
+		public static readonly int FN_NONAME = -1;
+
+		public Konoha()
 		{
+			ctx = new Context();
+			space = new KonohaSpace(ctx);
 		}
 
 		/// <summary>
@@ -32,14 +39,21 @@ namespace IronKonoha
 		/// <param name="exprStr">実行する文</param>
 		/// <param name="module">グローバル変数等を管理するオブジェクト</param>
 		/// <returns>実行結果</returns>
-		public object ExecuteExpr (string exprStr, ExpandoObject module)
+		public object ExecuteExpr(string exprStr, ExpandoObject module)
 		{
-			throw new NotImplementedException ();
+			return Eval(exprStr);
 		}
 
-		public static ExpandoObject CreateScope ()
+		public static ExpandoObject CreateScope()
 		{
-			return new ExpandoObject ();
+			return new ExpandoObject();
 		}
+
+		public dynamic Eval(string code)
+		{
+			space.Eval(code);
+			return null;
+		}
+
 	}
 }

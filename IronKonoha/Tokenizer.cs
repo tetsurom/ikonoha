@@ -91,103 +91,101 @@ namespace IronKonoha
 
 	public class KonohaType
 	{
-		public static readonly KonohaType Unknown = new KonohaType ();
+		public static readonly KonohaType Unknown = new KonohaType();
 	}
 
-	[System.Diagnostics.DebuggerDisplay("{Text} [{}]")]
-    public class Token
+	[System.Diagnostics.DebuggerDisplay("{Text} [{Type}]")]
+	public class Token
 	{
 
 		public TokenType Type { get; set; }
-
 		public string Text { get; private set; }
-
 		public IList<Token> Sub { get; set; }
-
-		public char TopChar { get { return this.Text [0]; } }
-
-		public KeywordType KeyWord { get; set; }
-
+		public char TopChar { get { return this.Text[0]; } }
+		public KeywordType Keyword { get; set; }
 		public KonohaType KType { get; set; }
-
-		public int Lpos { get; private set; }
-
 		public LineInfo ULine { get; set; }
 
-		public Token (TokenType type, string text, int lpos)
+		public Token(TokenType type, string text, int lpos)
 		{
 			this.Type = type;
 			this.Text = text;
-			this.Lpos = lpos;
 		}
 
 		// static void Token_toERR(CTX, struct _kToken *tk, size_t errref)
-		public void toERR (Context ctx, uint errorcode)
+		public void toERR(Context ctx, uint errorcode)
 		{
 			this.Type = TokenType.ERR;
-			this.Text = ctx.ctxsugar.errors.strings [(int)errorcode];
+			this.Text = ctx.ctxsugar.errors.strings[(int)errorcode];
 		}
 
-		public bool IsType { get { return KeyWord == KeywordType.Type; } }
+		public bool IsType { get { return Keyword == KeywordType.Type; } }
 
-  
+
 		// static kbool_t Token_resolved(CTX, kKonohaSpace *ks, struct _kToken *tk)
-		public bool IsResolved (Context ctx)
+		public bool IsResolved(Context ctx, KonohaSpace ks)
 		{
-			Symbol kw = ctx.kmodsugar.keyword_ (this.Text, null);
-			/*if (kw != FN_NONAME)
+			KKeyWord kw = ctx.kmodsugar.keyword_(this.Text, null);
+			if (kw != null && kw != Symbol.NONAME)
 			{
-				Syntax syn = SYN_(ks, kw);
-				if (syn != NULL)
+				Syntax syn = ks.GetSyntax(kw.Type);
+				if (syn != null)
 				{
-					if (syn->ty != TY_unknown)
+					if (syn.Type != KonohaType.Unknown)
 					{
-						this.keyword = KW_Type; tk->ty = syn->ty;
+						this.Keyword = KeywordType.Type;
+						this.Type = TokenType.TYPE;
+						this.KType = syn.Type;
 					}
 					else
 					{
-						this.keyword = kw;
+						this.Keyword = kw.Type;
 					}
 					return true;
 				}
 			}
-			* */
 			return false;
 		}
 
-		internal Token ResolveType (Context ctx, Token tkP)
+		internal Token ResolveType(Context ctx, Token tkP)
 		{
 			int i;
 			// 型引数の取得
 			int size = tkP.Sub.Count;
-			var p = new List<KonohaParam> ();
-			for (i = 0; i < size; i++) {
-				Token tkT = (tkP.Sub [i]);
-				if (tkT.KeyWord == KeywordType.Type) {
-					p.Add (new KonohaParam () { Type = tkT.Type });
+			var p = new List<KonohaParam>();
+			for (i = 0; i < size; i++)
+			{
+				Token tkT = (tkP.Sub[i]);
+				if (tkT.Keyword == KeywordType.Type)
+				{
+					p.Add(new KonohaParam() { Type = tkT.Type });
 				}
 				//if(tkT.TopChar == ',') continue;
 			}
-			throw new NotImplementedException ();
+			throw new NotImplementedException();
 			// 以下未実装
 			KonohaClass ct;
-			if (p.Count > 0) {
+			if (p.Count > 0)
+			{
 				ct = null;// this.ctx.share.ca.cts[(int)this.Type];
-				if (ct.cparam == KonohaParam.NULL) {
-					ctx.SUGAR_P (ReportLevel.ERR, this.ULine, this.Lpos, "not generic type: %s", this.KType.ToString ());
+				if (ct.cparam == KonohaParam.NULL)
+				{
+					ctx.SUGAR_P(ReportLevel.ERR, this.ULine, 0, "not generic type: %s", this.KType.ToString());
 					return this;
 				}
 				//ct = kClassTable_Generics(ct, TY_void, p.Count, p);
-			} else {
+			}
+			else
+			{
 				//ct = CT_P0(_ctx, CT_Array, this_type(this));
 			}
 			this.Type = (TokenType)ct.cid;
 			return this;
 		}
 
-		public void Print (Context ctx, ReportLevel pe, string fmt, params object[] ap)
+		public void Print(Context ctx, ReportLevel pe, string fmt, params object[] ap)
 		{
-			ctx.SUGAR_P (pe, this.ULine, this.Lpos, fmt, ap);
+			ctx.SUGAR_P(pe, this.ULine, 0, fmt, ap);
 		}
 
 		public Symbol nameid { get; set; }
@@ -224,9 +222,9 @@ namespace IronKonoha
 		/// <param name="tokStart">トークンの開始位置</param>
 		/// <param name="thunk"></param>
 		/// <returns>次のトークンの開始位置</returns>
-		public delegate int FTokenizer (Context ctx,out Token token,TokenizerEnvironment tenv,int tokStart,KMethod thunk);
+		public delegate int FTokenizer(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk);
 
-        #region 定数
+		#region 定数
 
 		enum CharType
 		{
@@ -349,49 +347,55 @@ namespace IronKonoha
 		/* UNDER */ TokenizeSymbol,
         };
 
-        #endregion
+		#endregion
 
-        #region トークナイズ関数郡
+		#region トークナイズ関数郡
 
-		static int TokenizeSkip (Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeSkip(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
 		{
 			token = null;
 			return ++tokStart;
 		}
 
-		static private bool IsNumChar (int c)
+		static private bool IsNumChar(int c)
 		{
 			return '0' <= c && c <= '9';
 		}
 
-		static private bool IsHexNumChar (int c)
+		static private bool IsHexNumChar(int c)
 		{
 			return ('0' <= c && c <= '9') | ('A' <= c && c <= 'F') | ('a' <= c && c <= 'f');
 		}
 
-		static private bool IsAlphaOrNum (int c)
+		static private bool IsAlphaOrNum(int c)
 		{
 			return ('0' <= c && c <= '9') | ('A' <= c && c <= 'Z') | ('a' <= c && c <= 'z');
 		}
 
-		static private bool IsSymbolic (int c)
+		static private bool IsSymbolic(int c)
 		{
-			return IsAlphaOrNum (c) || c == '_';
+			return IsAlphaOrNum(c) || c == '_';
 		}
 
-		static int TokenizeIndent (Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeIndent(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
 		{
 			int pos = tokStart;
 			string ts = tenv.Source;
 			int indent = 0;
 
-			if (pos < ts.Length) {
-				char ch = ts [pos++];
-				if (ch == '\t') {
+			if (pos < ts.Length)
+			{
+				char ch = ts[pos++];
+				if (ch == '\t')
+				{
 					indent += tenv.TabWidth;
-				} else if (ch == ' ') {
+				}
+				else if (ch == ' ')
+				{
 					indent += 1;
-				} else {
+				}
+				else
+				{
 					--pos;
 				}
 			}
@@ -400,65 +404,78 @@ namespace IronKonoha
 			return pos;
 		}
 
-		static int TokenizeNextline (Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeNextline(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
 		{
 			int pos = tokStart;
 			string ts = tenv.Source;
 
-			while (pos < ts.Length) {
-				if (ts [pos] == '\r') {
-					if (ts [pos + 1] == '\n') {
+			while (pos < ts.Length)
+			{
+				if (ts[pos] == '\r')
+				{
+					if (ts[pos + 1] == '\n')
+					{
 						++pos;
 					}
 					++pos;
-				} else if (ts [pos] == '\n') {
+				}
+				else if (ts[pos] == '\n')
+				{
 					++pos;
 				}
 			}
 
 			tenv.Line.LineNumber += 1;
 			tenv.Bol = pos;
-			return TokenizeIndent (ctx, out token, tenv, pos, thunk);
+			return TokenizeIndent(ctx, out token, tenv, pos, thunk);
 		}
 
-		static int TokenizeNumber (Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeNumber(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
 		{
 			int pos = tokStart;
 			bool dotAppeared = false;
 			string ts = tenv.Source;
 
-			while (pos < ts.Length) {
-				char ch = ts [pos++];
+			while (pos < ts.Length)
+			{
+				char ch = ts[pos++];
 				if (ch == '_')
 					continue; // nothing
-				if (ch == '.') {
-					if (!IsNumChar (ts [pos])) {
+				if (ch == '.')
+				{
+					if (!IsNumChar(ts[pos]))
+					{
 						--pos;
 						break;
 					}
 					dotAppeared = true;
 					continue;
 				}
-				if ((ch == 'e' || ch == 'E') && (ts [pos] == '+' || ts [pos] == '-')) {
+				if ((ch == 'e' || ch == 'E') && (ts[pos] == '+' || ts[pos] == '-'))
+				{
 					pos++;
 					continue;
 				}
-				if (!IsAlphaOrNum (ch)) {
+				if (!IsAlphaOrNum(ch))
+				{
 					--pos;
 					break;
 				}
 			}
 
-			string str = ts.Substring (tokStart, pos - tokStart).Replace ("_", "");
-			if (dotAppeared) {
-				token = new Token (TokenType.FLOAT, str, tokStart);
-			} else {
-				token = new Token (TokenType.INT, str, tokStart);
+			string str = ts.Substring(tokStart, pos - tokStart).Replace("_", "");
+			if (dotAppeared)
+			{
+				token = new Token(TokenType.FLOAT, str, tokStart);
+			}
+			else
+			{
+				token = new Token(TokenType.INT, str, tokStart);
 			}
 			return pos;  // next
 		}
 
-		static int TokenizeSymbol (Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeSymbol(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
 		{
 			int pos = tokStart;
 			string ts = tenv.Source;
@@ -466,52 +483,54 @@ namespace IronKonoha
 			while (pos < ts.Length && IsSymbolic(ts[pos]))
 				++pos;
 
-			token = new Token (TokenType.SYMBOL, ts.Substring (tokStart, pos - tokStart), tokStart);
+			token = new Token(TokenType.SYMBOL, ts.Substring(tokStart, pos - tokStart), tokStart);
 			return pos;
 		}
 
-		static int TokenizeOneCharOperator (Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeOneCharOperator(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
 		{
-			token = new Token (TokenType.OPERATOR, tenv.Source.Substring (tokStart, 1), tokStart);
+			token = new Token(TokenType.OPERATOR, tenv.Source.Substring(tokStart, 1), tokStart);
 			return ++tokStart;
 		}
 
-		static int TokenizeOperator (Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeOperator(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
 		{
 			int pos = tokStart;
 			string ts = tenv.Source;
 
-			while (pos < ts.Length) {
-				switch (ts [pos]) {
-				case '<':
-				case '>':
-				case '@':
-				case '$':
-				case '#':
-				case '+':
-				case '-':
-				case '*':
-				case '%':
-				case '/':
-				case '=':
-				case '&':
-				case '?':
-				case ':':
-				case '.':
-				case '^':
-				case '!':
-				case '~':
-				case '|':
-					++pos;
-					continue;
+			while (pos < ts.Length)
+			{
+				switch (ts[pos])
+				{
+					case '<':
+					case '>':
+					case '@':
+					case '$':
+					case '#':
+					case '+':
+					case '-':
+					case '*':
+					case '%':
+					case '/':
+					case '=':
+					case '&':
+					case '?':
+					case ':':
+					case '.':
+					case '^':
+					case '!':
+					case '~':
+					case '|':
+						++pos;
+						continue;
 				}
 				break;
 			}
-			token = new Token (TokenType.OPERATOR, ts.Substring (tokStart, pos - tokStart), tokStart);
+			token = new Token(TokenType.OPERATOR, ts.Substring(tokStart, pos - tokStart), tokStart);
 			return pos;
 		}
 
-		static int TokenizeLine (Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeLine(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
 		{
 			string ts = tenv.Source;
 			int pos = tokStart;
@@ -521,7 +540,7 @@ namespace IronKonoha
 			return pos;
 		}
 
-		static int TokenizeComment (Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeComment(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
 		{
 			string ts = tenv.Source;
 			int pos = tokStart + 2;
@@ -530,20 +549,27 @@ namespace IronKonoha
 			int level = 1;
 			token = null;
 
-			while (pos < ts.Length) {
-				ch = ts [pos++];
-				if (ch == '\r') {
+			while (pos < ts.Length)
+			{
+				ch = ts[pos++];
+				if (ch == '\r')
+				{
 					tenv.Line.LineNumber += 1;
-					if (ts [pos] == '\n')
+					if (ts[pos] == '\n')
 						++pos;
-				} else if (ch == '\n') {
+				}
+				else if (ch == '\n')
+				{
 					tenv.Line.LineNumber += 1;
 				}
-				if (prev == '*' && ch == '/') {
+				if (prev == '*' && ch == '/')
+				{
 					level--;
 					if (level == 0)
 						return pos;
-				} else if (prev == '/' && ch == '*') {
+				}
+				else if (prev == '/' && ch == '*')
+				{
 					level++;
 				}
 				prev = ch;
@@ -552,18 +578,21 @@ namespace IronKonoha
 			return pos;
 		}
 
-		static int TokenizeSlash (Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeSlash(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
 		{
 			string ts = tenv.Source;
-			if (ts [tokStart + 1] == '/') {
-				return TokenizeLine (ctx, out token, tenv, tokStart, thunk);
-			} else if (ts [tokStart + 1] == '*') {
-				return TokenizeComment (ctx, out token, tenv, tokStart, thunk);
+			if (ts[tokStart + 1] == '/')
+			{
+				return TokenizeLine(ctx, out token, tenv, tokStart, thunk);
 			}
-			return TokenizeOperator (ctx, out token, tenv, tokStart, thunk);
+			else if (ts[tokStart + 1] == '*')
+			{
+				return TokenizeComment(ctx, out token, tenv, tokStart, thunk);
+			}
+			return TokenizeOperator(ctx, out token, tenv, tokStart, thunk);
 		}
 
-		static int TokenizeDoubleQuote (Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeDoubleQuote(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
 		{
 			string ts = tenv.Source;
 			char ch = '\0';
@@ -572,13 +601,16 @@ namespace IronKonoha
 
 			token = null;
 
-			while (pos < ts.Length) {
-				ch = ts [pos++];
-				if (ch == '\n' || ch == '\r') {
+			while (pos < ts.Length)
+			{
+				ch = ts[pos++];
+				if (ch == '\n' || ch == '\r')
+				{
 					break;
 				}
-				if (ch == '"' && prev != '\\') {
-					token = new Token (TokenType.TEXT, ts.Substring (tokStart + 1, (pos - 1) - (tokStart + 1)), tokStart + 1);
+				if (ch == '"' && prev != '\\')
+				{
+					token = new Token(TokenType.TEXT, ts.Substring(tokStart + 1, (pos - 1) - (tokStart + 1)), tokStart + 1);
 					return pos;
 				}
 				prev = ch;
@@ -586,13 +618,13 @@ namespace IronKonoha
 			return pos - 1;
 		}
 
-		static int TokenizeUndefined (Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeUndefined(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
 		{
 			token = null;
 			return tokStart;
 		}
 
-		static int TokenizeBlock (Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeBlock(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
 		{
 			string ts = tenv.Source;
 			char ch = '\0';
@@ -602,59 +634,73 @@ namespace IronKonoha
 
 			token = null;
 
-			while (pos < ts.Length) {
-				ch = ts [pos++];
-				if (ch == '}') {
+			while (pos < ts.Length)
+			{
+				ch = ts[pos++];
+				if (ch == '}')
+				{
 					level--;
-					if (level == 0) {
-						token = new Token (TokenType.CODE, ts.Substring (tokStart + 1, pos - 2 - tokStart), tokStart + 1);
+					if (level == 0)
+					{
+						token = new Token(TokenType.CODE, ts.Substring(tokStart + 1, pos - 2 - tokStart), tokStart + 1);
 						return pos + 1;
 					}
 					pos++;
-				} else if (ch == '{') {
+				}
+				else if (ch == '{')
+				{
 					level++;
 					pos++;
-				} else {
-					var f = fmat [(int)charTypeMatrix [ch]];
-					pos = f (ctx, out token, tenv, pos, null);
+				}
+				else
+				{
+					var f = fmat[(int)charTypeMatrix[ch]];
+					pos = f(ctx, out token, tenv, pos, null);
 				}
 			}
 			return pos;
 		}
 
-        #endregion
+		#endregion
 
 		private Context ctx;
 		private KonohaSpace ks;
 
-		public Tokenizer (Context ctx, KonohaSpace ks)
+		public Tokenizer(Context ctx, KonohaSpace ks)
 		{
 			this.ctx = ctx;
 			this.ks = ks;
 		}
 
-		public IList<Token> Tokenize (String script)
+		public IList<Token> Tokenize(String script)
 		{
-			var env = new TokenizerEnvironment ()
+			var env = new TokenizerEnvironment()
 			{
 				TokenizerMatrix = tokenizerMatrix,//ks == null ? tokenizerMatrix : ks.TokenizerMatrix,
 				Source = script,
-				Line = new LineInfo (0, "")
+				Line = new LineInfo(0, "")
 			};
 
 			FTokenizer[] fmat = env.TokenizerMatrix;
-			var tokens = new List<Token> ();
+			var tokens = new List<Token>();
 			Token token;
 
-			for (int pos = TokenizeIndent(this.ctx, out token, env, 0, null); pos < env.Source.Length;) {
-				CharType ct = charTypeMatrix [env.Source [pos]];
-				int pos2 = fmat [(int)ct] (this.ctx, out token, env, pos, null);
-				Debug.Assert (pos2 > pos);
+			for (int pos = TokenizeIndent(this.ctx, out token, env, 0, null); pos < env.Source.Length; )
+			{
+				CharType ct = charTypeMatrix[env.Source[pos]];
+				int pos2 = fmat[(int)ct](this.ctx, out token, env, pos, null);
+				Debug.Assert(pos2 > pos);
 				pos = pos2;
-				if (token != null) {
-					token.ULine = new LineInfo (env.Line.LineNumber, env.Line.Filename);
-					tokens.Add (token);
+				if (token != null)
+				{
+					token.ULine = new LineInfo(env.Line.LineNumber, env.Line.Filename);
+					tokens.Add(token);
 				}
+			}
+
+			foreach (var tk in tokens)
+			{
+				Console.WriteLine("{0} [{1}]", tk.Text, tk.Type);
 			}
 
 			return tokens;
