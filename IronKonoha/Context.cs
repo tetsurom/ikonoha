@@ -394,6 +394,9 @@ namespace IronKonoha
 
 		void ReportError(ReportLevel pe, string msg)
 		{
+#if __MonoCS__
+			Console.WriteLine(" - " + msg);
+#else
 			var color = Console.ForegroundColor;
 			switch (pe)
 			{
@@ -411,8 +414,8 @@ namespace IronKonoha
 			}
 			Console.WriteLine(" - " + msg);
 			Console.ForegroundColor = color;
+#endif
 		}
-
 		public int sugarerr_count { get; set; }
 	}
 }
