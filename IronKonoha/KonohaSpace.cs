@@ -6,12 +6,24 @@ using System.Diagnostics;
 
 namespace IronKonoha
 {
+	[Flags]
+	public enum SynFlag
+	{
+		SYNFLAG_ExprTerm = 1,
+		SYNFLAG_ExprOp = 1 << 1,
+		SYNFLAG_ExprLeftJoinOp2 = 1 << 2,
+		SYNFLAG_ExprPostfixOp2 = 1 << 3,
+		SYNFLAG_StmtBreakExec = 1 << 8,
+		SYNFLAG_StmtJumpAhead = 1 << 9,
+		SYNFLAG_StmtJumpSkip = 1 << 10,
+	}
+
 	/*
     typedef const struct _ksyntax ksyntax_t;
     struct _ksyntax {
 	    keyword_t kw;  kflag_t flag;
-	    kArray   *syntaxRuleNULL;
-	    kMethod  *ParseStmtNULL;
+	    kArray   *syntaxRulenull;
+	    kMethod  *ParseStmtnull;
 	    kMethod  *ParseExpr;
 	    kMethod  *TopStmtTyCheck;
 	    kMethod  *StmtTyCheck;
@@ -26,6 +38,7 @@ namespace IronKonoha
 	{
 		public IList<Token> SyntaxRule { get; set; }
 		public KeywordType KeyWord { get; set; }
+		public SynFlag Flag { get; set; }
 		/// <summary>
 		/// 文法の優先度？ 
 		/// </summary>
@@ -46,7 +59,7 @@ namespace IronKonoha
     struct _kKonohaSpace {
 	    kObjectHeader h;
 	    kpack_t packid;  kpack_t packdom;
-	    const struct _kKonohaSpace   *parentNULL;
+	    const struct _kKonohaSpace   *parentnull;
 	    const Ftokenizer *fmat;
 	    struct kmap_t   *syntaxMapNN;
 	    //
@@ -60,6 +73,8 @@ namespace IronKonoha
 	public class KonohaSpace : KObject
 	{
 		private Context ctx;
+		public Dictionary<KeywordType, Syntax> syntaxMap { get; set; }
+		public KonohaSpace parent { get; set; }
 
 		public KonohaSpace(Context ctx)
 		{
@@ -147,18 +162,16 @@ namespace IronKonoha
 			Syntax parent = null;
 			while (ks != null)
 			{
-				if (ks.syntaxMap != null)
+				if (ks.syntaxMap != null && ks.syntaxMap.ContainsKey(keyword))
 				{
-					if (ks.syntaxMap.ContainsKey(keyword))
-					{
-						parent = ks.syntaxMap[keyword];
-					}
+					parent = ks.syntaxMap[keyword];
+					return parent;
 				}
 				ks = ks.parent;
 			}
 			if (isnew == true)
 			{
-				//DBG_P("creating new syntax %s old=%p", T_kw(kw), parent);
+				Console.WriteLine("creating new syntax {0} old={1}", keyword.ToString(), parent);
 				if (this.syntaxMap == null)
 				{
 					this.syntaxMap = new Dictionary<KeywordType, Syntax>();
@@ -191,8 +204,53 @@ namespace IronKonoha
 			return null;
 		}
 
-		public Dictionary<KeywordType, Syntax> syntaxMap { get; set; }
+		// struct.h
+		// static void KonohaSpace_defineSyntax(CTX, kKonohaSpace *ks, KDEFINE_SYNTAX *syndef)
+		public void defineSyntax(KDEFINE_SYNTAX syndef)
+		{
+			KMethod pParseStmt = null, pParseExpr = null, pStmtTyCheck = null, pExprTyCheck = null;
+			KMethod mParseStmt = null, mParseExpr = null, mStmtTyCheck = null, mExprTyCheck = null;
+			while(syndef.name != null) {
+				KeywordType kw = ctx.kmodsugar.keyword_(syndef.name, Symbol.NewID).Type;
+				Syntax syn = GetSyntax(kw, true);
+				//syn.token = syndef.name;
+				syn.Flag  |= syndef.flag;
+				/*
+				if(syndef.type != 0) {
+					syn.Type = syndef.type;
+				}
+				if(syndef.op1 != null) {
+					syn.Op1 = ksymbol(syndef.op1, 127, FN_NEWID, SYMPOL_METHOD);
+				}
+				if(syndef.op2 != null) {
+					syn.Op2 = ksymbol(syndef.op2, 127, FN_NEWID, SYMPOL_METHOD);
+				}
+				if(syndef.priority_op2 > 0) {
+					syn.priority = syndef.priority_op2;
+				}
+				if(syndef.rule != null) {
+					parseSyntaxRule(_ctx, syndef.rule, 0, syn.syntaxRulenull);
+				}
+				setSyntaxMethod(_ctx, syndef.ParseStmt, &(syn.ParseStmtnull), &pParseStmt, &mParseStmt);
+				setSyntaxMethod(_ctx, syndef.ParseExpr, &(syn.ParseExpr), &pParseExpr, &mParseExpr);
+				setSyntaxMethod(_ctx, syndef.TopStmtTyCheck, &(syn.TopStmtTyCheck), &pStmtTyCheck, &mStmtTyCheck);
+				setSyntaxMethod(_ctx, syndef.StmtTyCheck, &(syn.StmtTyCheck), &pStmtTyCheck, &mStmtTyCheck);
+				setSyntaxMethod(_ctx, syndef.ExprTyCheck, &(syn.ExprTyCheck), &pExprTyCheck, &mExprTyCheck);
+				if(syn.ParseExpr == kmodsugar.UndefinedParseExpr) {
+					if(FLAG_is(syn.flag, SYNFLAG_ExprOp)) {
+						KSETv(syn.ParseExpr, kmodsugar.ParseExpr_Op);
+					}
+					else if(FLAG_is(syn.flag, SYNFLAG_ExprTerm)) {
+						KSETv(syn.ParseExpr, kmodsugar.ParseExpr_Term);
+					}
+				}
+				DBG_ASSERT(syn == SYN_(ks, kw));
+				syndef++;
+				*/
+			}
+			Console.WriteLine("syntax size={0}, hmax={1}", ks.syntaxMapNN.size, ks.syntaxMapNN.hmax);
+		}
 
-		public KonohaSpace parent { get; set; }
+
 	}
 }

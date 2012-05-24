@@ -44,7 +44,7 @@
     <Compile Include="Context.cs" />
     <Compile Include="Konoha.cs" />
     <Compile Include="KonohaSpace.cs" />
-    <Compile Include="KonohaStatement.cs" />
+    <Compile Include="KStatement.cs" />
     <Compile Include="Tokenizer.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

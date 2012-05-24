@@ -28,6 +28,19 @@ namespace IronKonoha
 	// struct KDEFINE_SYNTAX
 	public class KDEFINE_SYNTAX
 	{
+		public string name { get; set; }
+		public KeywordType kw { get; set; }
+		public SynFlag flag { get; set; }
+		public string rule { get; set; }
+		public string op2 { get; set; }
+		public string op1 { get; set; }
+		public int priority_op2 { get; set; }
+		public KonohaType type { get; set; }
+		public KMethod ParseStmt { get; set; }
+		public KMethod ParseExpr { get; set; }
+		public KMethod TopStmtTyCheck { get; set; }
+		public KMethod StmtTyCheck { get; set; }
+		public KMethod ExprTyCheck { get; set; }
 	}
 
 	[Flags]

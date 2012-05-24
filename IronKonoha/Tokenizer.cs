@@ -101,7 +101,7 @@ namespace IronKonoha
 		public TokenType Type { get; set; }
 		public string Text { get; private set; }
 		public IList<Token> Sub { get; set; }
-		public char TopChar { get { return this.Text[0]; } }
+		public char TopChar { get { return Text.Length == 0 ? '\0' : this.Text[0]; } }
 		public KeywordType Keyword { get; set; }
 		public KonohaType KType { get; set; }
 		public LineInfo ULine { get; set; }
@@ -160,7 +160,6 @@ namespace IronKonoha
 				{
 					p.Add(new KonohaParam() { Type = tkT.Type });
 				}
-				//if(tkT.TopChar == ',') continue;
 			}
 			throw new NotImplementedException();
 			// 以下未実装
