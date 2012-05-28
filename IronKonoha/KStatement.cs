@@ -9,13 +9,9 @@ namespace IronKonoha
 	public class KStatement : KObject
 	{
 		public Syntax syn { get; set; }
-
 		public LineInfo ULine { get; set; }
-
 		public KonohaSpace ks { get; set; }
-
 		public BlockExpr parent { get; set; }
-
 		public ushort build { get; set; }
 
 		public KStatement(LineInfo line, KonohaSpace ks)
@@ -30,7 +26,7 @@ namespace IronKonoha
 			bool ret = false;
 			Syntax syn = this.ks.GetSyntaxRule(tls, s, e);
 			Debug.Assert(syn != null);
-			if (syn.SyntaxRule != null)
+			if (syn != null && syn.SyntaxRule != null)
 			{
 				this.syn = syn;
 				ret = (matchSyntaxRule(ctx, syn.SyntaxRule, this.ULine, tls, s, e, false) != -1);
@@ -59,7 +55,7 @@ namespace IronKonoha
 					{
 						if (optional)
 							return s;
-						tk.Print(ctx, ReportLevel.ERR, "%s needs '%s'", this.syn.KeyWord, rule.Keyword);
+						tk.Print(ctx, ReportLevel.ERR, "{0} needs '{1}'", this.syn.KeyWord, rule.Keyword);
 						return -1;
 					}
 					ti++;
@@ -70,7 +66,7 @@ namespace IronKonoha
 					Syntax syn = this.ks.GetSyntax(rule.Keyword);
 					if (syn == null || syn.ParseStmt == null)
 					{
-						tk.Print(ctx, ReportLevel.ERR, "unknown syntax pattern: %s", rule.Keyword);
+						tk.Print(ctx, ReportLevel.ERR, "unknown syntax pattern: {0}", rule.Keyword);
 						return -1;
 					}
 					int c = e;
@@ -81,7 +77,7 @@ namespace IronKonoha
 						{
 							if (optional)
 								return s;
-							tk.Print(ctx, ReportLevel.ERR, "%s needs '%s'", this.syn.KeyWord, rule.Keyword);
+							tk.Print(ctx, ReportLevel.ERR, "{0} needs '{1}'", this.syn.KeyWord, rule.Keyword);
 							return -1;
 						}
 						ri++;
@@ -95,7 +91,7 @@ namespace IronKonoha
 							return s;
 						if (err_count == ctx.sugarerr_count)
 						{
-							tk.Print(ctx, ReportLevel.ERR, "unknown syntax pattern: %s", this.syn.KeyWord, rule.Keyword, tk.Text);
+							tk.Print(ctx, ReportLevel.ERR, "unknown syntax pattern: {0}", this.syn.KeyWord, rule.Keyword, tk.Text);
 						}
 						return -1;
 					}

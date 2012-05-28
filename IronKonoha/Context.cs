@@ -36,11 +36,11 @@ namespace IronKonoha
 		public string op1 { get; set; }
 		public int priority_op2 { get; set; }
 		public KonohaType type { get; set; }
-		public KMethod ParseStmt { get; set; }
-		public KMethod ParseExpr { get; set; }
-		public KMethod TopStmtTyCheck { get; set; }
-		public KMethod StmtTyCheck { get; set; }
-		public KMethod ExprTyCheck { get; set; }
+		public StmtTyChecker ParseStmt { get; set; }
+		public StmtTyChecker ParseExpr { get; set; }
+		public StmtTyChecker TopStmtTyCheck { get; set; }
+		public StmtTyChecker StmtTyCheck { get; set; }
+		public StmtTyChecker ExprTyCheck { get; set; }
 	}
 
 	[Flags]
@@ -67,11 +67,11 @@ namespace IronKonoha
 		public IDictionary<string, KKeyWord> keywordMap;
 		public IList<string> packageList { get; set; }
 		public IDictionary<string, KPackage> packageMap;
-		public KMethod UndefinedParseExpr { get; set; }
+		public StmtTyChecker UndefinedParseExpr { get; set; }
 		public StmtTyChecker UndefinedStmtTyCheck { get; set; }
 		public StmtTyChecker UndefinedExprTyCheck { get; set; }
-		public KMethod ParseExpr_Term { get; set; }
-		public KMethod ParseExrp_Op { get; set; }
+		public StmtTyChecker ParseExpr_Term { get; set; }
+		public StmtTyChecker ParseExrp_Op { get; set; }
 		public Func<Context, string, uint, Symbol, KKeyWord> keyword { get; set; }
 		private Action<Context, KonohaSpace, int, Tokenizer.FTokenizer, KMethod> KonohaSpace_setTokenizer { get; set; }
 		public Func<Context, KonohaExpr, KonohaType, KObject, KonohaExpr> Expr_setConstValue { get; set; }
@@ -103,6 +103,10 @@ namespace IronKonoha
 		{
 			keywordMap = new Dictionary<string, KKeyWord>();
 			keywordList = new List<string>();
+			// temp
+			keywordMap["=="] = new KKeyWord() { Type = KeywordType.EQ };
+			keywordMap["$INT"] = new KKeyWord() { Type = KeywordType.TKInt };
+			keywordMap["$expr"] = new KKeyWord() { Type = KeywordType.Expr };
 		}
 
 		public KKeyWord keyword_(string name, Symbol def)
@@ -182,7 +186,11 @@ namespace IronKonoha
 
 	public class KShare
 	{
-
+		public Dictionary<string, Symbol> SymbolMap { get; set; }
+		public KShare()
+		{
+			SymbolMap = new Dictionary<string, Symbol>();
+		}
 	}
 
 	public class KArray : KObject

@@ -47,8 +47,8 @@ namespace IronKonoha
 		/// </summary>
 		public int priority { get; set; }
 		public KonohaType Type { get; set; }
-		public KMethod ParseStmt { get; set; }
-		public KMethod ParseExpr { get; set; }
+		public StmtTyChecker ParseStmt { get; set; }
+		public StmtTyChecker ParseExpr { get; set; }
 		public StmtTyChecker TopStmtTyCheck { get; set; }
 		public StmtTyChecker StmtTyCheck { get; set; }
 		public StmtTyChecker ExprTyCheck { get; set; }
@@ -82,6 +82,37 @@ namespace IronKonoha
 		public KonohaSpace(Context ctx)
 		{
 			this.ctx = ctx;
+			defineDefaultSyntax();
+		}
+
+		// sugar.c
+		// static void defineDefaultSyntax(CTX, kKonohaSpace *ks)
+		private void defineDefaultSyntax(){
+			KDEFINE_SYNTAX[] syntaxs =
+			{
+				new KDEFINE_SYNTAX(){
+					name = "==",
+					op2 = "opEQ",
+					priority_op2 = 512,
+					kw = KeywordType.EQ,
+					flag = SynFlag.ExprOp,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "$INT",
+					ExprTyCheck = ExprTyCheck_Int,
+					kw = KeywordType.TKInt,
+					flag = SynFlag.ExprTerm,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "$expr",
+					rule = "$expr",
+					ParseStmt = ParseStmt_Expr,
+					TopStmtTyCheck = TopStmtTyCheck_Expr,
+					ExprTyCheck = ExprTyCheck_Expr,
+					kw = KeywordType.Expr,
+				},
+			};
+			defineSyntax(syntaxs);
 		}
 
 		// static kstatus_t KonohaSpace_eval(CTX, kKonohaSpace *ks, const char *script, kline_t uline)
@@ -153,8 +184,8 @@ namespace IronKonoha
 
 		internal Syntax GetSyntax(KeywordType keyword)
 		{
-			return GetSyntax(keyword, true);
-			//return GetSyntax(keyword, false);
+			//return GetSyntax(keyword, true);
+			return GetSyntax(keyword, false);
 		}
 
 		//KonohaSpace_syntax
@@ -206,53 +237,163 @@ namespace IronKonoha
 			return null;
 		}
 
+		// static int findTopCh(CTX, kArray *tls, int s, int e, ktoken_t tt, int closech)
+		private int findTopCh(IList<Token> tls, int s, int e, TokenType tt, char closech)
+		{
+			int i;
+			for (i = s; i < e; i++)
+			{
+				Token tk = tls[i];
+				if (tk.Type == tt && tk.TopChar == closech) return i;
+			}
+			Debug.Assert(i != e);  // Must not happen
+			return e;
+		}
+
+		// static kbool_t checkNestedSyntax(CTX, kArray *tls, int *s, int e, ktoken_t tt, int opench, int closech)
+		private bool checkNestedSyntax(IList<Token> tls, ref int s, int e, TokenType tt, char opench, char closech)
+		{
+			int i = s;
+			Token tk = tls[i];
+			string t = tk.Text;
+			if(t[0] == opench && t[1] == 0) {
+				int ne = findTopCh(tls, i+1, e, tk.Type, closech);
+				tk.Type = tt;
+				tk.Keyword = (KeywordType)tt;
+				List<Token> sub;
+				//tk->topch = opench; tk.losech = closech;
+				makeSyntaxRule(tls, i + 1, ne, out sub);
+				tk.Sub = sub;
+				s = ne;
+				return true;
+			}
+			return false;
+		}
+
+		private bool makeSyntaxRule(IList<Token> tls, int s, int e, out List<Token> adst)
+		{
+			int i;
+			adst = new List<Token>();
+			int nameid = 0;
+			for(i = s; i < e; i++) {
+				Token tk = tls[i];
+				if(tk.Type == TokenType.INDENT) continue;
+				if(tk.Type == TokenType.TEXT /*|| tk.Type == TK_STEXT*/) {
+					if(checkNestedSyntax(tls, ref i, e, TokenType.AST_PARENTHESIS, '(', ')') ||
+						checkNestedSyntax(tls, ref i, e, TokenType.AST_BRANCET, '[', ']') ||
+						checkNestedSyntax(tls, ref i, e, TokenType.AST_BRACE, '{', '}')) {
+					}
+					else {
+						tk.Type = TokenType.CODE;
+						tk.Keyword = ctx.kmodsugar.keyword_(tk.Text, Symbol.NewID).Type;
+					}
+					adst.Add(tk);
+					continue;
+				}
+				if(tk.Type == TokenType.SYMBOL) {
+					if(i > 0 && tls[i-1].TopChar == '$') {
+						var name = string.Format("${0}", tk.Text);
+						tk.Keyword = ctx.kmodsugar.keyword_(name, Symbol.NewID).Type;
+						tk.Type = TokenType.METANAME;
+						if(nameid == 0) nameid = (int)tk.Keyword;
+						tk.nameid = new Symbol(); //TODO nameid;
+						nameid = 0;
+						adst.Add(tk);
+						continue;
+					}
+					if(i + 1 < e && tls[i+1].TopChar == ':') {
+						Token tk2 = tls[i];
+						nameid = (int)ctx.kmodsugar.keyword_(tk2.Text, Symbol.NewID).Type;
+						i++;
+						continue;
+					}
+				}
+				if(tk.Type == TokenType.OPERATOR) {
+					if(checkNestedSyntax(tls, ref i, e, TokenType.AST_OPTIONAL, '[', ']')) {
+						adst.Add(tk);
+						continue;
+					}
+					if(tls[i].TopChar == '$') continue;
+				}
+				ctx.SUGAR_P(ReportLevel.ERR, tk.ULine, 0, "illegal sugar syntax: {0}", tk.Text);
+				return false;
+			}
+			return true;
+		}
+
+		// token.h
+		// static void parseSyntaxRule(CTX, const char *rule, kline_t pline, kArray *a);
+		public void parseSyntaxRule(string rule, LineInfo pline, out List<Token> adst)
+		{
+			var tokenizer = new Tokenizer(ctx, this);
+			var tokens = tokenizer.Tokenize(rule);
+			makeSyntaxRule(tokens, 0, tokens.Count, out adst);
+		}
+
 		// struct.h
 		// static void KonohaSpace_defineSyntax(CTX, kKonohaSpace *ks, KDEFINE_SYNTAX *syndef)
-		public void defineSyntax(KDEFINE_SYNTAX syndef)
+		public void defineSyntax(KDEFINE_SYNTAX[] syndefs)
 		{
-			KMethod pParseStmt = null, pParseExpr = null, pStmtTyCheck = null, pExprTyCheck = null;
-			KMethod mParseStmt = null, mParseExpr = null, mStmtTyCheck = null, mExprTyCheck = null;
-			while(syndef.name != null) {
+			//KMethod pParseStmt = null, pParseExpr = null, pStmtTyCheck = null, pExprTyCheck = null;
+			//KMethod mParseStmt = null, mParseExpr = null, mStmtTyCheck = null, mExprTyCheck = null;
+			foreach(var syndef in syndefs) {
 				KeywordType kw = ctx.kmodsugar.keyword_(syndef.name, Symbol.NewID).Type;
 				Syntax syn = GetSyntax(kw, true);
 				//syn.token = syndef.name;
 				syn.Flag  |= syndef.flag;
-				/*
-				if(syndef.type != 0) {
-					syn.Type = syndef.type;
-				}
-				if(syndef.op1 != null) {
-					syn.Op1 = ksymbol(syndef.op1, 127, FN_NEWID, SYMPOL_METHOD);
-				}
-				if(syndef.op2 != null) {
-					syn.Op2 = ksymbol(syndef.op2, 127, FN_NEWID, SYMPOL_METHOD);
-				}
-				if(syndef.priority_op2 > 0) {
-					syn.priority = syndef.priority_op2;
-				}
+				//if(syndef.type != null) {
+				//    syn.Type = syndef.type;
+				//}
+				//if(syndef.op1 != null) {
+				//    syn.Op1 = null;// syndef.op1;//Symbol.Get(ctx, syndef.op1, Symbol.NewID, SymPol.MsETHOD);
+				//}
+				//if(syndef.op2 != null) {
+				//    syn.Op2 = null;// syndef.op2;//Symbol.Get(ctx, syndef.op2, Symbol.NewID, SymPol.MsETHOD);
+				//}
+				//if(syndef.priority_op2 > 0) {
+				//    syn.priority = syndef.priority_op2;
+				//}
 				if(syndef.rule != null) {
-					parseSyntaxRule(_ctx, syndef.rule, 0, syn.syntaxRulenull);
+					List<Token> adst;
+					parseSyntaxRule(syndef.rule, new LineInfo(0, ""), out adst);
+					syn.SyntaxRule = adst;
 				}
-				setSyntaxMethod(_ctx, syndef.ParseStmt, &(syn.ParseStmtnull), &pParseStmt, &mParseStmt);
-				setSyntaxMethod(_ctx, syndef.ParseExpr, &(syn.ParseExpr), &pParseExpr, &mParseExpr);
-				setSyntaxMethod(_ctx, syndef.TopStmtTyCheck, &(syn.TopStmtTyCheck), &pStmtTyCheck, &mStmtTyCheck);
-				setSyntaxMethod(_ctx, syndef.StmtTyCheck, &(syn.StmtTyCheck), &pStmtTyCheck, &mStmtTyCheck);
-				setSyntaxMethod(_ctx, syndef.ExprTyCheck, &(syn.ExprTyCheck), &pExprTyCheck, &mExprTyCheck);
-				if(syn.ParseExpr == kmodsugar.UndefinedParseExpr) {
-					if(FLAG_is(syn.flag, SYNFLAG_ExprOp)) {
-						KSETv(syn.ParseExpr, kmodsugar.ParseExpr_Op);
+				syn.ParseStmt = syndef.ParseStmt;
+				syn.ParseExpr = syndef.ParseExpr;
+				syn.TopStmtTyCheck = syndef.TopStmtTyCheck;
+				syn.StmtTyCheck = syndef.StmtTyCheck;
+				syn.ExprTyCheck = syndef.ExprTyCheck;
+				if(syn.ParseExpr == ctx.kmodsugar.UndefinedParseExpr) {
+					if(syn.Flag == SynFlag.ExprOp) {
+						syn.ParseExpr = ctx.kmodsugar.ParseExrp_Op;
 					}
-					else if(FLAG_is(syn.flag, SYNFLAG_ExprTerm)) {
-						KSETv(syn.ParseExpr, kmodsugar.ParseExpr_Term);
+					else if (syn.Flag == SynFlag.ExprTerm)
+					{
+						syn.ParseExpr = ctx.kmodsugar.ParseExpr_Term;
 					}
 				}
-				DBG_ASSERT(syn == SYN_(ks, kw));
-				syndef++;
-				*/
 			}
 			//Console.WriteLine("syntax size={0}, hmax={1}", syntaxMap.Count, syntaxMap.);
 		}
 
 
+
+		public void ExprTyCheck_Int(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			Console.WriteLine("tesetsetset");
+		}
+
+		public void ExprTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			Console.WriteLine("tesetsetset");
+		}
+		public void ParseStmt_Expr(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			Console.WriteLine("tesetsetset");
+		}
+		public void TopStmtTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			Console.WriteLine("tesetsetset");
+		}
 	}
 }

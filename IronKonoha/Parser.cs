@@ -7,10 +7,39 @@ using System.Diagnostics;
 
 namespace IronKonoha
 {
+	public enum SymPol{
+		RAW,
+		NAME,
+		MsETHOD,
+	}
+
 	public class Symbol
 	{
 		public static readonly Symbol NewID = new Symbol();
 		public static readonly Symbol NONAME = new Symbol();
+
+		public Symbol(){
+		}
+		public static Symbol Get(Context ctx, string name, Symbol def, SymPol pol)
+		{
+			/*if (pol == SYMPOL_RAW)
+			{
+				return ctx.share.SymbolMap[name];
+			}
+			else
+			{
+				ksymbol_t sym, mask = 0;
+				name = ksymbol_norm(buf, name, &len, &hcode, &mask, pol);
+				sym = Kmap_getcode(_ctx, _ctx->share->symbolMapNN, _ctx->share->symbolList, name, len, hcode, SPOL_ASCII, def);
+				if(def == sym) return def;
+				return sym | mask;
+			}*/
+			if (!ctx.share.SymbolMap.ContainsKey(name))
+			{
+				ctx.share.SymbolMap.Add(name, new Symbol());
+			}
+			return ctx.share.SymbolMap[name];
+		}
 	}
 
 	/// <summary>
