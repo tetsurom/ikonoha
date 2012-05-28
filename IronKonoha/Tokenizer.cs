@@ -654,7 +654,7 @@ namespace IronKonoha
 				else
 				{
 					var f = fmat[(int)charTypeMatrix[ch]];
-					pos = f(ctx, out token, tenv, pos - 1, null);
+					pos = f(ctx, out token, tenv, pos, null);
 				}
 			}
 			return pos;
