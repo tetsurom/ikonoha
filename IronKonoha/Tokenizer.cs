@@ -641,7 +641,7 @@ namespace IronKonoha
 					level--;
 					if (level == 0)
 					{
-						token = new Token(TokenType.CODE, ts.Substring(tokStart + 1, pos - 2 - tokStart), tokStart + 1);
+						token = new Token(TokenType.CODE, ts.Substring(tokStart + 1, pos - 1 - tokStart), tokStart + 1);
 						return pos + 1;
 					}
 					pos++;
