@@ -635,7 +635,7 @@ namespace IronKonoha
 
 			while (pos < ts.Length)
 			{
-				ch = ts[pos++];
+				ch = ts[pos];
 				if (ch == '}')
 				{
 					level--;
