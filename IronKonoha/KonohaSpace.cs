@@ -1,4 +1,4 @@
-﻿using System;
+﻿　using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,14 +9,17 @@ namespace IronKonoha
 	[Flags]
 	public enum SynFlag
 	{
-		SYNFLAG_ExprTerm = 1,
-		SYNFLAG_ExprOp = 1 << 1,
-		SYNFLAG_ExprLeftJoinOp2 = 1 << 2,
-		SYNFLAG_ExprPostfixOp2 = 1 << 3,
-		SYNFLAG_StmtBreakExec = 1 << 8,
-		SYNFLAG_StmtJumpAhead = 1 << 9,
-		SYNFLAG_StmtJumpSkip = 1 << 10,
+		ExprTerm = 1,
+		ExprOp = 1 << 1,
+		ExprLeftJoinOp2 = 1 << 2,
+		ExprPostfixOp2 = 1 << 3,
+		StmtBreakExec = 1 << 8,
+		StmtJumpAhead = 1 << 9,
+		StmtJumpSkip = 1 << 10,
 	}
+
+	public delegate void StmtTyChecker(KStatement stmt, Syntax syn, KGamma gma);
+
 
 	/*
     typedef const struct _ksyntax ksyntax_t;
@@ -46,9 +49,9 @@ namespace IronKonoha
 		public KonohaType Type { get; set; }
 		public KMethod ParseStmt { get; set; }
 		public KMethod ParseExpr { get; set; }
-		public KMethod TopStmtTyCheck { get; set; }
-		public KMethod StmtTyCheck { get; set; }
-		public KMethod ExprTyCheck { get; set; }
+		public StmtTyChecker TopStmtTyCheck { get; set; }
+		public StmtTyChecker StmtTyCheck { get; set; }
+		public StmtTyChecker ExprTyCheck { get; set; }
 		public KMethod Op1 { get; set; }
 		public KMethod Op2 { get; set; }
 		public Syntax Parent { get; set; }
@@ -129,24 +132,23 @@ namespace IronKonoha
 			return syn;
 		}
 
-		public delegate void StmtTyChecker(KStatement stmt, Syntax syn, KGamma gma);
 
 		public void SYN_setTopStmtTyCheck(KeywordType ks, StmtTyChecker checker)
 		{
 			var syn = GetSyntax(ks, true);
-			syn.TopStmtTyCheck = new KMethod();//checker;
+			syn.TopStmtTyCheck = checker;
 		}
 
 		public void SYN_setStmtTyCheck(KeywordType ks, StmtTyChecker checker)
 		{
 			var syn = GetSyntax(ks, true);
-			syn.StmtTyCheck = new KMethod();//checker;
+			syn.StmtTyCheck = checker;
 		}
 
 		public void SYN_setExprTyCheck(KeywordType ks, StmtTyChecker checker)
 		{
 			var syn = GetSyntax(ks, true);
-			syn.ExprTyCheck = new KMethod();//checker;
+			syn.ExprTyCheck = checker;
 		}
 
 		internal Syntax GetSyntax(KeywordType keyword)
@@ -248,7 +250,7 @@ namespace IronKonoha
 				syndef++;
 				*/
 			}
-			Console.WriteLine("syntax size={0}, hmax={1}", ks.syntaxMapNN.size, ks.syntaxMapNN.hmax);
+			//Console.WriteLine("syntax size={0}, hmax={1}", syntaxMap.Count, syntaxMap.);
 		}
 
 

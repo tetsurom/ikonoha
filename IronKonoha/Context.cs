@@ -68,8 +68,8 @@ namespace IronKonoha
 		public IList<string> packageList { get; set; }
 		public IDictionary<string, KPackage> packageMap;
 		public KMethod UndefinedParseExpr { get; set; }
-		public KMethod UndefinedStmtTyCheck { get; set; }
-		public KMethod UndefinedExprTyCheck { get; set; }
+		public StmtTyChecker UndefinedStmtTyCheck { get; set; }
+		public StmtTyChecker UndefinedExprTyCheck { get; set; }
 		public KMethod ParseExpr_Term { get; set; }
 		public KMethod ParseExrp_Op { get; set; }
 		public Func<Context, string, uint, Symbol, KKeyWord> keyword { get; set; }
