@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="Converter.cs" />
     <Compile Include="Context.cs" />
+    <Compile Include="Expression.cs" />
     <Compile Include="Konoha.cs" />
     <Compile Include="KonohaSpace.cs" />
     <Compile Include="KStatement.cs" />
