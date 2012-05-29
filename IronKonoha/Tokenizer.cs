@@ -13,7 +13,7 @@ namespace IronKonoha
 	/// </summary>
 	public class KMethod
 	{
-
+		public static readonly KMethod NoName = new KMethod();
 	}
 
 	public enum KeywordType

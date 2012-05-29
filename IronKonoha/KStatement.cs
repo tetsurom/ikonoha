@@ -145,21 +145,88 @@ namespace IronKonoha
 		// static int ParseStmt(CTX, ksyntax_t *syn, kStmt *stmt, ksymbol_t name, kArray *tls, int s, int e)
 		public int ParseStmt(Context ctx, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
 		{
-			throw new NotImplementedException();
-			/*
-            INIT_GCSTACK();
-	        BEGIN_LOCAL(lsfp, 8);
-	        KSETv(lsfp[K_CALLDELTA+0].o, (kObject*)stmt);
-	        lsfp[K_CALLDELTA+0].ndata = (uintptr_t)syn;
-	        lsfp[K_CALLDELTA+1].ivalue = name;
-	        KSETv(lsfp[K_CALLDELTA+2].a, tls);
-	        lsfp[K_CALLDELTA+3].ivalue = s;
-	        lsfp[K_CALLDELTA+4].ivalue = e;
-	        KCALL(lsfp, 0, syn->ParseStmtNULL, 4, knull(CT_Int));
-	        END_LOCAL();
-	        RESET_GCSTACK();
-	        return (int)lsfp[0].ivalue;
-             * */
+			return syn.ParseStmt(ctx, this, syn, name, tls, s, e);
+		}
+
+		// static kExpr *ParseExpr(CTX, ksyntax_t *syn, kStmt *stmt, kArray *tls, int s, int c, int e)
+		public KonohaExpr ParseExpr(Context ctx, Syntax syn, IList<Token> tls, int s, int c, int e)
+		{
+			if (syn.ParseExpr != null)
+			{
+				return syn.ParseExpr(ctx, syn, this, tls, s, c, e);
+			}
+			return ctx.kmodsugar.UndefinedParseExpr(ctx, syn, this, tls, s, c, e);
+		}
+
+		// static kExpr* Stmt_newExpr2(CTX, kStmt *stmt, kArray *tls, int s, int e)
+		public KonohaExpr newExpr2(Context ctx, IList<Token> tls, int s, int e)
+		{
+			if(s < e) {
+				Syntax syn = null;
+				int idx = findBinaryOp(ctx, tls, s, e, ref syn);
+				if(idx != -1) {
+					Console.WriteLine("** Found BinaryOp: s={0}, idx={1}, e={2}, '{3}'**", s, idx, e, tls[idx].Text);
+					return ParseExpr(ctx, syn, tls, s, idx, e);
+				}
+				int c = s;
+				syn = ks.GetSyntax(tls[c].Keyword);
+				return ParseExpr(ctx, syn, tls, c, c, e);
+			}
+			else {
+				if (0 < s - 1) {
+					ctx.SUGAR_P(ReportLevel.ERR, ULine, -1, "expected expression after {0}", tls[s-1].Text);
+				}
+				else if(e < tls.Count) {
+					ctx.SUGAR_P(ReportLevel.ERR, ULine, -1, "expected expression before {0}", tls[e].Text);
+				}
+				else {
+					ctx.SUGAR_P(ReportLevel.ERR, ULine, 0, "expected expression");
+				}
+				return null;
+			}
+		}
+
+		//static int Stmt_findBinaryOp(CTX, kStmt *stmt, kArray *tls, int s, int e, ksyntax_t **synRef)
+		int findBinaryOp(Context ctx, IList<Token> tls, int s, int e, ref Syntax synRef)
+		{
+			int idx = -1;
+			int prif = 0;
+			for(int i = skipUnaryOp(ctx, tls, s, e) + 1; i < e; i++) {
+				Token tk = tls[i];
+				Syntax syn = ks.GetSyntax(tk.Keyword);
+		//		if(syn != NULL && syn->op2 != 0) {
+				if(syn.priority > 0) {
+					if (prif < syn.priority || (prif == syn.priority && syn.Flag != SynFlag.ExprLeftJoinOp2))
+					{
+						prif = syn.priority;
+						idx = i;
+						synRef = syn;
+					}
+					if(syn.Flag != SynFlag.ExprPostfixOp2) {  /* check if real binary operator to parse f() + 1 */
+						i = skipUnaryOp(ctx, tls, i+1, e) - 1;
+					}
+				}
+			}
+			return idx;
+		}
+
+		// static int Stmt_skipUnaryOp(CTX, kStmt *stmt, kArray *tls, int s, int e)
+		int skipUnaryOp(Context ctx, IList<Token> tls, int s, int e)
+		{
+			int i;
+			for(i = s; i < e; i++) {
+				Token tk = tls[i];
+				if(!isUnaryOp(ctx, tk)) {
+					break;
+				}
+			}
+			return i;
+		}
+
+		bool isUnaryOp(Context ctx, Token tk)
+		{
+			Syntax syn = ks.GetSyntax(tk.Keyword);
+			return syn.Op1 != null;
 		}
 
 		// static int lookAheadKeyword(kArray *tls, int s, int e, kToken *rule)
@@ -193,7 +260,7 @@ namespace IronKonoha
 					object value = true;//UPCAST(K_TRUE);
 					if (tk1.Type == TokenType.AST_PARENTHESIS)
 					{
-						//value = (kObject*)Stmt_newExpr2(_ctx, stmt, tk1.Sub, 0, tk1.Sub.Count);
+						value = this.newExpr2(ctx, tk1.Sub, 0, tk1.Sub.Count);
 						i++;
 					}
 					if (value != null)

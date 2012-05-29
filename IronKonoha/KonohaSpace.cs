@@ -19,8 +19,9 @@ namespace IronKonoha
 	}
 
 	public delegate void StmtTyChecker(KStatement stmt, Syntax syn, KGamma gma);
-
-
+	public delegate int StmtParser(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int start, int end);
+	public delegate KonohaExpr ExprParser(Context ctx, Syntax syn, KStatement stmt, IList<Token> tokens, int start, int c, int end);
+	
 	/*
     typedef const struct _ksyntax ksyntax_t;
     struct _ksyntax {
@@ -47,8 +48,8 @@ namespace IronKonoha
 		/// </summary>
 		public int priority { get; set; }
 		public KonohaType Type { get; set; }
-		public StmtTyChecker ParseStmt { get; set; }
-		public StmtTyChecker ParseExpr { get; set; }
+		public StmtParser ParseStmt { get; set; }
+		public ExprParser ParseExpr { get; set; }
 		public StmtTyChecker TopStmtTyCheck { get; set; }
 		public StmtTyChecker StmtTyCheck { get; set; }
 		public StmtTyChecker ExprTyCheck { get; set; }
@@ -88,7 +89,7 @@ namespace IronKonoha
 		// sugar.c
 		// static void defineDefaultSyntax(CTX, kKonohaSpace *ks)
 		private void defineDefaultSyntax(){
-			KDEFINE_SYNTAX[] syntaxs =
+			KDEFINE_SYNTAX[] syntaxes =
 			{
 				new KDEFINE_SYNTAX(){
 					name = "==",
@@ -112,7 +113,7 @@ namespace IronKonoha
 					kw = KeywordType.Expr,
 				},
 			};
-			defineSyntax(syntaxs);
+			defineSyntax(syntaxes);
 		}
 
 		// static kstatus_t KonohaSpace_eval(CTX, kKonohaSpace *ks, const char *script, kline_t uline)
@@ -350,22 +351,22 @@ namespace IronKonoha
 				//if(syndef.op2 != null) {
 				//    syn.Op2 = null;// syndef.op2;//Symbol.Get(ctx, syndef.op2, Symbol.NewID, SymPol.MsETHOD);
 				//}
-				//if(syndef.priority_op2 > 0) {
-				//    syn.priority = syndef.priority_op2;
-				//}
+				if(syndef.priority_op2 > 0) {
+				    syn.priority = syndef.priority_op2;
+				}
 				if(syndef.rule != null) {
 					List<Token> adst;
 					parseSyntaxRule(syndef.rule, new LineInfo(0, ""), out adst);
 					syn.SyntaxRule = adst;
 				}
 				syn.ParseStmt = syndef.ParseStmt;
-				syn.ParseExpr = syndef.ParseExpr;
+				syn.ParseExpr = syndef.ParseExpr ?? ctx.kmodsugar.UndefinedParseExpr;
 				syn.TopStmtTyCheck = syndef.TopStmtTyCheck;
-				syn.StmtTyCheck = syndef.StmtTyCheck;
-				syn.ExprTyCheck = syndef.ExprTyCheck;
+				syn.StmtTyCheck = syndef.StmtTyCheck ?? ctx.kmodsugar.UndefinedStmtTyCheck;
+				syn.ExprTyCheck = syndef.ExprTyCheck ?? ctx.kmodsugar.UndefinedExprTyCheck;
 				if(syn.ParseExpr == ctx.kmodsugar.UndefinedParseExpr) {
 					if(syn.Flag == SynFlag.ExprOp) {
-						syn.ParseExpr = ctx.kmodsugar.ParseExrp_Op;
+						syn.ParseExpr = ctx.kmodsugar.ParseExpr_Op;
 					}
 					else if (syn.Flag == SynFlag.ExprTerm)
 					{
@@ -378,20 +379,27 @@ namespace IronKonoha
 
 
 
-		public void ExprTyCheck_Int(KStatement stmt, Syntax syn, KGamma gma)
+		public static void ExprTyCheck_Int(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			Console.WriteLine("tesetsetset");
 		}
 
-		public void ExprTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
+		public static void ExprTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			Console.WriteLine("tesetsetset");
 		}
-		public void ParseStmt_Expr(KStatement stmt, Syntax syn, KGamma gma)
+
+		public static int ParseStmt_Expr(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
 		{
-			Console.WriteLine("tesetsetset");
+			int r = -1;
+			if (stmt.newExpr2(ctx, tls, s, e) != null)
+			{
+				r = e;
+			}
+			return r;
 		}
-		public void TopStmtTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
+
+		public static void TopStmtTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			Console.WriteLine("tesetsetset");
 		}

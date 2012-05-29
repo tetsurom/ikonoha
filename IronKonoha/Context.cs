@@ -36,8 +36,8 @@ namespace IronKonoha
 		public string op1 { get; set; }
 		public int priority_op2 { get; set; }
 		public KonohaType type { get; set; }
-		public StmtTyChecker ParseStmt { get; set; }
-		public StmtTyChecker ParseExpr { get; set; }
+		public StmtParser ParseStmt { get; set; }
+		public ExprParser ParseExpr { get; set; }
 		public StmtTyChecker TopStmtTyCheck { get; set; }
 		public StmtTyChecker StmtTyCheck { get; set; }
 		public StmtTyChecker ExprTyCheck { get; set; }
@@ -67,11 +67,11 @@ namespace IronKonoha
 		public IDictionary<string, KKeyWord> keywordMap;
 		public IList<string> packageList { get; set; }
 		public IDictionary<string, KPackage> packageMap;
-		public StmtTyChecker UndefinedParseExpr { get; set; }
+		//public ExprParser UndefinedParseExpr { get; set; }
 		public StmtTyChecker UndefinedStmtTyCheck { get; set; }
 		public StmtTyChecker UndefinedExprTyCheck { get; set; }
-		public StmtTyChecker ParseExpr_Term { get; set; }
-		public StmtTyChecker ParseExrp_Op { get; set; }
+		public ExprParser ParseExpr_Term { get; set; }
+		//public ExprParser ParseExrp_Op { get; set; }
 		public Func<Context, string, uint, Symbol, KKeyWord> keyword { get; set; }
 		private Action<Context, KonohaSpace, int, Tokenizer.FTokenizer, KMethod> KonohaSpace_setTokenizer { get; set; }
 		public Func<Context, KonohaExpr, KonohaType, KObject, KonohaExpr> Expr_setConstValue { get; set; }
@@ -94,7 +94,7 @@ namespace IronKonoha
 		public Func<Context, IList<Token>, int, int, IList<object>, bool> makeSyntaxRule { get; set; }
 		public Func<Context, KonohaSpace, KStatement, IList<Token>, int, int, int, BlockExpr> new_block { get; set; }
 		public Action<Context, BlockExpr, KStatement, KStatement> Block_insertAfter { get; set; }
-		public Func<Context, KStatement, IList<Token>, int, int, KonohaExpr> Stmt_newExpr2 { get; set; }
+		//public Func<Context, KStatement, IList<Token>, int, int, KonohaExpr> Stmt_newExpr2 { get; set; }
 		public Func<Context, Syntax, int, object[], KonohaExpr> new_ConsExpr { get; set; }
 		public Func<Context, KStatement, KonohaExpr, IList<Token>, int, int, int, KonohaExpr> Stmt_addExprParams { get; set; }
 		public Func<Context, KonohaExpr, KStatement, IList<Token>, int, int, int, KonohaExpr> Expr_rightJoin { get; set; }
@@ -103,6 +103,7 @@ namespace IronKonoha
 		{
 			keywordMap = new Dictionary<string, KKeyWord>();
 			keywordList = new List<string>();
+			//UndefinedParseExpr = UndefinedParseExpr;
 			// temp
 			keywordMap["=="] = new KKeyWord() { Type = KeywordType.EQ };
 			keywordMap["$INT"] = new KKeyWord() { Type = KeywordType.TKInt };
@@ -112,6 +113,38 @@ namespace IronKonoha
 		public KKeyWord keyword_(string name, Symbol def)
 		{
 			return kmap_getcode(name, SPOL.ASCII | SPOL.POOL, def);
+		}
+
+		// ast.h
+		// static KMETHOD UndefinedParseExpr(CTX, ksfp_t *sfp _RIX)
+		public KonohaExpr UndefinedParseExpr(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int start, int c, int end)
+		{
+			Token tk = tls[c];
+			ctx.SUGAR_P(ReportLevel.ERR, tk.ULine, 0, "undefined expression parser for '{0}'", tk.Text);
+			return null;
+		}
+
+		public KonohaExpr ParseExpr_Op(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int s, int c, int e)
+		{
+			Token tk = tls[c];
+			KonohaExpr expr = null;
+			KonohaExpr rexpr = stmt.newExpr2(ctx, tls, c + 1, e);
+			KMethod mn = (s == c) ? syn.Op1 : syn.Op2;
+			if (mn != null && syn.ExprTyCheck == ctx.kmodsugar.UndefinedExprTyCheck)
+			{
+				//kToken_setmn(tk, mn, (s == c) ? MNTYPE_unary: MNTYPE_binary);
+				syn = stmt.ks.GetSyntax(KeywordType.ExprMethodCall);  // switch type checker
+			}
+			if (s == c)
+			{ // unary operator
+				expr = new ConsExpr(ctx, syn, 2, tk, rexpr);
+			}
+			else
+			{   // binary operator
+				KonohaExpr lexpr = stmt.newExpr2(ctx, tls, s, c);
+				expr = new ConsExpr(ctx, syn, 3, tk, lexpr, rexpr);
+			}
+			return expr;
 		}
 
 		public KKeyWord kmap_getcode(string name, SPOL spol, Symbol def)
@@ -337,15 +370,15 @@ namespace IronKonoha
 		{
 			// とりあえず4つまでうめておく
 			modshare = new List<KModShare>();
-			modshare.Add(new KModSugar());
-			modshare.Add(new KModSugar());
-			modshare.Add(new KModSugar());
+			modshare.Add(null);
+			modshare.Add(null);
+			modshare.Add(null);
 			modshare.Add(new KModSugar());
 
 			modlocal = new List<KModLocal>();
-			modlocal.Add(new CTXSugar());
-			modlocal.Add(new CTXSugar());
-			modlocal.Add(new CTXSugar());
+			modlocal.Add(null);
+			modlocal.Add(null);
+			modlocal.Add(null);
 			modlocal.Add(new CTXSugar());
 		}
 

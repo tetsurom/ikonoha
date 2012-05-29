@@ -317,9 +317,25 @@ namespace IronKonoha
 		public KonohaParam cparam { get; set; }
 	}
 
-	public abstract class KonohaExpr
+	public abstract class KonohaExpr : KObject
 	{
 		public KonohaExpr parent { get; set; }
+
+		public KonohaExpr()
+		{
+
+		}
+
+	}
+
+	public class ConsExpr : KonohaExpr
+	{
+		public IList<object> Cons { get; private set; }
+
+		public ConsExpr(Context ctx, Syntax syn, params object[] param)
+		{
+			Cons = new List<object>(param);
+		}
 	}
 
 	public class BlockExpr : KonohaExpr
