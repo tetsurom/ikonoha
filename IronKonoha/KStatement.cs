@@ -13,11 +13,13 @@ namespace IronKonoha
 		public KonohaSpace ks { get; set; }
 		public BlockExpr parent { get; set; }
 		public ushort build { get; set; }
+		public Dictionary<KeywordType, bool> annotation { get; private set; }
 
 		public KStatement(LineInfo line, KonohaSpace ks)
 		{
 			this.ULine = line;
 			this.ks = ks;
+			annotation = new Dictionary<KeywordType, bool>();
 		}
 
 		// static kbool_t Stmt_parseSyntaxRule(CTX, kStmt *stmt, kArray *tls, int s, int e)
@@ -253,11 +255,9 @@ namespace IronKonoha
 					break;
 				if (i + 1 < e)
 				{
-					string buf = "@" + tk.Text;
-					// what is FN_NEWID?
-					//KeywordType kw = keyword(ctx, buf, tk.Text.Length + 1, FN_NEWID);
+					var kw = ctx.kmodsugar.keyword_("@" + tk.Text, Symbol.NewID).Type;
 					Token tk1 = tls[i + 1];
-					object value = true;//UPCAST(K_TRUE);
+					KonohaExpr value = null;
 					if (tk1.Type == TokenType.AST_PARENTHESIS)
 					{
 						value = this.newExpr2(ctx, tk1.Sub, 0, tk1.Sub.Count);
@@ -265,7 +265,7 @@ namespace IronKonoha
 					}
 					if (value != null)
 					{
-						//kObject_setObject(stmt, kw, value);
+						annotation[kw] = true;
 					}
 				}
 			}

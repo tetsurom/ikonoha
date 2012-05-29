@@ -320,6 +320,7 @@ namespace IronKonoha
 	public abstract class KonohaExpr : KObject
 	{
 		public KonohaExpr parent { get; set; }
+		public Token tk { get; set; }
 
 		public KonohaExpr()
 		{
@@ -336,6 +337,11 @@ namespace IronKonoha
 		{
 			Cons = new List<object>(param);
 		}
+	}
+
+	public class TermExpr : KonohaExpr
+	{
+
 	}
 
 	public class BlockExpr : KonohaExpr

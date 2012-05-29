@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 
 namespace IronKonoha
 {
@@ -70,7 +71,7 @@ namespace IronKonoha
 		//public ExprParser UndefinedParseExpr { get; set; }
 		public StmtTyChecker UndefinedStmtTyCheck { get; set; }
 		public StmtTyChecker UndefinedExprTyCheck { get; set; }
-		public ExprParser ParseExpr_Term { get; set; }
+		//public ExprParser ParseExpr_Term { get; set; }
 		//public ExprParser ParseExrp_Op { get; set; }
 		public Func<Context, string, uint, Symbol, KKeyWord> keyword { get; set; }
 		private Action<Context, KonohaSpace, int, Tokenizer.FTokenizer, KMethod> KonohaSpace_setTokenizer { get; set; }
@@ -97,7 +98,7 @@ namespace IronKonoha
 		//public Func<Context, KStatement, IList<Token>, int, int, KonohaExpr> Stmt_newExpr2 { get; set; }
 		public Func<Context, Syntax, int, object[], KonohaExpr> new_ConsExpr { get; set; }
 		public Func<Context, KStatement, KonohaExpr, IList<Token>, int, int, int, KonohaExpr> Stmt_addExprParams { get; set; }
-		public Func<Context, KonohaExpr, KStatement, IList<Token>, int, int, int, KonohaExpr> Expr_rightJoin { get; set; }
+		//public Func<Context, KonohaExpr, KStatement, IList<Token>, int, int, int, KonohaExpr> Expr_rightJoin { get; set; }
 
 		public KModSugar()
 		{
@@ -124,6 +125,7 @@ namespace IronKonoha
 			return null;
 		}
 
+		// static KMETHOD ParseExpr_Op(CTX, ksfp_t *sfp _RIX)
 		public KonohaExpr ParseExpr_Op(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int s, int c, int e)
 		{
 			Token tk = tls[c];
@@ -143,6 +145,27 @@ namespace IronKonoha
 			{   // binary operator
 				KonohaExpr lexpr = stmt.newExpr2(ctx, tls, s, c);
 				expr = new ConsExpr(ctx, syn, 3, tk, lexpr, rexpr);
+			}
+			return expr;
+		}
+
+		// static KMETHOD ParseExpr_Term(CTX, ksfp_t *sfp _RIX)
+		public KonohaExpr ParseExpr_Term(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int s, int c, int e)
+		{
+			Debug.Assert(s == c);
+			Token tk = tls[c];
+			KonohaExpr expr = new TermExpr();
+				//new_W(Expr, SYN_(kStmt_ks(stmt), tk->kw));
+			//Expr_setTerm(expr, 1);
+			expr.tk = tk;
+			return Expr_rightJoin(ctx, expr, stmt, tls, s + 1, c + 1, e);
+		}
+
+		// static kExpr *Expr_rightJoin(CTX, kExpr *expr, kStmt *stmt, kArray *tls, int s, int c, int e)
+		KonohaExpr Expr_rightJoin(Context ctx, KonohaExpr expr, KStatement stmt, IList<Token> tls, int s, int c, int e)
+		{
+			if(c < e && expr != null) {
+				//WARN_Ignored(_ctx, tls, c, e);
 			}
 			return expr;
 		}
