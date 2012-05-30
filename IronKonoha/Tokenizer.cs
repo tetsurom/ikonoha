@@ -94,7 +94,7 @@ namespace IronKonoha
 		public static readonly KonohaType Unknown = new KonohaType();
 	}
 
-	[System.Diagnostics.DebuggerDisplay("{Text} [{Type}]")]
+	[System.Diagnostics.DebuggerDisplay("{Text,nq} [{Type}]")]
 	public class Token
 	{
 

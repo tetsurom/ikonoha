@@ -13,10 +13,12 @@ namespace IronKonoha
 		MsETHOD,
 	}
 
+	[System.Diagnostics.DebuggerDisplay("{Name,nq}")]
 	public class Symbol
 	{
 		public static readonly Symbol NewID = new Symbol();
 		public static readonly Symbol NONAME = new Symbol();
+		public string Name { get; private set; }
 
 		public Symbol(){
 		}
@@ -36,7 +38,7 @@ namespace IronKonoha
 			}*/
 			if (!ctx.share.SymbolMap.ContainsKey(name))
 			{
-				ctx.share.SymbolMap.Add(name, new Symbol());
+				ctx.share.SymbolMap.Add(name, new Symbol() { Name = name });
 			}
 			return ctx.share.SymbolMap[name];
 		}

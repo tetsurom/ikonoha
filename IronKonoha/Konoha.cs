@@ -6,6 +6,8 @@ using System.Dynamic;
 
 namespace IronKonoha
 {
+
+	[System.Diagnostics.DebuggerDisplay("{Filename}, {LineNumber}")]
 	public class LineInfo
 	{
 		public LineInfo(int line, string file)

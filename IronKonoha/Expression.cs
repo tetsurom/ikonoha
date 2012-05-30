@@ -6,7 +6,6 @@ using System.Diagnostics;
 
 namespace IronKonoha
 {
-	[System.Diagnostics.DebuggerDisplay("{tk.Text} [{tk.Type}]")]
 	public abstract class KonohaExpr : KObject
 	{
 		public KonohaExpr parent { get; set; }
@@ -30,7 +29,7 @@ namespace IronKonoha
 		}
 	}
 
-	[System.Diagnostics.DebuggerDisplay("{ToString()}")]
+	[System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
 	public class ConsExpr : KonohaExpr
 	{
 		public IList<object> Cons { get; private set; }
@@ -55,7 +54,7 @@ namespace IronKonoha
 			return builder.ToString();
 		}
 	}
-
+	[System.Diagnostics.DebuggerDisplay("{tk.Text} [{tk.Type}]")]
 	public class TermExpr : KonohaExpr
 	{
 

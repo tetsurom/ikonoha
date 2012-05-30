@@ -21,23 +21,24 @@ namespace IronKonoha
 	public delegate void StmtTyChecker(KStatement stmt, Syntax syn, KGamma gma);
 	public delegate int StmtParser(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int start, int end);
 	public delegate KonohaExpr ExprParser(Context ctx, Syntax syn, KStatement stmt, IList<Token> tokens, int start, int c, int end);
-	
+
 	/*
-    typedef const struct _ksyntax ksyntax_t;
-    struct _ksyntax {
-	    keyword_t kw;  kflag_t flag;
-	    kArray   *syntaxRulenull;
-	    kMethod  *ParseStmtnull;
-	    kMethod  *ParseExpr;
-	    kMethod  *TopStmtTyCheck;
-	    kMethod  *StmtTyCheck;
-	    kMethod  *ExprTyCheck;
-	    // binary
-	    ktype_t    ty;   kshort_t priority;
-	    kmethodn_t op2;  kmethodn_t op1;      // & a
-	    //kshort_t dummy;
-    };
-    */
+	typedef const struct _ksyntax ksyntax_t;
+	struct _ksyntax {
+		keyword_t kw;  kflag_t flag;
+		kArray   *syntaxRulenull;
+		kMethod  *ParseStmtnull;
+		kMethod  *ParseExpr;
+		kMethod  *TopStmtTyCheck;
+		kMethod  *StmtTyCheck;
+		kMethod  *ExprTyCheck;
+		// binary
+		ktype_t    ty;   kshort_t priority;
+		kmethodn_t op2;  kmethodn_t op1;      // & a
+		//kshort_t dummy;
+	};
+	*/
+	[System.Diagnostics.DebuggerDisplay("{KeyWord}")]
 	public class Syntax
 	{
 		public IList<Token> SyntaxRule { get; set; }
@@ -88,16 +89,11 @@ namespace IronKonoha
 
 		// sugar.c
 		// static void defineDefaultSyntax(CTX, kKonohaSpace *ks)
-		private void defineDefaultSyntax(){
+		private void defineDefaultSyntax()
+		{
 			KDEFINE_SYNTAX[] syntaxes =
 			{
-				new KDEFINE_SYNTAX(){
-					name = "==",
-					op2 = "opEQ",
-					priority_op2 = 512,
-					kw = KeywordType.EQ,
-					flag = SynFlag.ExprOp,
-				},
+
 				new KDEFINE_SYNTAX(){
 					name = "$INT",
 					ExprTyCheck = ExprTyCheck_Int,
@@ -111,6 +107,104 @@ namespace IronKonoha
 					TopStmtTyCheck = TopStmtTyCheck_Expr,
 					ExprTyCheck = ExprTyCheck_Expr,
 					kw = KeywordType.Expr,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "/",
+					op2 = "opDIV",
+					priority_op2 = 32,
+					kw = KeywordType.DIV,
+					flag = SynFlag.ExprOp,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "%",
+					op2 = "opMOD",
+					priority_op2 = 32,
+					kw = KeywordType.MOD,
+					flag = SynFlag.ExprOp,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "*",
+					op2 = "opMUL",
+					priority_op2 = 32,
+					kw = KeywordType.MUL,
+					flag = SynFlag.ExprOp,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "+",
+					op1 = "opPLUS",
+					op2 = "opADD",
+					priority_op2 = 64,
+					kw = KeywordType.ADD,
+					flag = SynFlag.ExprOp,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "-",
+					op1 = "opMINUS",
+					op2 = "opSUB",
+					priority_op2 = 64,
+					kw = KeywordType.SUB,
+					flag = SynFlag.ExprOp,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "<",
+					op2 = "opLT",
+					priority_op2 = 256,
+					kw = KeywordType.LT,
+					flag = SynFlag.ExprOp,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "<=",
+					op2 = "opLTE",
+					priority_op2 = 256,
+					kw = KeywordType.LTE,
+					flag = SynFlag.ExprOp,
+				},
+				new KDEFINE_SYNTAX(){
+					name = ">",
+					op2 = "opGT",
+					priority_op2 = 256,
+					kw = KeywordType.GT,
+					flag = SynFlag.ExprOp,
+				},
+				new KDEFINE_SYNTAX(){
+					name = ">=",
+					op2 = "opGTE",
+					priority_op2 = 256,
+					kw = KeywordType.GTE,
+					flag = SynFlag.ExprOp,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "==",
+					op2 = "opEQ",
+					priority_op2 = 512,
+					kw = KeywordType.EQ,
+					flag = SynFlag.ExprOp,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "!=",
+					op2 = "opNEQ",
+					priority_op2 = 512,
+					kw = KeywordType.NEQ,
+					flag = SynFlag.ExprOp,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "&&",
+					op2 = "opAND",
+					priority_op2 = 1024,
+					kw = KeywordType.AND,
+					flag = SynFlag.ExprOp,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "||",
+					op2 = "opOR",
+					priority_op2 = 2048,
+					kw = KeywordType.OR,
+					flag = SynFlag.ExprOp,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "=",
+					priority_op2 = 4096,
+					flag = SynFlag.ExprLeftJoinOp2,
 				},
 			};
 			defineSyntax(syntaxes);
@@ -257,8 +351,9 @@ namespace IronKonoha
 			int i = s;
 			Token tk = tls[i];
 			string t = tk.Text;
-			if(t[0] == opench && t[1] == 0) {
-				int ne = findTopCh(tls, i+1, e, tk.Type, closech);
+			if (t[0] == opench && t[1] == 0)
+			{
+				int ne = findTopCh(tls, i + 1, e, tk.Type, closech);
 				tk.Type = tt;
 				tk.Keyword = (KeywordType)tt;
 				List<Token> sub;
@@ -276,45 +371,54 @@ namespace IronKonoha
 			int i;
 			adst = new List<Token>();
 			int nameid = 0;
-			for(i = s; i < e; i++) {
+			for (i = s; i < e; i++)
+			{
 				Token tk = tls[i];
-				if(tk.Type == TokenType.INDENT) continue;
-				if(tk.Type == TokenType.TEXT /*|| tk.Type == TK_STEXT*/) {
-					if(checkNestedSyntax(tls, ref i, e, TokenType.AST_PARENTHESIS, '(', ')') ||
+				if (tk.Type == TokenType.INDENT) continue;
+				if (tk.Type == TokenType.TEXT /*|| tk.Type == TK_STEXT*/)
+				{
+					if (checkNestedSyntax(tls, ref i, e, TokenType.AST_PARENTHESIS, '(', ')') ||
 						checkNestedSyntax(tls, ref i, e, TokenType.AST_BRANCET, '[', ']') ||
-						checkNestedSyntax(tls, ref i, e, TokenType.AST_BRACE, '{', '}')) {
+						checkNestedSyntax(tls, ref i, e, TokenType.AST_BRACE, '{', '}'))
+					{
 					}
-					else {
+					else
+					{
 						tk.Type = TokenType.CODE;
 						tk.Keyword = ctx.kmodsugar.keyword_(tk.Text, Symbol.NewID).Type;
 					}
 					adst.Add(tk);
 					continue;
 				}
-				if(tk.Type == TokenType.SYMBOL) {
-					if(i > 0 && tls[i-1].TopChar == '$') {
+				if (tk.Type == TokenType.SYMBOL)
+				{
+					if (i > 0 && tls[i - 1].TopChar == '$')
+					{
 						var name = string.Format("${0}", tk.Text);
 						tk.Keyword = ctx.kmodsugar.keyword_(name, Symbol.NewID).Type;
 						tk.Type = TokenType.METANAME;
-						if(nameid == 0) nameid = (int)tk.Keyword;
+						if (nameid == 0) nameid = (int)tk.Keyword;
 						tk.nameid = new Symbol(); //TODO nameid;
 						nameid = 0;
 						adst.Add(tk);
 						continue;
 					}
-					if(i + 1 < e && tls[i+1].TopChar == ':') {
+					if (i + 1 < e && tls[i + 1].TopChar == ':')
+					{
 						Token tk2 = tls[i];
 						nameid = (int)ctx.kmodsugar.keyword_(tk2.Text, Symbol.NewID).Type;
 						i++;
 						continue;
 					}
 				}
-				if(tk.Type == TokenType.OPERATOR) {
-					if(checkNestedSyntax(tls, ref i, e, TokenType.AST_OPTIONAL, '[', ']')) {
+				if (tk.Type == TokenType.OPERATOR)
+				{
+					if (checkNestedSyntax(tls, ref i, e, TokenType.AST_OPTIONAL, '[', ']'))
+					{
 						adst.Add(tk);
 						continue;
 					}
-					if(tls[i].TopChar == '$') continue;
+					if (tls[i].TopChar == '$') continue;
 				}
 				ctx.SUGAR_P(ReportLevel.ERR, tk.ULine, 0, "illegal sugar syntax: {0}", tk.Text);
 				return false;
@@ -337,11 +441,13 @@ namespace IronKonoha
 		{
 			//KMethod pParseStmt = null, pParseExpr = null, pStmtTyCheck = null, pExprTyCheck = null;
 			//KMethod mParseStmt = null, mParseExpr = null, mStmtTyCheck = null, mExprTyCheck = null;
-			foreach(var syndef in syndefs) {
+			foreach (var syndef in syndefs)
+			{
+				ctx.kmodsugar.AddKeyword(syndef.name, syndef.kw);
 				KeywordType kw = ctx.kmodsugar.keyword_(syndef.name, Symbol.NewID).Type;
 				Syntax syn = GetSyntax(kw, true);
 				//syn.token = syndef.name;
-				syn.Flag  |= syndef.flag;
+				syn.Flag |= syndef.flag;
 				//if(syndef.type != null) {
 				//    syn.Type = syndef.type;
 				//}
@@ -351,10 +457,12 @@ namespace IronKonoha
 				//if(syndef.op2 != null) {
 				//    syn.Op2 = null;// syndef.op2;//Symbol.Get(ctx, syndef.op2, Symbol.NewID, SymPol.MsETHOD);
 				//}
-				if(syndef.priority_op2 > 0) {
-				    syn.priority = syndef.priority_op2;
+				if (syndef.priority_op2 > 0)
+				{
+					syn.priority = syndef.priority_op2;
 				}
-				if(syndef.rule != null) {
+				if (syndef.rule != null)
+				{
 					List<Token> adst;
 					parseSyntaxRule(syndef.rule, new LineInfo(0, ""), out adst);
 					syn.SyntaxRule = adst;
@@ -366,7 +474,8 @@ namespace IronKonoha
 				syn.ExprTyCheck = syndef.ExprTyCheck ?? ctx.kmodsugar.UndefinedExprTyCheck;
 				if (syn.ParseExpr == KModSugar.UndefinedParseExpr)
 				{
-					if(syn.Flag == SynFlag.ExprOp) {
+					if (syn.Flag == SynFlag.ExprOp)
+					{
 						syn.ParseExpr = KModSugar.ParseExpr_Op;
 					}
 					else if (syn.Flag == SynFlag.ExprTerm)

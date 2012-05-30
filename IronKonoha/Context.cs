@@ -104,9 +104,16 @@ namespace IronKonoha
 		{
 			keywordMap = new Dictionary<string, KKeyWord>();
 			// temp
+			/*
 			keywordMap["=="] = new KKeyWord() { Type = KeywordType.EQ };
 			keywordMap["$INT"] = new KKeyWord() { Type = KeywordType.TKInt };
 			keywordMap["$expr"] = new KKeyWord() { Type = KeywordType.Expr };
+			 * */
+		}
+
+		public void AddKeyword(string name, KeywordType kw)
+		{
+			keywordMap.Add(name, new KKeyWord() { Type = kw });
 		}
 
 		public KKeyWord keyword_(string name, Symbol def)
