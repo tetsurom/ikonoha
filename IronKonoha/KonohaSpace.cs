@@ -101,6 +101,18 @@ namespace IronKonoha
 					flag = SynFlag.ExprTerm,
 				},
 				new KDEFINE_SYNTAX(){
+					name = "$FLOAT",
+					ExprTyCheck = ExprTyCheck_Float,
+					kw = KeywordType.TKFloat,
+					flag = SynFlag.ExprTerm,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "$TEXT",
+					ExprTyCheck = ExprTyCheck_Text,
+					kw = KeywordType.Text,
+					flag = SynFlag.ExprTerm,
+				},
+				new KDEFINE_SYNTAX(){
 					name = "$expr",
 					rule = "$expr",
 					ParseStmt = ParseStmt_Expr,
@@ -494,6 +506,14 @@ namespace IronKonoha
 
 
 		public static void ExprTyCheck_Int(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			Console.WriteLine("tesetsetset");
+		}
+		public static void ExprTyCheck_Float(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			Console.WriteLine("tesetsetset");
+		}
+		public static void ExprTyCheck_Text(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			Console.WriteLine("tesetsetset");
 		}
