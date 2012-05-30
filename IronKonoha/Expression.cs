@@ -6,6 +6,7 @@ using System.Diagnostics;
 
 namespace IronKonoha
 {
+	[System.Diagnostics.DebuggerDisplay("{tk.Text} [{tk.Type}]")]
 	public abstract class KonohaExpr : KObject
 	{
 		public KonohaExpr parent { get; set; }
@@ -19,8 +20,17 @@ namespace IronKonoha
 
 		}
 
+		public override string ToString()
+		{
+			if (tk != null)
+			{
+				return tk.ToString();
+			}
+			return string.Empty;
+		}
 	}
 
+	[System.Diagnostics.DebuggerDisplay("{ToString()}")]
 	public class ConsExpr : KonohaExpr
 	{
 		public IList<object> Cons { get; private set; }
@@ -28,6 +38,21 @@ namespace IronKonoha
 		public ConsExpr(Context ctx, Syntax syn, params object[] param)
 		{
 			Cons = new List<object>(param);
+		}
+
+		public override string ToString()
+		{
+			var builder = new StringBuilder();
+			builder.Append("[");
+			foreach (var con in Cons)
+			{
+				builder.Append(con.ToString());
+				builder.Append(", ");
+			}
+			builder.Remove(builder.Length - 2, 2);
+			builder.Append("]");
+
+			return builder.ToString();
 		}
 	}
 

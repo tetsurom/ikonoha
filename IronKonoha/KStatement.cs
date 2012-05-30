@@ -6,6 +6,8 @@ using System.Diagnostics;
 
 namespace IronKonoha
 {
+
+	[System.Diagnostics.DebuggerDisplay("{map}")]
 	public class KStatement : KObject
 	{
 		public Syntax syn { get; set; }
@@ -14,12 +16,14 @@ namespace IronKonoha
 		public BlockExpr parent { get; set; }
 		public ushort build { get; set; }
 		public Dictionary<KeywordType, bool> annotation { get; private set; }
+		public Dictionary<int, KonohaExpr> map { get; private set; }
 
 		public KStatement(LineInfo line, KonohaSpace ks)
 		{
 			this.ULine = line;
 			this.ks = ks;
 			annotation = new Dictionary<KeywordType, bool>();
+			map = new Dictionary<int, KonohaExpr>();
 		}
 
 		// static kbool_t Stmt_parseSyntaxRule(CTX, kStmt *stmt, kArray *tls, int s, int e)
@@ -123,7 +127,7 @@ namespace IronKonoha
 					{
 						if (optional)
 							return s;
-						//kToken_p(tk, ERR_, "%s needs '%c'", T_statement(this.syn.KeyWord), rule.TopChar);
+						tk.Print(ctx, ReportLevel.ERR, "{0} needs '{1}'", this.syn.KeyWord, rule.TopChar);
 						return -1;
 					}
 				}
@@ -135,7 +139,7 @@ namespace IronKonoha
 					Token rule = rules[ri];
 					if (rule.Type != TokenType.AST_OPTIONAL)
 					{
-						//SUGAR_P(ERR_, uline, -1, "%s needs syntax pattern: %s", T_statement(this.syn.KeyWord), T_kw(rule.KeyWord));
+						ctx.SUGAR_P(ReportLevel.ERR, uline, -1, "{0} needs syntax pattern: {1}", this.syn.KeyWord, rule.Keyword);
 						return -1;
 					}
 				}
@@ -157,7 +161,7 @@ namespace IronKonoha
 			{
 				return syn.ParseExpr(ctx, syn, this, tls, s, c, e);
 			}
-			return ctx.kmodsugar.UndefinedParseExpr(ctx, syn, this, tls, s, c, e);
+			return KModSugar.UndefinedParseExpr(ctx, syn, this, tls, s, c, e);
 		}
 
 		// static kExpr* Stmt_newExpr2(CTX, kStmt *stmt, kArray *tls, int s, int e)

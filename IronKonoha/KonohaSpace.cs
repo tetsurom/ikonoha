@@ -225,7 +225,7 @@ namespace IronKonoha
 						Type = KonohaType.Unknown,
 						Op1 = null,
 						Op2 = null,
-						ParseExpr = ctx.kmodsugar.UndefinedParseExpr,
+						ParseExpr = KModSugar.UndefinedParseExpr,
 						TopStmtTyCheck = ctx.kmodsugar.UndefinedStmtTyCheck,
 						StmtTyCheck = ctx.kmodsugar.UndefinedStmtTyCheck,
 						ExprTyCheck = ctx.kmodsugar.UndefinedExprTyCheck,
@@ -360,17 +360,18 @@ namespace IronKonoha
 					syn.SyntaxRule = adst;
 				}
 				syn.ParseStmt = syndef.ParseStmt;
-				syn.ParseExpr = syndef.ParseExpr ?? ctx.kmodsugar.UndefinedParseExpr;
+				syn.ParseExpr = syndef.ParseExpr ?? KModSugar.UndefinedParseExpr;
 				syn.TopStmtTyCheck = syndef.TopStmtTyCheck;
 				syn.StmtTyCheck = syndef.StmtTyCheck ?? ctx.kmodsugar.UndefinedStmtTyCheck;
 				syn.ExprTyCheck = syndef.ExprTyCheck ?? ctx.kmodsugar.UndefinedExprTyCheck;
-				if(syn.ParseExpr == ctx.kmodsugar.UndefinedParseExpr) {
+				if (syn.ParseExpr == KModSugar.UndefinedParseExpr)
+				{
 					if(syn.Flag == SynFlag.ExprOp) {
-						syn.ParseExpr = ctx.kmodsugar.ParseExpr_Op;
+						syn.ParseExpr = KModSugar.ParseExpr_Op;
 					}
 					else if (syn.Flag == SynFlag.ExprTerm)
 					{
-						syn.ParseExpr = ctx.kmodsugar.ParseExpr_Term;
+						syn.ParseExpr = KModSugar.ParseExpr_Term;
 					}
 				}
 			}
@@ -392,8 +393,12 @@ namespace IronKonoha
 		public static int ParseStmt_Expr(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
 		{
 			int r = -1;
-			if (stmt.newExpr2(ctx, tls, s, e) != null)
+			var expr = stmt.newExpr2(ctx, tls, s, e);
+			if (expr != null)
 			{
+				//dumpExpr(_ctx, 0, 0, expr);
+				//kObject_setObject(stmt, name, expr);
+				stmt.map.Add(name.GetHashCode(), expr);
 				r = e;
 			}
 			return r;

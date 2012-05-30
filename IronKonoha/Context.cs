@@ -64,7 +64,7 @@ namespace IronKonoha
 		public KonohaClass cKonohaSpace { get; set; }
 		public KonohaClass cGamma { get; set; }
 		public KonohaClass cTokenArray { get; set; }
-		public IList<string> keywordList { get; set; }
+		public ICollection<string> keywordList { get{ return keywordMap.Keys; } }
 		public IDictionary<string, KKeyWord> keywordMap;
 		public IList<string> packageList { get; set; }
 		public IDictionary<string, KPackage> packageMap;
@@ -103,8 +103,6 @@ namespace IronKonoha
 		public KModSugar()
 		{
 			keywordMap = new Dictionary<string, KKeyWord>();
-			keywordList = new List<string>();
-			//UndefinedParseExpr = UndefinedParseExpr;
 			// temp
 			keywordMap["=="] = new KKeyWord() { Type = KeywordType.EQ };
 			keywordMap["$INT"] = new KKeyWord() { Type = KeywordType.TKInt };
@@ -118,7 +116,7 @@ namespace IronKonoha
 
 		// ast.h
 		// static KMETHOD UndefinedParseExpr(CTX, ksfp_t *sfp _RIX)
-		public KonohaExpr UndefinedParseExpr(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int start, int c, int end)
+		public static KonohaExpr UndefinedParseExpr(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int start, int c, int end)
 		{
 			Token tk = tls[c];
 			ctx.SUGAR_P(ReportLevel.ERR, tk.ULine, 0, "undefined expression parser for '{0}'", tk.Text);
@@ -126,7 +124,7 @@ namespace IronKonoha
 		}
 
 		// static KMETHOD ParseExpr_Op(CTX, ksfp_t *sfp _RIX)
-		public KonohaExpr ParseExpr_Op(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int s, int c, int e)
+		public static KonohaExpr ParseExpr_Op(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int s, int c, int e)
 		{
 			Token tk = tls[c];
 			KonohaExpr expr = null;
@@ -139,18 +137,18 @@ namespace IronKonoha
 			}
 			if (s == c)
 			{ // unary operator
-				expr = new ConsExpr(ctx, syn, 2, tk, rexpr);
+				expr = new ConsExpr(ctx, syn, tk, rexpr);
 			}
 			else
 			{   // binary operator
 				KonohaExpr lexpr = stmt.newExpr2(ctx, tls, s, c);
-				expr = new ConsExpr(ctx, syn, 3, tk, lexpr, rexpr);
+				expr = new ConsExpr(ctx, syn, tk, lexpr, rexpr);
 			}
 			return expr;
 		}
 
 		// static KMETHOD ParseExpr_Term(CTX, ksfp_t *sfp _RIX)
-		public KonohaExpr ParseExpr_Term(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int s, int c, int e)
+		public static KonohaExpr ParseExpr_Term(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int s, int c, int e)
 		{
 			Debug.Assert(s == c);
 			Token tk = tls[c];
@@ -162,7 +160,7 @@ namespace IronKonoha
 		}
 
 		// static kExpr *Expr_rightJoin(CTX, kExpr *expr, kStmt *stmt, kArray *tls, int s, int c, int e)
-		KonohaExpr Expr_rightJoin(Context ctx, KonohaExpr expr, KStatement stmt, IList<Token> tls, int s, int c, int e)
+		static KonohaExpr Expr_rightJoin(Context ctx, KonohaExpr expr, KStatement stmt, IList<Token> tls, int s, int c, int e)
 		{
 			if(c < e && expr != null) {
 				//WARN_Ignored(_ctx, tls, c, e);
@@ -178,7 +176,7 @@ namespace IronKonoha
 			}
 			if (def == Symbol.NewID)
 			{
-				keywordList.Add(name);
+				//keywordList.Add(name);
 				keywordMap.Add(name, null);
 			}
 			return null;

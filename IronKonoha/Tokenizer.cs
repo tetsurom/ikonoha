@@ -112,6 +112,11 @@ namespace IronKonoha
 			this.Text = text;
 		}
 
+		public override string ToString()
+		{
+			return Text;
+		}
+
 		// static void Token_toERR(CTX, struct _kToken *tk, size_t errref)
 		public void toERR(Context ctx, uint errorcode)
 		{
