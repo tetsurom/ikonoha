@@ -68,8 +68,14 @@ namespace IronKonoha
 					return Expression.Modulo(param.ElementAt (0), param.ElementAt (1));
 				}
 			} else if (kexpr is TermExpr) {
-				int i = int.Parse (kexpr.tk.Text);
-				return Expression.Constant (i);
+				switch(kexpr.tk.Type) {
+				case TokenType.INT:
+					return Expression.Constant(int.Parse(kexpr.tk.Text));
+				case TokenType.FLOAT:
+					return Expression.Constant(float.Parse(kexpr.tk.Text));
+				case TokenType.TEXT:
+					return Expression.Constant(kexpr.tk.Text);
+				}
 			}
 			return null;
 		}
