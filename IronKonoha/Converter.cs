@@ -71,7 +71,7 @@ namespace IronKonoha
 			case TokenType.SYMBOL:
 				return SymbolASM(tk.Keyword, param);
 			case TokenType.CODE:
-				return Expression.Call(typeof(KonohaSpace).GetMethod("RunEval"),param.ElementAt(0)); //TODO
+				return Expression.Call(typeof(Converter).GetMethod("RunEval"),param.ElementAt(0));
 			}
 			return null;
 		}
@@ -115,7 +115,10 @@ namespace IronKonoha
 		{
 			switch(keyword) {
 			case KeywordType.If:
-				return Expression.Condition(param.ElementAt(0), param.ElementAt(1), param.ElementAt(2));
+				if(param.Count() == 3){
+					return Expression.Condition(param.ElementAt(0), param.ElementAt(1), param.ElementAt(2));
+				}
+				return Expression.Condition(param.ElementAt(0), param.ElementAt(1),KNull);
 			case KeywordType.Null:
 				return KNull;
 			}
@@ -163,5 +166,17 @@ namespace IronKonoha
 			return a % b;
 		}
 		#endregion
+		public static object RunEval(string script,Context ctx, KonohaSpace ks)
+		{
+			var tokenizer = new Tokenizer(ctx, ks);
+			var parser = new Parser(ctx, ks);
+			var converter = new Converter(ctx,ks);
+			var tokens = tokenizer.Tokenize(script);
+			var block = parser.CreateBlock(null, tokens, 0, tokens.Count(), ';');
+			var ast = converter.Convert(block);
+			var f = ast.Compile();
+			return f();
+		}
+
 	}
 }
