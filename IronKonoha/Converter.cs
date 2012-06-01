@@ -24,7 +24,6 @@ namespace IronKonoha
 			this.ctx = ctx;
 			this.ks = ks;
 		}
-<<<<<<< HEAD
 		
 		public Expression<Func<object>> Convert (BlockExpr block)
 		{

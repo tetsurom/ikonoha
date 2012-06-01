@@ -332,7 +332,7 @@ namespace IronKonoha
 			var block = parser.CreateBlock(null, tokens, 0, tokens.Count(), ';');
 			var ast = converter.Convert(block);
 			var f = ast.Compile();
-			Console.WriteLine(f(null));
+			Console.WriteLine(f());
 		}
 
 		// static ksyntax_t* KonohaSpace_getSyntaxRule(CTX, kKonohaSpace *ks, kArray *tls, int s, int e)
