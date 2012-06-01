@@ -51,9 +51,9 @@ namespace IronKonoha
 			} else if(kexpr is TermExpr) {
 				switch(kexpr.tk.Type) {
 				case TokenType.INT:
-					return Expression.Constant(int.Parse(kexpr.tk.Text));
+					return Expression.Constant(long.Parse(kexpr.tk.Text));
 				case TokenType.FLOAT:
-					return Expression.Constant(float.Parse(kexpr.tk.Text));
+					return Expression.Constant(double.Parse(kexpr.tk.Text));
 				case TokenType.TEXT:
 					return Expression.Constant(kexpr.tk.Text);
 				}
@@ -80,31 +80,31 @@ namespace IronKonoha
 		{
 			switch (keyword) {
 			case KeywordType.ADD:
-				return Expression.Add(left,right);
+				return Expression.Call(typeof(Converter).GetMethod("Add"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
 			case KeywordType.SUB:
-				return Expression.Subtract(left,right);
+				return Expression.Call(typeof(Converter).GetMethod("Sub"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
 			case KeywordType.MUL:
-				return Expression.Multiply(left,right);
+				return Expression.Call(typeof(Converter).GetMethod("Mul"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
 			case KeywordType.DIV:
-				return Expression.Divide(left,right);
+				return Expression.Call(typeof(Converter).GetMethod("Div"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
 			case KeywordType.EQ:
-				return Expression.Equal(left,right);
+				return Expression.Call(typeof(Converter).GetMethod("Eq"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
 			case KeywordType.NEQ:
-				return Expression.NotEqual(left,right);
+				return Expression.Call(typeof(Converter).GetMethod("Neq"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
 			case KeywordType.LT:
-				return Expression.LessThan(left,right);
+				return Expression.Call(typeof(Converter).GetMethod("Lt"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
 			case KeywordType.LTE:
-				return Expression.LessThanOrEqual(left,right);
+				return Expression.Call(typeof(Converter).GetMethod("Lte"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
 			case KeywordType.GT:
-				return Expression.GreaterThan(left,right);
+				return Expression.Call(typeof(Converter).GetMethod("Gt"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
 			case KeywordType.GTE:
-				return Expression.GreaterThanOrEqual(left,right);
+				return Expression.Call(typeof(Converter).GetMethod("Gte"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
 			case KeywordType.AND:
-				return Expression.And(left,right);
+				return Expression.Call(typeof(Converter).GetMethod("And"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
 			case KeywordType.OR:
-				return Expression.Or(left,right);
+				return Expression.Call(typeof(Converter).GetMethod("Or"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
 			case KeywordType.MOD:
-				return Expression.Modulo(left,right);
+				return Expression.Call(typeof(Converter).GetMethod("Mod"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
 			case KeywordType.Parenthesis:
 				return null; // It will not use in here.
 			}
@@ -121,5 +121,47 @@ namespace IronKonoha
 			}
 			return null;
 		}
+		
+		#region Operator
+		public static object Add(dynamic a, dynamic b){
+			return a + b;
+		}
+		public static object Sub(dynamic a, dynamic b){
+			return a - b;
+		}
+		public static object Mul(dynamic a, dynamic b){
+			return a * b;
+		}
+		public static object Div(dynamic a, dynamic b){
+			return a / b;
+		}
+		public static object Eq(dynamic a, dynamic b){
+			return a == b;
+		}
+		public static object Neq(dynamic a, dynamic b){
+			return a != b;
+		}
+		public static object Lt(dynamic a, dynamic b){
+			return a < b;
+		}
+		public static object Lte(dynamic a, dynamic b){
+			return a <= b;
+		}
+		public static object Gt(dynamic a, dynamic b){
+			return a > b;
+		}
+		public static object Gte(dynamic a, dynamic b){
+			return a >= b;
+		}
+		public static object And(dynamic a, dynamic b){
+			return a && b; //TODO
+		}
+		public static object Or(dynamic a, dynamic b){
+			return a || b; //TODO
+		}
+		public static object Mod(dynamic a, dynamic b){
+			return a % b;
+		}
+		#endregion
 	}
 }
