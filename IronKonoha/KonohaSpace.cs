@@ -78,6 +78,7 @@ namespace IronKonoha
 	public class KonohaSpace : KObject
 	{
 		private Context ctx;
+
 		public Dictionary<KeywordType, Syntax> syntaxMap { get; set; }
 		public KonohaSpace parent { get; set; }
 
@@ -93,7 +94,32 @@ namespace IronKonoha
 		{
 			KDEFINE_SYNTAX[] syntaxes =
 			{
-
+				new KDEFINE_SYNTAX(){
+					name = "$ERR",
+					flag = SynFlag.StmtBreakExec,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "$expr",
+					rule = "$expr",
+					ParseStmt = ParseStmt_Expr,
+					TopStmtTyCheck = TopStmtTyCheck_Expr,
+					ExprTyCheck = ExprTyCheck_Expr,
+					kw = KeywordType.Expr,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "$SYMBOL",
+					flag = SynFlag.ExprTerm,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "$USYMBOL",
+					flag = SynFlag.ExprTerm,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "$TEXT",
+					ExprTyCheck = ExprTyCheck_Text,
+					kw = KeywordType.Text,
+					flag = SynFlag.ExprTerm,
+				},
 				new KDEFINE_SYNTAX(){
 					name = "$INT",
 					ExprTyCheck = ExprTyCheck_Int,
@@ -107,18 +133,40 @@ namespace IronKonoha
 					flag = SynFlag.ExprTerm,
 				},
 				new KDEFINE_SYNTAX(){
-					name = "$TEXT",
-					ExprTyCheck = ExprTyCheck_Text,
-					kw = KeywordType.Text,
+					name = "$type",
+					rule = "$type $expr",
+					ExprTyCheck = ExprTyCheck_Float,
+					kw = KeywordType.TKFloat,
 					flag = SynFlag.ExprTerm,
 				},
 				new KDEFINE_SYNTAX(){
-					name = "$expr",
-					rule = "$expr",
-					ParseStmt = ParseStmt_Expr,
-					TopStmtTyCheck = TopStmtTyCheck_Expr,
-					ExprTyCheck = ExprTyCheck_Expr,
-					kw = KeywordType.Expr,
+					name = "()",
+					kw = KeywordType.Parenthesis,
+					priority_op2 = 16,
+					flag = SynFlag.ExprPostfixOp2,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "[]",
+					kw = KeywordType.Brancet,
+					priority_op2 = 16,
+					flag = SynFlag.ExprPostfixOp2,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "{}",
+					kw = KeywordType.Brace,
+					priority_op2 = 16,
+					flag = SynFlag.ExprPostfixOp2,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "$block",
+					ParseStmt = ParseStmt_Block,
+					ExprTyCheck = ExprTyCheck_Block,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "$params",
+					ParseStmt = ParseStmt_Params,
+					TopStmtTyCheck = TopStmtTyCheck_ParamsDecl,
+					ExprTyCheck = ExprTyCheck_MethodCall,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "/",
@@ -218,17 +266,69 @@ namespace IronKonoha
 					priority_op2 = 4096,
 					flag = SynFlag.ExprLeftJoinOp2,
 				},
+				//new KDEFINE_SYNTAX(){
+				//    name = ",",
+				//    priority_op2 = 8192,
+				//},
+				new KDEFINE_SYNTAX(){
+					name = "void",
+					type = KonohaType.Void,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "int",
+					type = KonohaType.Int,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "boolean",
+					type = KonohaType.Boolean,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "null",
+					kw = KeywordType.Null,
+					flag = SynFlag.ExprTerm,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "true",
+					kw = KeywordType.True,
+					flag = SynFlag.ExprTerm,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "false",
+					kw = KeywordType.False,
+					flag = SynFlag.ExprTerm,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "else",
+					kw = KeywordType.Else,
+					rule = "\"else\" $block",
+				},
+				new KDEFINE_SYNTAX(){
+					name = "if",
+					kw = KeywordType.If,
+					rule = "\"if\" \"(\" $expr \")\" $block [\"else\" else: $block]",
+				},
+				new KDEFINE_SYNTAX(){
+					name = "return",
+					kw = KeywordType.Return,
+					rule = "\"return\" [$expr]",
+					flag = SynFlag.StmtBreakExec,
+				},
 			};
 			defineSyntax(syntaxes);
+		}
+
+		public IList<Token> tokenize(string script)
+		{
+			var tokenizer = new Tokenizer(ctx, this);
+			return tokenizer.Tokenize(script);
 		}
 
 		// static kstatus_t KonohaSpace_eval(CTX, kKonohaSpace *ks, const char *script, kline_t uline)
 		public void Eval(string script)
 		{
-			var tokenizer = new Tokenizer(ctx, this);
+			var tokens = tokenize(script);
 			var parser = new Parser(ctx, this);
-			var converter = new Converter(ctx,this);
-			var tokens = tokenizer.Tokenize(script);
+			var converter = new Converter(ctx, this);
 			var block = parser.CreateBlock(null, tokens, 0, tokens.Count(), ';');
 			var ast = converter.Convert(block);
 			var f = ast.Compile();
@@ -367,7 +467,7 @@ namespace IronKonoha
 			int i = s;
 			Token tk = tls[i];
 			string t = tk.Text;
-			if (t[0] == opench && t[1] == 0)
+			if (t[0] == opench && t.Length == 1)
 			{
 				int ne = findTopCh(tls, i + 1, e, tk.Type, closech);
 				tk.Type = tt;
@@ -538,6 +638,61 @@ namespace IronKonoha
 		}
 
 		public static void TopStmtTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			Console.WriteLine("tesetsetset");
+		}
+
+		// static KMETHOD ParseStmt_Block(CTX, ksfp_t *sfp _RIX)
+		private static int ParseStmt_Block(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
+		{
+			Token tk = tls[s];
+			if(tk.Type == TokenType.CODE) {
+				stmt.map.Add(name.GetHashCode(), new CodeExpr(tk));
+				return s + 1;
+			}
+			var parser = new Parser(ctx, stmt.ks);
+			if (tk.Type == TokenType.AST_BRACE)
+			{
+				BlockExpr bk = parser.CreateBlock(stmt, tk.Sub, 0, tk.Sub.Count, ';');
+				stmt.map.Add(name.GetHashCode(), bk);
+				return s + 1;
+			}
+			else {
+				BlockExpr bk = parser.CreateBlock(stmt, tls, s, e, ';');
+				stmt.map.Add(name.GetHashCode(), bk);
+				return e;
+			}
+		}
+
+		private static void ExprTyCheck_Block(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			Console.WriteLine("tesetsetset");
+		}
+
+		// static KMETHOD ParseStmt_Params(CTX, ksfp_t *sfp _RIX)
+		private static int ParseStmt_Params(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int s, int e)
+		{
+			int r = -1;
+			Token tk = tokens[s];
+			if (tk.Type == TokenType.AST_PARENTHESIS)
+			{
+				var tls = tk.Sub;
+				int ss = 0;
+				int ee = tls.Count;
+				if (0 < ee && tls[0].Keyword == KeywordType.Void) ss = 1;  //  f(void) = > f()
+				BlockExpr bk = new Parser(ctx, stmt.ks).CreateBlock(stmt, tls, ss, ee, ',');
+				stmt.map.Add(name.GetHashCode(), bk);
+				r = s + 1;
+			}
+			return r;
+		}
+
+
+		private static void TopStmtTyCheck_ParamsDecl(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			Console.WriteLine("tesetsetset");
+		}
+		private static void ExprTyCheck_MethodCall(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			Console.WriteLine("tesetsetset");
 		}

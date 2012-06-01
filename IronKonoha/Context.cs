@@ -65,7 +65,7 @@ namespace IronKonoha
 		public KonohaClass cGamma { get; set; }
 		public KonohaClass cTokenArray { get; set; }
 		public ICollection<string> keywordList { get{ return keywordMap.Keys; } }
-		public IDictionary<string, KKeyWord> keywordMap;
+		private IDictionary<string, KKeyWord> keywordMap;
 		public IList<string> packageList { get; set; }
 		public IDictionary<string, KPackage> packageMap;
 		//public ExprParser UndefinedParseExpr { get; set; }
@@ -184,7 +184,7 @@ namespace IronKonoha
 			if (def == Symbol.NewID)
 			{
 				//keywordList.Add(name);
-				keywordMap.Add(name, null);
+				//keywordMap.Add(name, null);
 			}
 			return null;
 		}

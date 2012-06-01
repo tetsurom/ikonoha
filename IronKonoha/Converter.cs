@@ -19,11 +19,12 @@ namespace IronKonoha
 		internal static readonly Expression KFalse = Expression.Constant(false);
 		//internal static readonly Expression KEmptyString = Expression.Constant(null,typeof(KString));
 		
-		public Converter (Context ctx, KonohaSpace ks)
+		public Converter(Context ctx, KonohaSpace ks)
 		{
 			this.ctx = ctx;
 			this.ks = ks;
 		}
+<<<<<<< HEAD
 		
 		public Expression<Func<object>> Convert (BlockExpr block)
 		{
@@ -44,7 +45,7 @@ namespace IronKonoha
 			return b;
 		}
 
-		public Expression MakeExpression (KonohaExpr kexpr)
+		public Expression MakeExpression(KonohaExpr kexpr)
 		{
 			if(kexpr is ConsExpr) {
 				return MakeConsExpression((ConsExpr)kexpr);

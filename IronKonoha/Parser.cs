@@ -86,7 +86,7 @@ namespace IronKonoha
 		/// <param name="delim">デリミタ</param>
 		/// <returns></returns>
 		// static kBlock *new_Block(CTX, kKonohaSpace *ks, kStmt *parent, kArray *tls, int s, int e, int delim)
-		public BlockExpr CreateBlock(KonohaExpr parent, IList<Token> token, int start, int end, char delim)
+		public BlockExpr CreateBlock(ExprOrStmt parent, IList<Token> token, int start, int end, char delim)
 		{
 			BlockExpr block = new BlockExpr();
 			block.parent = parent;

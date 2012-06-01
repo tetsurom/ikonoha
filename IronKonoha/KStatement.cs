@@ -8,7 +8,7 @@ namespace IronKonoha
 {
 
 	[System.Diagnostics.DebuggerDisplay("{map}")]
-	public class KStatement : KObject
+	public class KStatement : ExprOrStmt
 	{
 		public Syntax syn { get; set; }
 		public LineInfo ULine { get; set; }

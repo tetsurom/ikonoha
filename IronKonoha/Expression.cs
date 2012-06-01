@@ -6,9 +6,14 @@ using System.Diagnostics;
 
 namespace IronKonoha
 {
-	public abstract class KonohaExpr : KObject
+	public abstract class ExprOrStmt : KObject
 	{
-		public KonohaExpr parent { get; set; }
+
+	}
+
+	public abstract class KonohaExpr : ExprOrStmt
+	{
+		public ExprOrStmt parent { get; set; }
 		/// <summary>
 		/// 目的不明
 		/// </summary>
@@ -58,6 +63,15 @@ namespace IronKonoha
 	public class TermExpr : KonohaExpr
 	{
 
+	}
+
+	[System.Diagnostics.DebuggerDisplay("{tk.Text} [{tk.Type}]")]
+	public class CodeExpr : KonohaExpr
+	{
+		public CodeExpr(Token tk)
+		{
+			this.tk = tk;
+		}
 	}
 
 	public class ConstExpr<T> : KonohaExpr

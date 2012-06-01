@@ -92,6 +92,9 @@ namespace IronKonoha
 	public class KonohaType
 	{
 		public static readonly KonohaType Unknown = new KonohaType();
+		public static readonly KonohaType Void = new KonohaType();
+		public static readonly KonohaType Int = new KonohaType();
+		public static readonly KonohaType Boolean = new KonohaType();
 	}
 
 	[System.Diagnostics.DebuggerDisplay("{Text,nq} [{Type}]")]
