@@ -54,7 +54,7 @@ namespace IronKonoha
 				Token rule = rules[ri];
 				Token tk = tls[ti];
 				uline = tk.ULine;
-				//DBG_P("matching rule=%d,%s,%s token=%d,%s,%s", ri, T_tt(rule.Type), T_kw(rule.KeyWord), ti-s, T_tt(tk.Type), kToken_s(tk));
+				Console.WriteLine("matching rule={0},{1},{2} token={3},{4},{5}", ri, rule.Type, rule.Keyword, ti - s, tk.Type, tk.Text);
 				if (rule.Type == TokenType.CODE)
 				{
 					if (rule.Keyword != tk.Keyword)
@@ -274,6 +274,24 @@ namespace IronKonoha
 				}
 			}
 			return i;
+		}
+
+		// static kExpr *Stmt_addExprParams(CTX, kStmt *stmt, kExpr *expr, kArray *tls, int s, int e, int allowEmpty)
+		public void addExprParams(Context ctx,  KonohaExpr expr, IList<Token> tls, int s, int e, bool allowEmpty)
+		{
+			int i, start = s;
+			for(i = s; i < e; i++) {
+				Token tk = tls[i];
+				if(tk.Keyword == KeywordType.COMMA) {
+					((ConsExpr)expr).Add(ctx, newExpr2(ctx, tls, start, i));
+					start = i + 1;
+				}
+			}
+			if(!allowEmpty || start < i) {
+				((ConsExpr)expr).Add(ctx, newExpr2(ctx, tls, start, i));
+			}
+			//kArray_clear(tls, s);
+			//return expr;
 		}
 
 		// Stmt_toERR

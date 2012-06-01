@@ -160,11 +160,13 @@ namespace IronKonoha
 				else if (tk.TopChar == '(')
 				{
 					i = makeTree(TokenType.AST_PARENTHESIS, tokens, i, end, ')', tokensDst, out errorToken);
+					tk.Keyword = KeywordType.Parenthesis;
 					continue;
 				}
 				else if (tk.TopChar == '[')
 				{
 					i = makeTree(TokenType.AST_BRANCET, tokens, i, end, ']', tokensDst, out errorToken);
+					tk.Keyword = KeywordType.Brancet;
 					continue;
 				}
 				else if (tk.Type == TokenType.ERR)
@@ -207,11 +209,13 @@ namespace IronKonoha
 				if (tk.TopChar == '(')
 				{
 					i = makeTree(TokenType.AST_PARENTHESIS, tokens, i, end, ')', tkP.Sub, out errorToken);
+					tk.Keyword = KeywordType.Parenthesis;
 					continue;
 				}
 				else if (tk.TopChar == '[')
 				{
 					i = makeTree(TokenType.AST_BRANCET, tokens, i, end, ']', tkP.Sub, out errorToken);
+					tk.Keyword = KeywordType.Brancet;
 					continue;
 				}
 				else if (tk.TopChar == closeChar)

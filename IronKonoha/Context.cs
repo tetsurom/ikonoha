@@ -167,7 +167,7 @@ namespace IronKonoha
 		}
 
 		// static kExpr *Expr_rightJoin(CTX, kExpr *expr, kStmt *stmt, kArray *tls, int s, int c, int e)
-		static KonohaExpr Expr_rightJoin(Context ctx, KonohaExpr expr, KStatement stmt, IList<Token> tls, int s, int c, int e)
+		public static KonohaExpr Expr_rightJoin(Context ctx, KonohaExpr expr, KStatement stmt, IList<Token> tls, int s, int c, int e)
 		{
 			if(c < e && expr != null) {
 				//WARN_Ignored(_ctx, tls, c, e);

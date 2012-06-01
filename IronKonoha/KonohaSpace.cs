@@ -19,8 +19,8 @@ namespace IronKonoha
 	}
 
 	public delegate void StmtTyChecker(KStatement stmt, Syntax syn, KGamma gma);
-	public delegate int StmtParser(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int start, int end);
-	public delegate KonohaExpr ExprParser(Context ctx, Syntax syn, KStatement stmt, IList<Token> tokens, int start, int c, int end);
+	public delegate int StmtParser(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int start, int current, int end);
+	public delegate KonohaExpr ExprParser(Context ctx, Syntax syn, KStatement stmt, IList<Token> tokens, int start, int current, int end);
 
 	/*
 	typedef const struct _ksyntax ksyntax_t;
@@ -142,6 +142,7 @@ namespace IronKonoha
 				new KDEFINE_SYNTAX(){
 					name = "()",
 					kw = KeywordType.Parenthesis,
+					ParseExpr = ParseExpr_Parenthesis,
 					priority_op2 = 16,
 					flag = SynFlag.ExprPostfixOp2,
 				},
@@ -695,6 +696,32 @@ namespace IronKonoha
 		private static void ExprTyCheck_MethodCall(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			Console.WriteLine("tesetsetset");
+		}
+
+		// static KMETHOD ParseExpr_Parenthesis(CTX, ksfp_t *sfp _RIX)
+		private static int ParseExpr_Parenthesis(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int c, int e)
+		{
+			Token tk = tls[c];
+			if(s == c) {
+				KonohaExpr expr = stmt.newExpr2(ctx, tk.Sub, 0, tk.Sub.Count);
+				return KModSugar.Expr_rightJoin(ctx, expr, stmt, tls, s + 1, c + 1, e);
+			}
+			else {
+				KonohaExpr lexpr = stmt.newExpr2(ctx, tls, s, c);
+				if(lexpr == null) {
+					return 0;
+				}
+				if(lexpr.syn.KeyWord == KeywordType.DOT) {
+					lexpr.syn = stmt.ks.GetSyntax(KeywordType.ExprMethodCall); // CALL
+				}
+				else if(lexpr.syn.KeyWord != KeywordType.ExprMethodCall) {
+					Console.WriteLine("function calls  .. ");
+					syn = stmt.ks.GetSyntax(KeywordType.Parenthesis);    // (f null ())
+					lexpr  = new ConsExpr(ctx, syn, lexpr, null);
+				}
+				stmt.addExprParams(ctx, lexpr, tk.Sub, 0, tk.Sub.Count, true/*allowEmpty*/);
+				return KModSugar.Expr_rightJoin(ctx, lexpr, stmt, tls, s + 1, c + 1, e);
+			}
 		}
 	}
 }

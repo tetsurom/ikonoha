@@ -18,6 +18,7 @@ namespace IronKonoha
 		/// 目的不明
 		/// </summary>
 		public Token tk { get; set; }
+		public Syntax syn { get; set; }
 
 		public KonohaExpr()
 		{
@@ -42,6 +43,14 @@ namespace IronKonoha
 		public ConsExpr(Context ctx, Syntax syn, params object[] param)
 		{
 			Cons = new List<object>(param);
+		}
+
+		public void Add(Context ctx, KonohaExpr expr)
+		{
+			if (expr != null)
+			{
+				Cons.Add(expr);
+			}
 		}
 
 		public override string ToString()
