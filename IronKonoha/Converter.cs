@@ -10,7 +10,7 @@ namespace IronKonoha
 	/// <summary>
 	/// Generate DLR Expression Tree from konoha AST.
 	/// </summary>
-	class Converter
+	public class Converter
 	{
 		private Context ctx;
 		private KonohaSpace ks;
@@ -71,7 +71,10 @@ namespace IronKonoha
 			case TokenType.SYMBOL:
 				return SymbolASM(tk.Keyword, param);
 			case TokenType.CODE:
-				return Expression.Call(typeof(Converter).GetMethod("RunEval"),param.ElementAt(0));
+				return Expression.Call(typeof(Converter).GetMethod("RunEval"),
+					Expression.Constant(tk.Text,typeof(string)),
+					Expression.Constant(ctx,typeof(Context)),
+					Expression.Constant(ks,typeof(KonohaSpace)));
 			}
 			return null;
 		}
@@ -138,29 +141,29 @@ namespace IronKonoha
 		public static object Div(dynamic a, dynamic b){
 			return a / b;
 		}
-		public static object Eq(dynamic a, dynamic b){
+		public static bool Eq(dynamic a, dynamic b){
 			return a == b;
 		}
-		public static object Neq(dynamic a, dynamic b){
+		public static bool Neq(dynamic a, dynamic b){
 			return a != b;
 		}
-		public static object Lt(dynamic a, dynamic b){
+		public static bool Lt(dynamic a, dynamic b){
 			return a < b;
 		}
-		public static object Lte(dynamic a, dynamic b){
+		public static bool Lte(dynamic a, dynamic b){
 			return a <= b;
 		}
-		public static object Gt(dynamic a, dynamic b){
+		public static bool Gt(dynamic a, dynamic b){
 			return a > b;
 		}
-		public static object Gte(dynamic a, dynamic b){
+		public static bool Gte(dynamic a, dynamic b){
 			return a >= b;
 		}
-		public static object And(dynamic a, dynamic b){
-			return a && b; //TODO
+		public static bool And(dynamic a, dynamic b){
+			return a && b;
 		}
-		public static object Or(dynamic a, dynamic b){
-			return a || b; //TODO
+		public static bool Or(dynamic a, dynamic b){
+			return a || b;
 		}
 		public static object Mod(dynamic a, dynamic b){
 			return a % b;
