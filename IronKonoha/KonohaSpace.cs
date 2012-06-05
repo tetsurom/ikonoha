@@ -19,7 +19,7 @@ namespace IronKonoha
 	}
 
 	public delegate void StmtTyChecker(KStatement stmt, Syntax syn, KGamma gma);
-	public delegate int StmtParser(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int start, int current, int end);
+	public delegate int StmtParser(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int start, int end);
 	public delegate KonohaExpr ExprParser(Context ctx, Syntax syn, KStatement stmt, IList<Token> tokens, int start, int current, int end);
 
 	/*
@@ -160,6 +160,7 @@ namespace IronKonoha
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$block",
+					kw = KeywordType.Block,
 					ParseStmt = ParseStmt_Block,
 					ExprTyCheck = ExprTyCheck_Block,
 				},
@@ -699,7 +700,7 @@ namespace IronKonoha
 		}
 
 		// static KMETHOD ParseExpr_Parenthesis(CTX, ksfp_t *sfp _RIX)
-		private static int ParseExpr_Parenthesis(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int c, int e)
+		private static KonohaExpr ParseExpr_Parenthesis(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int s, int c, int e)
 		{
 			Token tk = tls[c];
 			if(s == c) {
@@ -709,7 +710,7 @@ namespace IronKonoha
 			else {
 				KonohaExpr lexpr = stmt.newExpr2(ctx, tls, s, c);
 				if(lexpr == null) {
-					return 0;
+					return null;
 				}
 				if(lexpr.syn.KeyWord == KeywordType.DOT) {
 					lexpr.syn = stmt.ks.GetSyntax(KeywordType.ExprMethodCall); // CALL

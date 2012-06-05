@@ -7,6 +7,18 @@ using System.Diagnostics;
 namespace IronKonoha
 {
 
+	public enum StmtType
+	{
+		UNDEFINED,
+		ERR,
+		EXPR,
+		BLOCK,
+		RETURN,
+		IF,
+		LOOP,
+		JUMP,
+	}
+
 	[System.Diagnostics.DebuggerDisplay("{map}")]
 	public class KStatement : ExprOrStmt
 	{
@@ -14,7 +26,7 @@ namespace IronKonoha
 		public LineInfo ULine { get; set; }
 		public KonohaSpace ks { get; set; }
 		public BlockExpr parent { get; set; }
-		public ushort build { get; set; }
+		public StmtType build { get; set; }
 		public Dictionary<KeywordType, bool> annotation { get; private set; }
 		public Dictionary<int, KonohaExpr> map { get; private set; }
 
@@ -297,9 +309,8 @@ namespace IronKonoha
 		// Stmt_toERR
 		public void toERR(Context ctx, uint estart)
 		{
-			//throw new NotImplementedException();
-			this.syn = new Syntax();//ks.GetSyntax(parent, KeywordType.Err);
-			//this.build = TSTMT_ERR;
+			this.syn = ks.GetSyntax(KeywordType.Err);
+			this.build = StmtType.ERR;
 			//kObject_setObject(stmt, KW_Err, kstrerror(eno));
 		}
 	}
