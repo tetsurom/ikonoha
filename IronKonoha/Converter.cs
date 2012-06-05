@@ -31,8 +31,12 @@ namespace IronKonoha
 //			try{
 				List<Expression> list = new List<Expression> ();
 				foreach(KStatement st in block.blocks) {
-					foreach(KonohaExpr kexpr in st.map.Values) {
-						list.Add(MakeExpression(kexpr));
+					if(st.syn.KeyWord == KeywordType.If) {
+							list.Add(MakeIfExpression(st.map));
+					}else{
+						foreach(KonohaExpr kexpr in st.map.Values) {
+							list.Add(MakeExpression(kexpr));
+						}
 					}
 				}
 
@@ -57,8 +61,24 @@ namespace IronKonoha
 				case TokenType.TEXT:
 					return Expression.Constant(kexpr.tk.Text);
 				}
+			} else if(kexpr is CodeExpr) {
+				switch(kexpr.tk.Type) {
+				case TokenType.CODE:
+					return Expression.Call(typeof(Converter).GetMethod("RunEval"),
+						Expression.Constant(kexpr.tk.Text,typeof(string)),
+						Expression.Constant(ctx,typeof(Context)),
+						Expression.Constant(ks,typeof(KonohaSpace)));
+				}
 			}
 			return null;
+		}
+
+		public Expression MakeIfExpression (Dictionary<dynamic, KonohaExpr> map)
+		{
+			if(map.Count() == 3) {
+				return Expression.Condition(MakeExpression(map[Symbol.Get(ctx,"$expr")]), MakeExpression(map[Symbol.Get(ctx,"$block")]), MakeExpression(map[Symbol.Get(ctx,"else:")]));
+			}
+			return Expression.Condition(MakeExpression(map[Symbol.Get(ctx,"$expr")]), MakeExpression(map[Symbol.Get(ctx,"$block")]),KNull);
 		}
 
 		public Expression MakeConsExpression (ConsExpr expr)
@@ -70,11 +90,6 @@ namespace IronKonoha
 				return OperatorASM(tk.Keyword,param.ElementAt(0),param.ElementAt(1));
 			case TokenType.SYMBOL:
 				return SymbolASM(tk.Keyword, param);
-			case TokenType.CODE:
-				return Expression.Call(typeof(Converter).GetMethod("RunEval"),
-					Expression.Constant(tk.Text,typeof(string)),
-					Expression.Constant(ctx,typeof(Context)),
-					Expression.Constant(ks,typeof(KonohaSpace)));
 			}
 			return null;
 		}
@@ -117,11 +132,6 @@ namespace IronKonoha
 		public Expression SymbolASM (KeywordType keyword, IEnumerable<Expression> param)
 		{
 			switch(keyword) {
-			case KeywordType.If:
-				if(param.Count() == 3){
-					return Expression.Condition(param.ElementAt(0), param.ElementAt(1), param.ElementAt(2));
-				}
-				return Expression.Condition(param.ElementAt(0), param.ElementAt(1),KNull);
 			case KeywordType.Null:
 				return KNull;
 			}
