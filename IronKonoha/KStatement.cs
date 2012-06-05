@@ -28,14 +28,14 @@ namespace IronKonoha
 		public BlockExpr parent { get; set; }
 		public StmtType build { get; set; }
 		public Dictionary<KeywordType, bool> annotation { get; private set; }
-		public Dictionary<int, KonohaExpr> map { get; private set; }
+		public Dictionary<object, KonohaExpr> map { get; private set; }
 
 		public KStatement(LineInfo line, KonohaSpace ks)
 		{
 			this.ULine = line;
 			this.ks = ks;
 			annotation = new Dictionary<KeywordType, bool>();
-			map = new Dictionary<int, KonohaExpr>();
+			map = new Dictionary<object, KonohaExpr>();
 		}
 
 		// static kbool_t Stmt_parseSyntaxRule(CTX, kStmt *stmt, kArray *tls, int s, int e)

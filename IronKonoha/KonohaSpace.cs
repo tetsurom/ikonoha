@@ -516,7 +516,7 @@ namespace IronKonoha
 						tk.Keyword = ctx.kmodsugar.keyword_(name, Symbol.NewID).Type;
 						tk.Type = TokenType.METANAME;
 						if (nameid == 0) nameid = (int)tk.Keyword;
-						tk.nameid = new Symbol(); //TODO nameid;
+						tk.nameid = Symbol.Get(ctx, name);
 						nameid = 0;
 						adst.Add(tk);
 						continue;
@@ -633,7 +633,7 @@ namespace IronKonoha
 			{
 				//dumpExpr(_ctx, 0, 0, expr);
 				//kObject_setObject(stmt, name, expr);
-				stmt.map.Add(name.GetHashCode(), expr);
+				stmt.map.Add(name, expr);
 				r = e;
 			}
 			return r;
@@ -649,19 +649,19 @@ namespace IronKonoha
 		{
 			Token tk = tls[s];
 			if(tk.Type == TokenType.CODE) {
-				stmt.map.Add(name.GetHashCode(), new CodeExpr(tk));
+				stmt.map.Add(name, new CodeExpr(tk));
 				return s + 1;
 			}
 			var parser = new Parser(ctx, stmt.ks);
 			if (tk.Type == TokenType.AST_BRACE)
 			{
 				BlockExpr bk = parser.CreateBlock(stmt, tk.Sub, 0, tk.Sub.Count, ';');
-				stmt.map.Add(name.GetHashCode(), bk);
+				stmt.map.Add(name, bk);
 				return s + 1;
 			}
 			else {
 				BlockExpr bk = parser.CreateBlock(stmt, tls, s, e, ';');
-				stmt.map.Add(name.GetHashCode(), bk);
+				stmt.map.Add(name, bk);
 				return e;
 			}
 		}
@@ -683,7 +683,7 @@ namespace IronKonoha
 				int ee = tls.Count;
 				if (0 < ee && tls[0].Keyword == KeywordType.Void) ss = 1;  //  f(void) = > f()
 				BlockExpr bk = new Parser(ctx, stmt.ks).CreateBlock(stmt, tls, ss, ee, ',');
-				stmt.map.Add(name.GetHashCode(), bk);
+				stmt.map.Add(name, bk);
 				r = s + 1;
 			}
 			return r;

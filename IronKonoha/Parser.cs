@@ -20,7 +20,7 @@ namespace IronKonoha
 		public static readonly Symbol NONAME = new Symbol();
 		public string Name { get; private set; }
 
-		public Symbol(){
+		protected Symbol(){
 		}
 		public static Symbol Get(Context ctx, string name, Symbol def, SymPol pol)
 		{
@@ -36,6 +36,14 @@ namespace IronKonoha
 				if(def == sym) return def;
 				return sym | mask;
 			}*/
+			if (!ctx.share.SymbolMap.ContainsKey(name))
+			{
+				ctx.share.SymbolMap.Add(name, new Symbol() { Name = name });
+			}
+			return ctx.share.SymbolMap[name];
+		}
+		public static Symbol Get(Context ctx, string name)
+		{
 			if (!ctx.share.SymbolMap.ContainsKey(name))
 			{
 				ctx.share.SymbolMap.Add(name, new Symbol() { Name = name });

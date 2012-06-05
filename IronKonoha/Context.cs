@@ -408,6 +408,8 @@ namespace IronKonoha
 			modlocal.Add(null);
 			modlocal.Add(null);
 			modlocal.Add(new CTXSugar());
+
+			share = new KShare();
 		}
 
 		public string GetErrorTypeString(ReportLevel pe)
