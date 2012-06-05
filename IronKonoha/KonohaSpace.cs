@@ -484,11 +484,12 @@ namespace IronKonoha
 			return false;
 		}
 
+		// static kbool_t makeSyntaxRule(CTX, kArray *tls, int s, int e, kArray *adst)
 		private bool makeSyntaxRule(IList<Token> tls, int s, int e, out List<Token> adst)
 		{
 			int i;
 			adst = new List<Token>();
-			int nameid = 0;
+			Symbol nameid = null;
 			for (i = s; i < e; i++)
 			{
 				Token tk = tls[i];
@@ -515,16 +516,16 @@ namespace IronKonoha
 						var name = string.Format("${0}", tk.Text);
 						tk.Keyword = ctx.kmodsugar.keyword_(name, Symbol.NewID).Type;
 						tk.Type = TokenType.METANAME;
-						if (nameid == 0) nameid = (int)tk.Keyword;
-						tk.nameid = Symbol.Get(ctx, name);
-						nameid = 0;
+						if (nameid == null) nameid = Symbol.Get(ctx, tk.Text);
+						tk.nameid = nameid;
+						nameid = null;
 						adst.Add(tk);
 						continue;
 					}
 					if (i + 1 < e && tls[i + 1].TopChar == ':')
 					{
 						Token tk2 = tls[i];
-						nameid = (int)ctx.kmodsugar.keyword_(tk2.Text, Symbol.NewID).Type;
+						nameid = Symbol.Get(ctx, tk2.Text);
 						i++;
 						continue;
 					}
@@ -647,6 +648,7 @@ namespace IronKonoha
 		// static KMETHOD ParseStmt_Block(CTX, ksfp_t *sfp _RIX)
 		private static int ParseStmt_Block(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
 		{
+			//Console.WriteLine("ParseStmt_Block name:" + name.Name);
 			Token tk = tls[s];
 			if(tk.Type == TokenType.CODE) {
 				stmt.map.Add(name, new CodeExpr(tk));

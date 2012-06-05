@@ -102,7 +102,7 @@ namespace IronKonoha
 					}
 					int err_count = ctx.ctxsugar.err_count;
 					int next = ParseStmt(ctx, syn, rule.nameid, tls, ti, c);
-					//			DBG_P("matched '%s' nameid='%s', next=%d=>%d", Pkeyword(rule.KeyWord), Pkeyword(rule->nameid), ti, next);
+					Console.WriteLine("matched '{0}' nameid='{1}', next={2}=>{3}", rule.Keyword, rule.nameid.Name, ti, next);
 					if (next == -1)
 					{
 						if (optional)
