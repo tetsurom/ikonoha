@@ -76,9 +76,9 @@ namespace IronKonoha
 		public Expression MakeIfExpression (Dictionary<dynamic, KonohaExpr> map)
 		{
 			if(map.Count() == 3) {
-				return Expression.Condition(MakeExpression(map[Symbol.Get(ctx,"$expr")]), MakeExpression(map[Symbol.Get(ctx,"$block")]), MakeExpression(map[Symbol.Get(ctx,"else:")]));
+				return Expression.Condition(MakeExpression(map[Symbol.Get(ctx,"expr")]), MakeExpression(map[Symbol.Get(ctx,"block")]), MakeExpression(map[Symbol.Get(ctx,"else")]));
 			}
-			return Expression.Condition(MakeExpression(map[Symbol.Get(ctx,"$expr")]), MakeExpression(map[Symbol.Get(ctx,"$block")]),KNull);
+			return Expression.Condition(MakeExpression(map[Symbol.Get(ctx,"expr")]), MakeExpression(map[Symbol.Get(ctx,"block")]),KNull);
 		}
 
 		public Expression MakeConsExpression (ConsExpr expr)
