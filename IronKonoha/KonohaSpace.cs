@@ -108,10 +108,14 @@ namespace IronKonoha
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$SYMBOL",
+					ParseStmt = ParseStmt_Symbol,
+					kw = KeywordType.Symbol,
 					flag = SynFlag.ExprTerm,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$USYMBOL",
+					ParseStmt = ParseStmt_Usymbol,
+					kw = KeywordType.Usymbol,
 					flag = SynFlag.ExprTerm,
 				},
 				new KDEFINE_SYNTAX(){
@@ -135,8 +139,8 @@ namespace IronKonoha
 				new KDEFINE_SYNTAX(){
 					name = "$type",
 					rule = "$type $expr",
-					ExprTyCheck = ExprTyCheck_Float,
-					kw = KeywordType.TKFloat,
+					ParseStmt = ParseStmt_Type,
+					kw = KeywordType.Type,
 					flag = SynFlag.ExprTerm,
 				},
 				new KDEFINE_SYNTAX(){
@@ -166,9 +170,21 @@ namespace IronKonoha
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$params",
+					kw = KeywordType.Params,
 					ParseStmt = ParseStmt_Params,
 					TopStmtTyCheck = TopStmtTyCheck_ParamsDecl,
 					ExprTyCheck = ExprTyCheck_MethodCall,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "$toks",
+					kw = KeywordType.Toks,
+					ParseStmt = ParseStmt_Toks,
+				},
+				new KDEFINE_SYNTAX(){
+					name = ".",
+					priority_op2 = 16,
+					kw = KeywordType.DOT,
+					ParseExpr = ParseExpr_Dot,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "/",
@@ -274,14 +290,21 @@ namespace IronKonoha
 				//},
 				new KDEFINE_SYNTAX(){
 					name = "void",
+					rule = "$type [$USYMBOL \".\"] $SYMBOL $params [$block]",
+					ParseStmt = ParseStmt_Type,
+					kw = KeywordType.StmtMethodDecl,
 					type = KonohaType.Void,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "int",
+					ParseStmt = ParseStmt_Type,
+					kw = KeywordType.Type,
 					type = KonohaType.Int,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "boolean",
+					ParseStmt = ParseStmt_Type,
+					kw = KeywordType.Type,
 					type = KonohaType.Boolean,
 				},
 				new KDEFINE_SYNTAX(){
@@ -344,10 +367,10 @@ namespace IronKonoha
 			if (tk.IsType)
 			{
 				tk = (s + 1 < e) ? tls[s + 1] : null;
-				if (tk.Type == TokenType.SYMBOL || tk.Type == TokenType.USYMBOL)
+				if (tk != null && (tk.Type == TokenType.SYMBOL || tk.Type == TokenType.USYMBOL))
 				{
 					tk = (s + 2 < e) ? tls[s + 2] : null;
-					if (tk.Type == TokenType.AST_PARENTHESIS || tk.Keyword == KeywordType.DOT)
+					if (tk != null && (tk.Type == TokenType.AST_PARENTHESIS || tk.Keyword == KeywordType.DOT))
 					{
 						return GetSyntax(KeywordType.StmtMethodDecl); //
 					}
@@ -404,20 +427,19 @@ namespace IronKonoha
 		//KonohaSpace_syntax
 		internal Syntax GetSyntax(KeywordType keyword, bool isnew)
 		{
-			KonohaSpace ks = this;
-			Syntax parent = null;
-			while (ks != null)
+			
+			Syntax syntaxParent = null;
+			for (KonohaSpace ks = this; ks != null; ks = ks.parent)
 			{
 				if (ks.syntaxMap != null && ks.syntaxMap.ContainsKey(keyword))
 				{
-					parent = ks.syntaxMap[keyword];
-					return parent;
+					syntaxParent = ks.syntaxMap[keyword];
+					break;
 				}
-				ks = ks.parent;
 			}
 			if (isnew == true)
 			{
-				Console.WriteLine("creating new syntax {0} old={1}", keyword.ToString(), parent);
+				Console.WriteLine("creating new syntax {0} old={1}", keyword.ToString(), syntaxParent);
 				if (this.syntaxMap == null)
 				{
 					this.syntaxMap = new Dictionary<KeywordType, Syntax>();
@@ -425,9 +447,9 @@ namespace IronKonoha
 
 				this.syntaxMap[keyword] = new Syntax();
 
-				if (parent != null)
+				if (syntaxParent != null)
 				{  // TODO: RCGC
-					this.syntaxMap[keyword] = parent;
+					this.syntaxMap[keyword] = syntaxParent;
 				}
 				else
 				{
@@ -444,10 +466,10 @@ namespace IronKonoha
 					};
 					this.syntaxMap[keyword] = syn;
 				}
-				this.syntaxMap[keyword].Parent = parent;
+				this.syntaxMap[keyword].Parent = syntaxParent;
 				return this.syntaxMap[keyword];
 			}
-			return null;
+			return syntaxParent;
 		}
 
 		// static int findTopCh(CTX, kArray *tls, int s, int e, ktoken_t tt, int closech)
@@ -606,25 +628,48 @@ namespace IronKonoha
 			//Console.WriteLine("syntax size={0}, hmax={1}", syntaxMap.Count, syntaxMap.);
 		}
 
-
+		#region ExprTyCheck
 
 		public static void ExprTyCheck_Int(KStatement stmt, Syntax syn, KGamma gma)
 		{
-			Console.WriteLine("tesetsetset");
+			throw new NotImplementedException();
 		}
 		public static void ExprTyCheck_Float(KStatement stmt, Syntax syn, KGamma gma)
 		{
-			Console.WriteLine("tesetsetset");
+			throw new NotImplementedException();
 		}
 		public static void ExprTyCheck_Text(KStatement stmt, Syntax syn, KGamma gma)
 		{
-			Console.WriteLine("tesetsetset");
+			throw new NotImplementedException();
 		}
 
 		public static void ExprTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
 		{
-			Console.WriteLine("tesetsetset");
+			throw new NotImplementedException();
 		}
+
+		private static void ExprTyCheck_Block(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			throw new NotImplementedException();
+		}
+
+		public static void TopStmtTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			throw new NotImplementedException();
+		}
+
+		private static void TopStmtTyCheck_ParamsDecl(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			throw new NotImplementedException();
+		}
+		private static void ExprTyCheck_MethodCall(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			throw new NotImplementedException();
+		}
+
+		#endregion
+
+		#region ParseStmt
 
 		public static int ParseStmt_Expr(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
 		{
@@ -640,10 +685,61 @@ namespace IronKonoha
 			return r;
 		}
 
-		public static void TopStmtTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
+		public static int ParseStmt_Type(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
 		{
-			Console.WriteLine("tesetsetset");
+			int r = -1;
+			Token tk = tls[s];
+			if (tk.IsType)
+			{
+				//kObject_setObject(stmt, name, tk);
+				stmt.map.Add(name, new SingleTokenExpr(tk));
+				r = s + 1;
+			}
+			return r;
 		}
+
+		public static int ParseStmt_Usymbol(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
+		{
+			int r = -1;
+			Token tk = tls[s];
+			if (tk.Type == TokenType.USYMBOL)
+			{
+				stmt.map.Add(name, new SingleTokenExpr(tk));
+				r = s + 1;
+			}
+			return r;
+		}
+
+		public static int ParseStmt_Symbol(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
+		{
+			int r = -1;
+			Token tk = tls[s];
+			if (tk.Type == TokenType.SYMBOL)
+			{
+				stmt.map.Add(name, new SingleTokenExpr(tk));
+				r = s + 1;
+			}
+			return r;
+		}
+
+		// static KMETHOD ParseStmt_Params(CTX, ksfp_t *sfp _RIX)
+		private static int ParseStmt_Params(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int s, int e)
+		{
+			int r = -1;
+			Token tk = tokens[s];
+			if (tk.Type == TokenType.AST_PARENTHESIS)
+			{
+				var tls = tk.Sub;
+				int ss = 0;
+				int ee = tls.Count;
+				if (0 < ee && tls[0].Keyword == KeywordType.Void) ss = 1;  //  f(void) = > f()
+				BlockExpr bk = new Parser(ctx, stmt.ks).CreateBlock(stmt, tls, ss, ee, ',');
+				stmt.map.Add(name, bk);
+				r = s + 1;
+			}
+			return r;
+		}
+
 
 		// static KMETHOD ParseStmt_Block(CTX, ksfp_t *sfp _RIX)
 		private static int ParseStmt_Block(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
@@ -668,38 +764,26 @@ namespace IronKonoha
 			}
 		}
 
-		private static void ExprTyCheck_Block(KStatement stmt, Syntax syn, KGamma gma)
+		// static KMETHOD ParseStmt_Toks(CTX, ksfp_t *sfp _RIX)
+		private static int ParseStmt_Toks(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
 		{
-			Console.WriteLine("tesetsetset");
-		}
-
-		// static KMETHOD ParseStmt_Params(CTX, ksfp_t *sfp _RIX)
-		private static int ParseStmt_Params(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int s, int e)
-		{
-			int r = -1;
-			Token tk = tokens[s];
-			if (tk.Type == TokenType.AST_PARENTHESIS)
+			if (s < e)
 			{
-				var tls = tk.Sub;
-				int ss = 0;
-				int ee = tls.Count;
-				if (0 < ee && tls[0].Keyword == KeywordType.Void) ss = 1;  //  f(void) = > f()
-				BlockExpr bk = new Parser(ctx, stmt.ks).CreateBlock(stmt, tls, ss, ee, ',');
-				stmt.map.Add(name, bk);
-				r = s + 1;
+				var a = new List<Token>();
+				while (s < e)
+				{
+					a.Add(tls[s]);
+					s++;
+				}
+				//kObject_setObject(stmt, name, a);
+				//stmt.map.Add(name, a);
+				throw new NotImplementedException();
+				return e;
 			}
-			return r;
+			return -1;
 		}
 
-
-		private static void TopStmtTyCheck_ParamsDecl(KStatement stmt, Syntax syn, KGamma gma)
-		{
-			Console.WriteLine("tesetsetset");
-		}
-		private static void ExprTyCheck_MethodCall(KStatement stmt, Syntax syn, KGamma gma)
-		{
-			Console.WriteLine("tesetsetset");
-		}
+		#endregion
 
 		// static KMETHOD ParseExpr_Parenthesis(CTX, ksfp_t *sfp _RIX)
 		private static KonohaExpr ParseExpr_Parenthesis(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int s, int c, int e)
@@ -725,6 +809,29 @@ namespace IronKonoha
 				stmt.addExprParams(ctx, lexpr, tk.Sub, 0, tk.Sub.Count, true/*allowEmpty*/);
 				return KModSugar.Expr_rightJoin(ctx, lexpr, stmt, tls, s + 1, c + 1, e);
 			}
+		}
+
+		static bool isFieldName(IList<Token> tls, int c, int e)
+		{
+			if(c+1 < e) {
+				Token tk = tls[c+1];
+				return (tk.Type == TokenType.SYMBOL || tk.Type == TokenType.USYMBOL || tk.Type == TokenType.MSYMBOL);
+			}
+			return false;
+		}
+
+		private static KonohaExpr ParseExpr_Dot(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int s, int c, int e)
+		{
+			Console.WriteLine("s={0}, c={1}", s, c);
+			Debug.Assert(s < c);
+			if (isFieldName(tls, c, e))
+			{
+				KonohaExpr expr = stmt.newExpr2(ctx, tls, s, c);
+				expr = new ConsExpr(ctx, syn, tls[c + 1], expr);
+				return KModSugar.Expr_rightJoin(ctx, expr, stmt, tls, c + 2, c + 2, e);
+			}
+			if (c + 1 < e) c++;
+			return new ConsExpr(ctx, syn, tls[c], ReportLevel.ERR, "expected field name: not " + tls[c].Text);
 		}
 	}
 }

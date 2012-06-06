@@ -43,7 +43,7 @@ namespace IronKonoha
 		{
 			bool ret = false;
 			Syntax syn = this.ks.GetSyntaxRule(tls, s, e);
-			Debug.Assert(syn != null);
+			//Debug.Assert(syn != null);
 			if (syn != null && syn.SyntaxRule != null)
 			{
 				this.syn = syn;
@@ -72,7 +72,9 @@ namespace IronKonoha
 					if (rule.Keyword != tk.Keyword)
 					{
 						if (optional)
+						{
 							return s;
+						}
 						tk.Print(ctx, ReportLevel.ERR, "{0} needs '{1}'", this.syn.KeyWord, rule.Keyword);
 						return -1;
 					}
@@ -94,7 +96,9 @@ namespace IronKonoha
 						if (c == -1)
 						{
 							if (optional)
+							{
 								return s;
+							}
 							tk.Print(ctx, ReportLevel.ERR, "{0} needs '{1}'", this.syn.KeyWord, rule.Keyword);
 							return -1;
 						}
@@ -106,7 +110,9 @@ namespace IronKonoha
 					if (next == -1)
 					{
 						if (optional)
+						{
 							return s;
+						}
 						if (err_count == ctx.sugarerr_count)
 						{
 							tk.Print(ctx, ReportLevel.ERR, "unknown syntax pattern: {0}", this.syn.KeyWord, rule.Keyword, tk.Text);
@@ -122,7 +128,9 @@ namespace IronKonoha
 				{
 					int next = matchSyntaxRule(ctx, rule.Sub, uline, tls, ti, e, true);
 					if (next == -1)
+					{
 						return -1;
+					}
 					ti = next;
 					continue;
 				}
@@ -132,13 +140,17 @@ namespace IronKonoha
 					{
 						int next = matchSyntaxRule(ctx, rule.Sub, uline, tk.Sub, 0, tk.Sub.Count, false);
 						if (next == -1)
+						{
 							return -1;
+						}
 						ti++;
 					}
 					else
 					{
 						if (optional)
+						{
 							return s;
+						}
 						tk.Print(ctx, ReportLevel.ERR, "{0} needs '{1}'", this.syn.KeyWord, rule.TopChar);
 						return -1;
 					}
@@ -163,12 +175,14 @@ namespace IronKonoha
 		// static int ParseStmt(CTX, ksyntax_t *syn, kStmt *stmt, ksymbol_t name, kArray *tls, int s, int e)
 		public int ParseStmt(Context ctx, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
 		{
+			//Console.WriteLine("ParseStmt {0}, {0}", name.Name, tls[s].Text);
 			return syn.ParseStmt(ctx, this, syn, name, tls, s, e);
 		}
 
 		// static kExpr *ParseExpr(CTX, ksyntax_t *syn, kStmt *stmt, kArray *tls, int s, int c, int e)
 		public KonohaExpr ParseExpr(Context ctx, Syntax syn, IList<Token> tls, int s, int c, int e)
 		{
+			Debug.Assert(syn != null);
 			if (syn.ParseExpr != null)
 			{
 				return syn.ParseExpr(ctx, syn, this, tls, s, c, e);
@@ -183,11 +197,12 @@ namespace IronKonoha
 				Syntax syn = null;
 				int idx = findBinaryOp(ctx, tls, s, e, ref syn);
 				if(idx != -1) {
-					Console.WriteLine("** Found BinaryOp: s={0}, idx={1}, e={2}, '{3}'**", s, idx, e, tls[idx].Text);
+					Console.WriteLine("** Found BinaryOp: s={0}, idx={1}, e={2}, '{3}' **", s, idx, e, tls[idx].Text);
 					return ParseExpr(ctx, syn, tls, s, idx, e);
 				}
 				int c = s;
 				syn = ks.GetSyntax(tls[c].Keyword);
+				Debug.Assert(syn != null);
 				return ParseExpr(ctx, syn, tls, c, c, e);
 			}
 			else {
@@ -244,7 +259,7 @@ namespace IronKonoha
 		bool isUnaryOp(Context ctx, Token tk)
 		{
 			Syntax syn = ks.GetSyntax(tk.Keyword);
-			return syn.Op1 != null;
+			return syn != null && syn.Op1 != null;
 		}
 
 		// static int lookAheadKeyword(kArray *tls, int s, int e, kToken *rule)

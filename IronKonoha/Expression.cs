@@ -83,8 +83,21 @@ namespace IronKonoha
 		}
 	}
 
+	[System.Diagnostics.DebuggerDisplay("{tk.Text} [{tk.Type}]")]
+	public class SingleTokenExpr : KonohaExpr
+	{
+		public SingleTokenExpr(Token tk)
+		{
+			this.tk = tk;
+		}
+	}
+
 	public class ConstExpr<T> : KonohaExpr
 	{
+		public ConstExpr(T data)
+		{
+			Data = data;
+		}
 		public T Data { get; set; }
 	}
 
