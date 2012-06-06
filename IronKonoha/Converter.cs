@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Dynamic;
+using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using Microsoft.CSharp.RuntimeBinder;
 
 namespace IronKonoha
 {
@@ -94,11 +97,21 @@ namespace IronKonoha
 			return null;
 		}
 
+		public dynamic GetBinaryBinder(ExpressionType et)
+		{
+			return Binder.BinaryOperation(
+				CSharpBinderFlags.None, et, typeof(Converter),
+				new CSharpArgumentInfo[] {
+					CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+					CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)});
+		}
+
 		public Expression OperatorASM (KeywordType keyword, Expression left, Expression right)
 		{
 			switch (keyword) {
 			case KeywordType.ADD:
-				return Expression.Call(typeof(Converter).GetMethod("Add"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
+				return Expression.Dynamic(GetBinaryBinder(ExpressionType.Add),typeof(object),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
+//				return Expression.Call(typeof(Converter).GetMethod("Add"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
 			case KeywordType.SUB:
 				return Expression.Call(typeof(Converter).GetMethod("Sub"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
 			case KeywordType.MUL:
