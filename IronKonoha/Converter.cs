@@ -20,6 +20,23 @@ namespace IronKonoha
 		internal static readonly Expression KNull = Expression.Constant(null);
 		internal static readonly Expression KTrue = Expression.Constant(true);
 		internal static readonly Expression KFalse = Expression.Constant(false);
+		internal static readonly Dictionary<KeywordType,ExpressionType> BinaryOperationType
+			 = new Dictionary<KeywordType, ExpressionType>()
+			{
+				{KeywordType.ADD ,ExpressionType.Add},
+				{KeywordType.SUB ,ExpressionType.Subtract},
+				{KeywordType.MUL ,ExpressionType.Multiply},
+				{KeywordType.DIV ,ExpressionType.Divide},
+				{KeywordType.EQ  ,ExpressionType.Equal},
+				{KeywordType.NEQ ,ExpressionType.NotEqual},
+				{KeywordType.LT  ,ExpressionType.LessThan},
+				{KeywordType.LTE ,ExpressionType.LessThanOrEqual},
+				{KeywordType.GT  ,ExpressionType.GreaterThan},
+				{KeywordType.GTE ,ExpressionType.GreaterThanOrEqual},
+				{KeywordType.AND ,ExpressionType.And},
+				{KeywordType.OR  ,ExpressionType.Or},
+				{KeywordType.MOD ,ExpressionType.Modulo}
+			};
 		//internal static readonly Expression KEmptyString = Expression.Constant(null,typeof(KString));
 		
 		public Converter(Context ctx, KonohaSpace ks)
@@ -90,7 +107,10 @@ namespace IronKonoha
 			var param = expr.Cons.Skip(1).Select(p => MakeExpression (p as KonohaExpr));
 			switch(tk.Type) {
 			case TokenType.OPERATOR:
-				return OperatorASM(tk.Keyword,param.ElementAt(0),param.ElementAt(1));
+			return Expression.Dynamic(GetBinaryBinder(BinaryOperationType[tk.Keyword]),
+						typeof(object),
+						Expression.Convert(param.ElementAt(0),typeof(object)),
+						Expression.Convert(param.ElementAt(1),typeof(object)));
 			case TokenType.SYMBOL:
 				return SymbolASM(tk.Keyword, param);
 			}
@@ -106,42 +126,6 @@ namespace IronKonoha
 					CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)});
 		}
 
-		public Expression OperatorASM (KeywordType keyword, Expression left, Expression right)
-		{
-			switch (keyword) {
-			case KeywordType.ADD:
-				return Expression.Dynamic(GetBinaryBinder(ExpressionType.Add),typeof(object),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
-//				return Expression.Call(typeof(Converter).GetMethod("Add"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
-			case KeywordType.SUB:
-				return Expression.Call(typeof(Converter).GetMethod("Sub"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
-			case KeywordType.MUL:
-				return Expression.Call(typeof(Converter).GetMethod("Mul"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
-			case KeywordType.DIV:
-				return Expression.Call(typeof(Converter).GetMethod("Div"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
-			case KeywordType.EQ:
-				return Expression.Call(typeof(Converter).GetMethod("Eq"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
-			case KeywordType.NEQ:
-				return Expression.Call(typeof(Converter).GetMethod("Neq"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
-			case KeywordType.LT:
-				return Expression.Call(typeof(Converter).GetMethod("Lt"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
-			case KeywordType.LTE:
-				return Expression.Call(typeof(Converter).GetMethod("Lte"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
-			case KeywordType.GT:
-				return Expression.Call(typeof(Converter).GetMethod("Gt"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
-			case KeywordType.GTE:
-				return Expression.Call(typeof(Converter).GetMethod("Gte"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
-			case KeywordType.AND:
-				return Expression.Call(typeof(Converter).GetMethod("And"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
-			case KeywordType.OR:
-				return Expression.Call(typeof(Converter).GetMethod("Or"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
-			case KeywordType.MOD:
-				return Expression.Call(typeof(Converter).GetMethod("Mod"),Expression.Convert(left,typeof(object)),Expression.Convert(right,typeof(object)));
-			case KeywordType.Parenthesis:
-				return null; // It will not use in here.
-			}
-		return null;
-		}
-
 		public Expression SymbolASM (KeywordType keyword, IEnumerable<Expression> param)
 		{
 			switch(keyword) {
@@ -150,48 +134,7 @@ namespace IronKonoha
 			}
 			return null;
 		}
-		
-		#region Operator
-		public static object Add(dynamic a, dynamic b){
-			return a + b;
-		}
-		public static object Sub(dynamic a, dynamic b){
-			return a - b;
-		}
-		public static object Mul(dynamic a, dynamic b){
-			return a * b;
-		}
-		public static object Div(dynamic a, dynamic b){
-			return a / b;
-		}
-		public static bool Eq(dynamic a, dynamic b){
-			return a == b;
-		}
-		public static bool Neq(dynamic a, dynamic b){
-			return a != b;
-		}
-		public static bool Lt(dynamic a, dynamic b){
-			return a < b;
-		}
-		public static bool Lte(dynamic a, dynamic b){
-			return a <= b;
-		}
-		public static bool Gt(dynamic a, dynamic b){
-			return a > b;
-		}
-		public static bool Gte(dynamic a, dynamic b){
-			return a >= b;
-		}
-		public static bool And(dynamic a, dynamic b){
-			return a && b;
-		}
-		public static bool Or(dynamic a, dynamic b){
-			return a || b;
-		}
-		public static object Mod(dynamic a, dynamic b){
-			return a % b;
-		}
-		#endregion
+
 		public static object RunEval(string script,Context ctx, KonohaSpace ks)
 		{
 			var tokenizer = new Tokenizer(ctx, ks);
