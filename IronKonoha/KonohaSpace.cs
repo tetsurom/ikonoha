@@ -284,10 +284,14 @@ namespace IronKonoha
 					priority_op2 = 4096,
 					flag = SynFlag.ExprLeftJoinOp2,
 				},
-				//new KDEFINE_SYNTAX(){
-				//    name = ",",
-				//    priority_op2 = 8192,
-				//},
+				new KDEFINE_SYNTAX(){
+				    name = ",",
+					op2 = "*",
+				    priority_op2 = 8192,
+				},
+				new KDEFINE_SYNTAX(){
+				    name = "$",
+				},
 				new KDEFINE_SYNTAX(){
 					name = "void",
 					rule = "$type [$USYMBOL \".\"] $SYMBOL $params [$block]",
@@ -797,6 +801,10 @@ namespace IronKonoha
 				KonohaExpr lexpr = stmt.newExpr2(ctx, tls, s, c);
 				if(lexpr == null) {
 					return null;
+				}
+				if (lexpr.syn == null)
+				{
+					lexpr.syn = stmt.ks.GetSyntax(lexpr.tk.Keyword);
 				}
 				if(lexpr.syn.KeyWord == KeywordType.DOT) {
 					lexpr.syn = stmt.ks.GetSyntax(KeywordType.ExprMethodCall); // CALL
