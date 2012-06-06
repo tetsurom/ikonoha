@@ -52,7 +52,9 @@ namespace IronKonoha
 				List<Expression> list = new List<Expression> ();
 				foreach(KStatement st in block.blocks) {
 					if(st.syn.KeyWord == KeywordType.If) {
-							list.Add(MakeIfExpression(st.map));
+						list.Add(MakeIfExpression(st.map));
+					}else if(st.syn.KeyWord == KeywordType.StmtMethodDecl) {
+						list.Add(MakeStmtDeclExpression(st.map));
 					}else{
 						foreach(KonohaExpr kexpr in st.map.Values) {
 							list.Add(MakeExpression(kexpr));
@@ -66,6 +68,20 @@ namespace IronKonoha
 				//TODO : static error check
 //			}
 			return b;
+		}
+
+		public Expression MakeStmtDeclExpression (Dictionary<object, KonohaExpr> map)
+		{
+			string key = map[Symbol.Get(ctx,"SYMBOL")].tk.Text;
+			((IDictionary<string,dynamic>)this.ks.scope)[key] = Expression.Lambda(MakeExpression(map[Symbol.Get(ctx,"block")]),
+				key,true,
+				MakeParameterExpression(map[Symbol.Get(ctx,"params")]));
+			return ((IDictionary<string,dynamic>)this.ks.scope)[key];
+		}
+
+		public ParameterExpression[] MakeParameterExpression (KonohaExpr par1)
+		{
+			return new[]{Expression.Parameter(typeof(object),null)};
 		}
 
 		public Expression MakeExpression(KonohaExpr kexpr)
@@ -96,26 +112,33 @@ namespace IronKonoha
 		public Expression MakeIfExpression (Dictionary<dynamic, KonohaExpr> map)
 		{
 			if(map.Count() == 3) {
-				return Expression.Condition(MakeExpression(map[Symbol.Get(ctx,"expr")]),
+				return Expression.Condition(Expression.Convert(MakeExpression(map[Symbol.Get(ctx,"expr")]),typeof(bool)),
 					MakeExpression(map[Symbol.Get(ctx,"block")]),
 					MakeExpression(map[Symbol.Get(ctx,"else")]));
 			}
-			return Expression.Condition(MakeExpression(map[Symbol.Get(ctx,"expr")]),
+			return Expression.Condition(Expression.Convert(MakeExpression(map[Symbol.Get(ctx,"expr")]),typeof(bool)),
 				MakeExpression(map[Symbol.Get(ctx,"block")]),KNull);
 		}
 
 		public Expression MakeConsExpression (ConsExpr expr)
 		{
-			Token tk = expr.Cons[0] as Token;
-			var param = expr.Cons.Skip(1).Select(p => MakeExpression (p as KonohaExpr));
-			switch(tk.Type) {
-			case TokenType.OPERATOR:
-			return Expression.Dynamic(GetBinaryBinder(BinaryOperationType[tk.Keyword]),
-						typeof(object),
-						Expression.Convert(param.ElementAt(0),typeof(object)),
-						Expression.Convert(param.ElementAt(1),typeof(object)));
-			case TokenType.SYMBOL:
-				return SymbolASM(tk.Keyword, param);
+			if(expr.Cons[0] is Token){
+				Token tk = expr.Cons[0] as Token;
+				var param = expr.Cons.Skip(1).Select(p => MakeExpression (p as KonohaExpr));
+				switch(tk.Type) {
+				case TokenType.OPERATOR:
+				return Expression.Dynamic(GetBinaryBinder(BinaryOperationType[tk.Keyword]),
+							typeof(object),
+							Expression.Convert(param.ElementAt(0),typeof(object)),
+							Expression.Convert(param.ElementAt(1),typeof(object)));
+				case TokenType.SYMBOL:
+					return SymbolASM(tk.Keyword, param);
+				}
+			}else{
+				Token tk = ((KonohaExpr)expr.Cons[0]).tk;
+				var f = ((IDictionary<string,dynamic>)ks.scope)[tk.Text];
+				return Expression.Invoke(f,KNull);
+				//MakeExpression((KonohaExpr)expr.Cons[1])); //TODO parameters.
 			}
 			return null;
 		}
@@ -140,6 +163,8 @@ namespace IronKonoha
 
 		public static object RunEval(string script,Context ctx, KonohaSpace ks)
 		{
+//			KonohaSpace ks = new KonohaSpace(ctx,1);
+//			ks.parent = ksparent;
 			var tokenizer = new Tokenizer(ctx, ks);
 			var parser = new Parser(ctx, ks);
 			var converter = new Converter(ctx,ks);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Dynamic;
 using System.Text;
 using System.Diagnostics;
 
@@ -81,11 +82,18 @@ namespace IronKonoha
 
 		public Dictionary<KeywordType, Syntax> syntaxMap { get; set; }
 		public KonohaSpace parent { get; set; }
-
+		public ExpandoObject scope {get; set;}
+		
 		public KonohaSpace(Context ctx)
 		{
 			this.ctx = ctx;
+			this.scope = new ExpandoObject();
 			defineDefaultSyntax();
+		}
+		
+		public KonohaSpace(Context ctx,int child)
+		{
+			this.ctx = ctx;
 		}
 
 		// sugar.c
