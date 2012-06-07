@@ -386,7 +386,7 @@ namespace IronKonoha
 					{
 						return GetSyntax(KeywordType.StmtMethodDecl); //
 					}
-					return GetSyntax(KeywordType.StmtTypeDecl);  //
+					return GetSyntax(KeywordType.Type);  //
 				}
 				return GetSyntax(KeywordType.Expr);  // expression
 			}
