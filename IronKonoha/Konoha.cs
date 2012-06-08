@@ -24,8 +24,8 @@ namespace IronKonoha
 	public class Konoha
 	{
 
-		Context ctx;
-		KonohaSpace space;
+		public Context ctx { get; private set; }
+		public KonohaSpace space { get; private set; }
 
 		public static readonly int FN_NONAME = -1;
 
