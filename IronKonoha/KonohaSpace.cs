@@ -4,6 +4,8 @@ using System.Linq;
 using System.Dynamic;
 using System.Text;
 using System.Diagnostics;
+using System.Linq.Expressions;
+using System.Reflection;
 
 namespace IronKonoha
 {
@@ -368,6 +370,9 @@ namespace IronKonoha
 			var converter = new Converter(ctx, this);
 			var block = parser.CreateBlock(null, tokens, 0, tokens.Count(), ';');
 			dynamic ast = converter.Convert(block);
+			string dbv = typeof(Expression).InvokeMember("DebugView", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetProperty, null, ast, null);
+			Console.WriteLine("### DLR ASR Dump ###");
+			Console.WriteLine(dbv);
 			var f = ast.Compile();
 			return f();
 		}

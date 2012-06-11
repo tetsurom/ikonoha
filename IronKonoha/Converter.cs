@@ -10,7 +10,7 @@ using Microsoft.CSharp.RuntimeBinder;
 
 namespace IronKonoha
 {
-	public delegate object FuncLambda(params object[] args);
+	//public delegate object FuncLambda(params object[] args);
 
 	abstract class Cache
 	{
@@ -28,33 +28,48 @@ namespace IronKonoha
 
 	public class FunctionEnvironment
 	{
-		public ParameterExpression Param { get; set; }
+		public ParameterExpression[] Params { get; set; }
 		public LabelTarget ReturnLabel { get; set; }
 	}
 
 	class FuncCache : Cache
 	{
-		public FuncLambda Lambda { get; protected set; }
+		private dynamic _lambda;
+		public dynamic Lambda
+		{
+			get
+			{
+				preInvoke();
+				return _lambda;
+			}
+		}
 
 		public FuncCache(Converter converter, string body, IList<string> param)
 			:base(converter, body, param){
 
 		}
 
-		public object Invoke(params object[] args)
+		private void preInvoke()
 		{
-			if (Lambda == null)
+			if (_lambda == null)
 			{
-				Console.WriteLine("compile block...");
 				var e = converter.ConvertFunc(BlockBody, Params);
 				var f = e.Compile();
-				Lambda = f;
+				_lambda = f;
 			}
-			else
-			{
-				//Console.WriteLine("cache hitted & compile skipped.");
-			}
-			return Lambda(args);
+		}
+
+		public object Invoke()
+		{
+			return Lambda();
+		}
+		public object Invoke(object p1)
+		{
+			return Lambda(p1);
+		}
+		public object Invoke(object p1, object p2)
+		{
+			return Lambda(p1, p2);
 		}
 	}
 
@@ -134,21 +149,40 @@ namespace IronKonoha
 			return ConvertToExprList(block, environment, param);
 		}
 
-		public Expression<FuncLambda> ConvertFunc(string body, IList<string> param)
+		public dynamic ConvertFunc(string body, IList<string> param)
 		{
 			var env = new FunctionEnvironment()
 			{
-				Param = Expression.Parameter(typeof(object[]), "args"),
+				Params = param.Select(p=>Expression.Parameter(typeof(object), p)).ToArray(),
 				ReturnLabel = Expression.Label(typeof(object))
 			};
 			var list = ConvertBlock(body, env, param);
 			list.Add(Expression.Label(env.ReturnLabel, KNull));
 			Expression root = Expression.Block(list);
+
+			if (root.Type == typeof(void))
+			{
+				switch (param.Count)
+				{
+					default:
+					case 0:
+						return Expression.Lambda<Action>(root, env.Params);
+					case 1:
+						return Expression.Lambda<Action<object>>(root, env.Params);
+				}
+			}
 			if (root.Type != typeof(object))
 			{
 				root = Expression.Convert(root, typeof(object));
 			}
-			return Expression.Lambda<FuncLambda>(root, env.Param);
+			switch (param.Count)
+			{
+				default:
+				case 0:
+					return Expression.Lambda<Func<object>>(root, env.Params);
+				case 1:
+					return Expression.Lambda<Func<object, object>>(root, env.Params);
+			}
 		}
 
 		public List<Expression> ConvertToExprList(BlockExpr block, FunctionEnvironment environment, IList<string> funcargs)
@@ -189,7 +223,7 @@ namespace IronKonoha
 
 			var cache = new FuncCache(this, block.tk.Text, GetParamList(map[Symbols.Params] as BlockExpr).ToList());
 
-			FuncLambda lambda = p => cache.Invoke(p);
+			dynamic lambda = new Func<object, object>(p => cache.Invoke(p));
 
 			string key = map[Symbols.SYMBOL].tk.Text;
 			Scope[key] = lambda;
@@ -224,7 +258,7 @@ namespace IronKonoha
 				case TokenType.SYMBOL:
 					if (args.Contains(text))
 					{
-						return Expression.ArrayIndex(environment.Param, Expression.Constant(args.IndexOf(text)));
+						return environment.Params[args.IndexOf(text)];
 					}
 					return KNull;
 				}
@@ -262,7 +296,8 @@ namespace IronKonoha
 			}else{
 				Token tk = ((KonohaExpr)expr.Cons[0]).tk;
 				var f = Scope[tk.Text];
-				Type ty = f.GetType();
+				//Type ty = f.GetType();
+				/*
 				if (ty == typeof(FuncLambda))
 				{
 					Expression paramExpressions;
@@ -278,18 +313,18 @@ namespace IronKonoha
 					return Expression.Invoke(Expression.Constant(f), new[] { paramExpressions });
 				}
 				else
-				{
+				{*/
 					if (expr.Cons.Count > 2)
 					{
-						var tyarg = ty.GetGenericArguments();
-						Expression[] p = new[] { Expression.Convert(MakeExpression((KonohaExpr)expr.Cons[2], environment, args), tyarg[0]) };
+						//var tyarg = ty.GetGenericArguments();
+						Expression p = MakeExpression((KonohaExpr)expr.Cons[2], environment, args);
 						return Expression.Invoke(Expression.Constant(f), p);
 					}
 					else
 					{
 						return Expression.Invoke(Expression.Constant(f));
 					}
-				}
+				//}
 			}
 			return null;
 		}

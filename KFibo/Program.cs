@@ -7,7 +7,7 @@ namespace KFibo
 {
 	class Program
 	{
-		static int csfibo(int n)
+		static long csfibo(long n)
 		{
 			if (n < 3) { return 1; } else { return csfibo(n - 1) + csfibo(n - 2); }
 		}
@@ -16,7 +16,7 @@ namespace KFibo
 		{
 			var konoha = new IronKonoha.Konoha();
 			dynamic global = konoha.space.scope;
-			global.csfibo = new Func<int, int>(csfibo);
+			global.csfibo = new Func<long, long>(csfibo);
 
 			dynamic fibo = konoha.Eval("int fibo(int n){ if(n < 3){ return 1; } else { return fibo(n - 1) + fibo(n - 2); } }");
 			Console.ReadLine(); // fibo is not compiled yet.
