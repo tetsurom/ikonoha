@@ -234,23 +234,41 @@ namespace IronKonoha
 				case TokenType.OPERATOR:
 					return Expression.Dynamic(GetBinaryBinder(BinaryOperationType[tk.Keyword]),
 						typeof(object),
-						Expression.Convert(param.ElementAt(0),typeof(object)),
-						Expression.Convert(param.ElementAt(1),typeof(object)));
+						param.ElementAt(0),
+						param.ElementAt(1)
+					);
 				}
 			}else{
 				Token tk = ((KonohaExpr)expr.Cons[0]).tk;
 				var f = Scope[tk.Text];
-				Expression pa;
-				if (expr.Cons.Count > 2)
+				Type ty = f.GetType();
+				if (ty == typeof(FuncLambda))
 				{
-					Expression[] p = new[] { Expression.Convert(MakeExpression((KonohaExpr)expr.Cons[2], paramExpr, args), typeof(object)) };
-					pa = Expression.NewArrayInit(typeof(object), p);
+					Expression paramExpressions;
+					if (expr.Cons.Count > 2)
+					{
+						Expression[] p = new[] { Expression.Convert(MakeExpression((KonohaExpr)expr.Cons[2], paramExpr, args), typeof(object)) };
+						paramExpressions = Expression.NewArrayInit(typeof(object), p);
+					}
+					else
+					{
+						paramExpressions = Expression.Constant(new object[] { });
+					}
+					return Expression.Invoke(Expression.Constant(f), new[] { paramExpressions });
 				}
 				else
 				{
-					pa = Expression.Constant(new object[] { });
+					if (expr.Cons.Count > 2)
+					{
+						var tyarg = ty.GetGenericArguments();
+						Expression[] p = new[] { Expression.Convert(MakeExpression((KonohaExpr)expr.Cons[2], paramExpr, args), tyarg[0]) };
+						return Expression.Invoke(Expression.Constant(f), p);
+					}
+					else
+					{
+						return Expression.Invoke(Expression.Constant(f));
+					}
 				}
-				return Expression.Invoke(Expression.Constant(f), new[] { pa });
 			}
 			return null;
 		}
