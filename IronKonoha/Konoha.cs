@@ -53,8 +53,7 @@ namespace IronKonoha
 
 		public dynamic Eval(string code)
 		{
-			space.Eval(code);
-			return null;
+			return space.Eval(code);
 		}
 
 	}

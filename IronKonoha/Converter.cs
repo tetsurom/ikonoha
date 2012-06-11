@@ -17,23 +17,27 @@ namespace IronKonoha
 		protected string BlockBody;
 		protected IList<string> Params;
 		protected Converter converter;
-		protected ParameterExpression paramExpr;
 
-		public Cache(Converter converter, string body, ParameterExpression paramExpr, IList<string> param)
+		public Cache(Converter converter, string body, IList<string> param)
 		{
 			this.converter = converter;
 			this.BlockBody = body;
-			this.paramExpr = paramExpr;
 			this.Params = param;
 		}
+	}
+
+	public class FunctionEnvironment
+	{
+		public ParameterExpression Param { get; set; }
+		public LabelTarget ReturnLabel { get; set; }
 	}
 
 	class FuncCache : Cache
 	{
 		public FuncLambda Lambda { get; protected set; }
 
-		public FuncCache(Converter converter, string body, ParameterExpression paramExpr, IList<string> param)
-			:base(converter, body, paramExpr, param){
+		public FuncCache(Converter converter, string body, IList<string> param)
+			:base(converter, body, param){
 
 		}
 
@@ -42,7 +46,7 @@ namespace IronKonoha
 			if (Lambda == null)
 			{
 				Console.WriteLine("compile block...");
-				var e = converter.ConvertFunc(BlockBody, paramExpr, Params);
+				var e = converter.ConvertFunc(BlockBody, Params);
 				var f = e.Compile();
 				Lambda = f;
 			}
@@ -102,6 +106,8 @@ namespace IronKonoha
 			}
 		}
 
+
+
 		readonly SymbolConst Symbols;
 
 		private IDictionary<string, object> Scope { get { return ks.scope as IDictionary<string, object>; } }
@@ -113,53 +119,64 @@ namespace IronKonoha
 			Symbols = new SymbolConst(ctx);
 		}
 		
-		public Expression<Func<object>> Convert (BlockExpr block)
+		public Expression Convert (BlockExpr block)
 		{
-			var root = Expression.Convert(
-				Expression.Block(ConvertToExprList(block, null, null)),
-				typeof(object));
-			return Expression.Lambda<Func<object>>(root);
+			return Expression.Lambda(Expression.Block(ConvertToExprList(block, null, null)));
 		}
 
-		private IList<Expression> ConvertBlock(string body, ParameterExpression paramExpr, IList<string> param)
+		private IList<Expression> ConvertBlock(string body, FunctionEnvironment environment, IList<string> param)
 		{
+
 			var tokenizer = new Tokenizer(ctx, ks);
 			var parser = new Parser(ctx, ks);
 			var tokens = tokenizer.Tokenize(body);
 			var block = parser.CreateBlock(null, tokens, 0, tokens.Count(), ';');
-			return ConvertToExprList(block, paramExpr, param);
+			return ConvertToExprList(block, environment, param);
 		}
 
-		public Expression<FuncLambda> ConvertFunc(string body, ParameterExpression paramExpr, IList<string> param)
+		public Expression<FuncLambda> ConvertFunc(string body, IList<string> param)
 		{
-			var list = ConvertBlock(body, paramExpr, param);
-			var root = Expression.Block(list);
-			if (root.Type == typeof(void))
+			var env = new FunctionEnvironment()
 			{
-				list.Add(KNull);
-				root = Expression.Block(list);
+				Param = Expression.Parameter(typeof(object[]), "args"),
+				ReturnLabel = Expression.Label(typeof(object))
+			};
+			var list = ConvertBlock(body, env, param);
+			list.Add(Expression.Label(env.ReturnLabel, KNull));
+			Expression root = Expression.Block(list);
+			if (root.Type != typeof(object))
+			{
+				root = Expression.Convert(root, typeof(object));
 			}
-			return Expression.Lambda<FuncLambda>(root, paramExpr);
+			return Expression.Lambda<FuncLambda>(root, env.Param);
 		}
 
-		public List<Expression> ConvertToExprList(BlockExpr block, ParameterExpression paramExpr, IList<string> funcargs)
+		public List<Expression> ConvertToExprList(BlockExpr block, FunctionEnvironment environment, IList<string> funcargs)
 		{
 			List<Expression> list = new List<Expression>();
 			foreach (KStatement st in block.blocks)
 			{
 				if (st.syn.KeyWord == KeywordType.If)
 				{
-					list.Add(MakeIfExpression(st.map, paramExpr, funcargs));
+					list.Add(MakeIfExpression(st.map, environment, funcargs));
 				}
 				else if (st.syn.KeyWord == KeywordType.StmtMethodDecl)
 				{
 					list.Add(MakeFuncDeclExpression(st.map));
 				}
+				else if (st.syn.KeyWord == KeywordType.Return)
+				{
+					var exp = MakeExpression(st.map.Values.First(), environment, funcargs);
+					if(exp.Type != typeof(object)){
+						exp = Expression.Convert(exp, typeof(object));
+					}
+					list.Add(Expression.Return(environment.ReturnLabel, exp));
+				}
 				else
 				{
 					foreach (KonohaExpr kexpr in st.map.Values)
 					{
-						list.Add(MakeExpression(kexpr, paramExpr, funcargs));
+						list.Add(MakeExpression(kexpr, environment, funcargs));
 					}
 				}
 			}
@@ -170,8 +187,7 @@ namespace IronKonoha
 		{
 			CodeExpr block = map[Symbols.Block] as CodeExpr;
 
-			var args = Expression.Parameter(typeof(object[]), "args");
-			var cache = new FuncCache(this, block.tk.Text, args, GetParamList(map[Symbols.Params] as BlockExpr).ToList());
+			var cache = new FuncCache(this, block.tk.Text, GetParamList(map[Symbols.Params] as BlockExpr).ToList());
 
 			FuncLambda lambda = p => cache.Invoke(p);
 
@@ -181,11 +197,9 @@ namespace IronKonoha
 			return Expression.Constant(lambda);
 		}
 
-		public Expression MakeBlockExpression(KonohaExpr expr, ParameterExpression paramExpr, IList<String> param)
+		public Expression MakeBlockExpression(KonohaExpr expr, FunctionEnvironment environment, IList<String> param)
 		{
-			return Expression.Convert(
-				Expression.Block(ConvertBlock(expr.tk.Text, paramExpr, param)),
-				typeof(object));
+			return Expression.Block(ConvertBlock(expr.tk.Text, environment, param));
 		}
 
 		public IEnumerable<string> GetParamList(BlockExpr args)
@@ -194,10 +208,10 @@ namespace IronKonoha
 				   select stmt.map[Symbols.Expr].tk.Text;
 		}
 
-		public Expression MakeExpression(KonohaExpr kexpr, ParameterExpression paramExpr, IList<String> args)
+		public Expression MakeExpression(KonohaExpr kexpr, FunctionEnvironment environment, IList<String> args)
 		{
 			if(kexpr is ConsExpr) {
-				return MakeConsExpression((ConsExpr)kexpr, paramExpr, args);
+				return MakeConsExpression((ConsExpr)kexpr, environment, args);
 			} else if(kexpr is TermExpr) {
 				var text = kexpr.tk.Text;
 				switch(kexpr.tk.Type) {
@@ -208,28 +222,35 @@ namespace IronKonoha
 				case TokenType.TEXT:
 					return Expression.Constant(text);
 				case TokenType.SYMBOL:
-					return Expression.ArrayIndex(paramExpr, Expression.Constant(args.IndexOf(text)));
+					if (args.Contains(text))
+					{
+						return Expression.ArrayIndex(environment.Param, Expression.Constant(args.IndexOf(text)));
+					}
+					return KNull;
 				}
 			}
 			return null;
 		}
 
-		public ConditionalExpression MakeIfExpression(Dictionary<dynamic, KonohaExpr> map, ParameterExpression paramExpr, IList<String> args)
+		public ConditionalExpression MakeIfExpression(Dictionary<dynamic, KonohaExpr> map, FunctionEnvironment environment, IList<String> args)
 		{
-			var cond = Expression.Convert(MakeExpression(map[Symbols.Expr], paramExpr, args), typeof(bool));
-			var onTrue = MakeBlockExpression(map[Symbols.Block], paramExpr, args);
+			Expression cond = MakeExpression(map[Symbols.Expr], environment, args);
+			if(cond.Type != typeof(bool)){
+				cond = Expression.Convert(cond, typeof(bool));
+			}
+			var onTrue = MakeBlockExpression(map[Symbols.Block], environment, args);
 
 			if(map.Count() < 3){
-				return Expression.Condition(cond, onTrue, KNull);
+				return Expression.IfThen(cond, onTrue);
 			}
-			return Expression.Condition(cond, onTrue, MakeBlockExpression(map[Symbols.Else], paramExpr, args));
+			return Expression.IfThenElse(cond, onTrue, MakeBlockExpression(map[Symbols.Else], environment, args));
 		}
 
-		public Expression MakeConsExpression(ConsExpr expr, ParameterExpression paramExpr, IList<String> args)
+		public Expression MakeConsExpression(ConsExpr expr, FunctionEnvironment environment, IList<String> args)
 		{
 			if(expr.Cons[0] is Token){
 				Token tk = expr.Cons[0] as Token;
-				var param = expr.Cons.Skip(1).Select(p => MakeExpression(p as KonohaExpr, paramExpr, args));
+				var param = expr.Cons.Skip(1).Select(p => MakeExpression(p as KonohaExpr, environment, args));
 				switch(tk.Type) {
 				case TokenType.OPERATOR:
 					return Expression.Dynamic(GetBinaryBinder(BinaryOperationType[tk.Keyword]),
@@ -247,7 +268,7 @@ namespace IronKonoha
 					Expression paramExpressions;
 					if (expr.Cons.Count > 2)
 					{
-						Expression[] p = new[] { Expression.Convert(MakeExpression((KonohaExpr)expr.Cons[2], paramExpr, args), typeof(object)) };
+						Expression[] p = new[] { MakeExpression((KonohaExpr)expr.Cons[2], environment, args) };
 						paramExpressions = Expression.NewArrayInit(typeof(object), p);
 					}
 					else
@@ -261,7 +282,7 @@ namespace IronKonoha
 					if (expr.Cons.Count > 2)
 					{
 						var tyarg = ty.GetGenericArguments();
-						Expression[] p = new[] { Expression.Convert(MakeExpression((KonohaExpr)expr.Cons[2], paramExpr, args), tyarg[0]) };
+						Expression[] p = new[] { Expression.Convert(MakeExpression((KonohaExpr)expr.Cons[2], environment, args), tyarg[0]) };
 						return Expression.Invoke(Expression.Constant(f), p);
 					}
 					else

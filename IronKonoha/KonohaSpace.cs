@@ -361,15 +361,15 @@ namespace IronKonoha
 		}
 
 		// static kstatus_t KonohaSpace_eval(CTX, kKonohaSpace *ks, const char *script, kline_t uline)
-		public void Eval(string script)
+		public dynamic Eval(string script)
 		{
 			var tokens = tokenize(script);
 			var parser = new Parser(ctx, this);
 			var converter = new Converter(ctx, this);
 			var block = parser.CreateBlock(null, tokens, 0, tokens.Count(), ';');
-			var ast = converter.Convert(block);
+			dynamic ast = converter.Convert(block);
 			var f = ast.Compile();
-			Console.WriteLine(f());
+			return f();
 		}
 
 		// static ksyntax_t* KonohaSpace_getSyntaxRule(CTX, kKonohaSpace *ks, kArray *tls, int s, int e)
