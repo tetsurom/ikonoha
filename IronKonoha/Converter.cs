@@ -45,6 +45,7 @@ namespace IronKonoha
 					var f = e.Compile();
 					_lambda = f;
 				}
+				this.Invoke = _lambda;
 				return _lambda;
 			}
 		}
@@ -152,46 +153,73 @@ namespace IronKonoha
 			return Expression.Lambda<T>(root, env.Params);
 		}
 
-		public List<Expression> ConvertToExprList(BlockExpr block, FunctionEnvironment environment, IList<string> funcargs)
+		private Dictionary<int, Type> FuncTypes = new Dictionary<int, Type>
 		{
-			List<Expression> list = new List<Expression>();
-			foreach (KStatement st in block.blocks)
-			{
-				if (st.syn.KeyWord == KeywordType.If)
-				{
-					list.Add(MakeIfExpression(st.map, environment, funcargs));
-				}
-				else if (st.syn.KeyWord == KeywordType.StmtMethodDecl)
-				{
-					list.Add(MakeFuncDeclExpression(st.map));
-				}
-				else if (st.syn.KeyWord == KeywordType.Return)
-				{
-					var exp = MakeExpression(st.map.Values.First(), environment, funcargs);
-					if(exp.Type != typeof(object)){
-						exp = Expression.Convert(exp, typeof(object));
-					}
-					list.Add(Expression.Return(environment.ReturnLabel, exp));
-				}
-				else
-				{
-					foreach (KonohaExpr kexpr in st.map.Values)
-					{
-						list.Add(MakeExpression(kexpr, environment, funcargs));
-					}
-				}
-			}
-			return list;
-		}
+			{0, typeof(Func<>)},
+			{1, typeof(Func<,>)},
+			{2, typeof(Func<,,>)},
+			{3, typeof(Func<,,,>)},
+			{4, typeof(Func<,,,,>)},
+			{5, typeof(Func<,,,,,>)},
+			{6, typeof(Func<,,,,,,>)},
+			{7, typeof(Func<,,,,,,,>)},
+			{8, typeof(Func<,,,,,,,,>)},
+			{9, typeof(Func<,,,,,,,,,>)},
+			{10, typeof(Func<,,,,,,,,,,>)},
+			{11, typeof(Func<,,,,,,,,,,,>)},
+			{12, typeof(Func<,,,,,,,,,,,,>)},
+			{13, typeof(Func<,,,,,,,,,,,,,>)},
+			{14, typeof(Func<,,,,,,,,,,,,,,>)},
+			{15, typeof(Func<,,,,,,,,,,,,,,,>)},
+			{16, typeof(Func<,,,,,,,,,,,,,,,,>)},
+		};
+
+		private Dictionary<int, Type> ActionTypes = new Dictionary<int, Type>
+		{
+			{0, typeof(Action)},
+			{1, typeof(Action<>)},
+			{2, typeof(Action<,>)},
+			{3, typeof(Action<,,>)},
+			{4, typeof(Action<,,,>)},
+			{5, typeof(Action<,,,,>)},
+			{6, typeof(Action<,,,,,>)},
+			{7, typeof(Action<,,,,,,>)},
+			{8, typeof(Action<,,,,,,,>)},
+			{9, typeof(Action<,,,,,,,,>)},
+			{10, typeof(Action<,,,,,,,,,>)},
+			{11, typeof(Action<,,,,,,,,,,>)},
+			{12, typeof(Action<,,,,,,,,,,,>)},
+			{13, typeof(Action<,,,,,,,,,,,,>)},
+			{14, typeof(Action<,,,,,,,,,,,,,>)},
+			{15, typeof(Action<,,,,,,,,,,,,,,>)},
+			{16, typeof(Action<,,,,,,,,,,,,,,,>)},
+		};
 
 		public Expression MakeFuncDeclExpression (Dictionary<object, KonohaExpr> map)
 		{
 			CodeExpr block = map[Symbols.Block] as CodeExpr;
 
-			var ftype = typeof(MulticastDelegate);
-			var gtype = ftype.MakeGenericType(new []{typeof(object), typeof(object)});
-			
-			var cache = new FuncCache<Func<object, object>>(this, block.tk.Text, GetParamList(map[Symbols.Params] as BlockExpr).ToList());
+			var retType = map[Symbol.Get(ctx, "type")].tk;
+
+			var args = GetParamList(map[Symbols.Params] as BlockExpr).ToList();
+			var argtypes = args.Select(a => typeof(object)).ToList();
+
+			Type ftype = null;
+
+			if (retType.Keyword == KeywordType.Void)
+			{
+				ftype = ActionTypes[args.Count].MakeGenericType(argtypes.ToArray());
+			}
+			else
+			{
+				argtypes.Add(typeof(object));
+				ftype = FuncTypes[args.Count].MakeGenericType(argtypes.ToArray());
+			}
+
+			Type fctype = typeof(FuncCache<>).MakeGenericType(ftype);
+
+			dynamic cache = fctype.InvokeMember("", System.Reflection.BindingFlags.CreateInstance, null, null,
+				new object[] { this, block.tk.Text, args });
 
 			string key = map[Symbols.SYMBOL].tk.Text;
 			Scope[key] = cache.Invoke;
@@ -199,6 +227,33 @@ namespace IronKonoha
 			var t = typeof(int);
 
 			return Expression.Constant(Scope[key]);
+		}
+
+		public Expression KStatementToExpr(KStatement st, FunctionEnvironment environment, IList<string> funcargs)
+		{
+			if (st.syn.KeyWord == KeywordType.If)
+			{
+				return MakeIfExpression(st.map, environment, funcargs);
+			}
+			if (st.syn.KeyWord == KeywordType.StmtMethodDecl)
+			{
+				return MakeFuncDeclExpression(st.map);
+			}
+			if (st.syn.KeyWord == KeywordType.Return)
+			{
+				var exp = MakeExpression(st.map.Values.First(), environment, funcargs);
+				if (exp.Type != typeof(object))
+				{
+					exp = Expression.Convert(exp, typeof(object));
+				}
+				return Expression.Return(environment.ReturnLabel, exp);
+			}
+			return MakeExpression(st.map.Values.First(), environment, funcargs);
+		}
+
+		public List<Expression> ConvertToExprList(BlockExpr block, FunctionEnvironment environment, IList<string> funcargs)
+		{
+			return block.blocks.Select(s => KStatementToExpr(s, environment, funcargs)).ToList();
 		}
 
 		public Expression MakeBlockExpression(KonohaExpr expr, FunctionEnvironment environment, IList<String> param)
@@ -252,49 +307,34 @@ namespace IronKonoha
 
 		public Expression MakeConsExpression(ConsExpr expr, FunctionEnvironment environment, IList<String> args)
 		{
-			if(expr.Cons[0] is Token){
+			if (expr.Cons[0] is Token)
+			{
 				Token tk = expr.Cons[0] as Token;
 				var param = expr.Cons.Skip(1).Select(p => MakeExpression(p as KonohaExpr, environment, args));
-				switch(tk.Type) {
-				case TokenType.OPERATOR:
-					return Expression.Dynamic(GetBinaryBinder(BinaryOperationType[tk.Keyword]),
-						typeof(object),
-						param.ElementAt(0),
-						param.ElementAt(1)
-					);
+				switch (tk.Type)
+				{
+					case TokenType.OPERATOR:
+						return Expression.Dynamic(GetBinaryBinder(BinaryOperationType[tk.Keyword]),
+							typeof(object),
+							param.ElementAt(0),
+							param.ElementAt(1)
+						);
 				}
-			}else{
+			}
+			else
+			{
 				Token tk = ((KonohaExpr)expr.Cons[0]).tk;
 				var f = Scope[tk.Text];
-				//Type ty = f.GetType();
-				/*
-				if (ty == typeof(FuncLambda))
+
+				if (expr.Cons.Count > 2)
 				{
-					Expression paramExpressions;
-					if (expr.Cons.Count > 2)
-					{
-						Expression[] p = new[] { MakeExpression((KonohaExpr)expr.Cons[2], environment, args) };
-						paramExpressions = Expression.NewArrayInit(typeof(object), p);
-					}
-					else
-					{
-						paramExpressions = Expression.Constant(new object[] { });
-					}
-					return Expression.Invoke(Expression.Constant(f), new[] { paramExpressions });
+					Expression p = MakeExpression((KonohaExpr)expr.Cons[2], environment, args);
+					return Expression.Invoke(Expression.Constant(f), p);
 				}
 				else
-				{*/
-					if (expr.Cons.Count > 2)
-					{
-						//var tyarg = ty.GetGenericArguments();
-						Expression p = MakeExpression((KonohaExpr)expr.Cons[2], environment, args);
-						return Expression.Invoke(Expression.Constant(f), p);
-					}
-					else
-					{
-						return Expression.Invoke(Expression.Constant(f));
-					}
-				//}
+				{
+					return Expression.Invoke(Expression.Constant(f));
+				}
 			}
 			return null;
 		}
