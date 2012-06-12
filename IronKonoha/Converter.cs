@@ -32,44 +32,34 @@ namespace IronKonoha
 		public LabelTarget ReturnLabel { get; set; }
 	}
 
-	class FuncCache : Cache
+	class FuncCache<T> : Cache
 	{
-		private dynamic _lambda;
-		public dynamic Lambda
+		private T _lambda;
+		public T Lambda
 		{
 			get
 			{
-				preInvoke();
+				if (_lambda == null)
+				{
+					var e = converter.ConvertFunc<T>(BlockBody, Params);
+					var f = e.Compile();
+					_lambda = f;
+				}
 				return _lambda;
 			}
 		}
 
+		public T Invoke { get; private set; }
+
 		public FuncCache(Converter converter, string body, IList<string> param)
 			:base(converter, body, param){
-
-		}
-
-		private void preInvoke()
-		{
-			if (_lambda == null)
-			{
-				var e = converter.ConvertFunc(BlockBody, Params);
-				var f = e.Compile();
-				_lambda = f;
-			}
-		}
-
-		public object Invoke()
-		{
-			return Lambda();
-		}
-		public object Invoke(object p1)
-		{
-			return Lambda(p1);
-		}
-		public object Invoke(object p1, object p2)
-		{
-			return Lambda(p1, p2);
+			var paramexprs = Params.Select(p => Expression.Parameter(typeof(object), p)).ToArray();
+			var bodyexpr = Expression.Block(
+				Expression.Invoke(
+					Expression.MakeMemberAccess(Expression.Constant(this), this.GetType().GetProperty("Lambda")),
+					paramexprs));
+			var lmd = Expression.Lambda<T>(bodyexpr, paramexprs);
+			Invoke = lmd.Compile();
 		}
 	}
 
@@ -149,7 +139,7 @@ namespace IronKonoha
 			return ConvertToExprList(block, environment, param);
 		}
 
-		public dynamic ConvertFunc(string body, IList<string> param)
+		public dynamic ConvertFunc<T>(string body, IList<string> param)
 		{
 			var env = new FunctionEnvironment()
 			{
@@ -159,30 +149,7 @@ namespace IronKonoha
 			var list = ConvertBlock(body, env, param);
 			list.Add(Expression.Label(env.ReturnLabel, KNull));
 			Expression root = Expression.Block(list);
-
-			if (root.Type == typeof(void))
-			{
-				switch (param.Count)
-				{
-					default:
-					case 0:
-						return Expression.Lambda<Action>(root, env.Params);
-					case 1:
-						return Expression.Lambda<Action<object>>(root, env.Params);
-				}
-			}
-			if (root.Type != typeof(object))
-			{
-				root = Expression.Convert(root, typeof(object));
-			}
-			switch (param.Count)
-			{
-				default:
-				case 0:
-					return Expression.Lambda<Func<object>>(root, env.Params);
-				case 1:
-					return Expression.Lambda<Func<object, object>>(root, env.Params);
-			}
+			return Expression.Lambda<T>(root, env.Params);
 		}
 
 		public List<Expression> ConvertToExprList(BlockExpr block, FunctionEnvironment environment, IList<string> funcargs)
@@ -221,14 +188,17 @@ namespace IronKonoha
 		{
 			CodeExpr block = map[Symbols.Block] as CodeExpr;
 
-			var cache = new FuncCache(this, block.tk.Text, GetParamList(map[Symbols.Params] as BlockExpr).ToList());
-
-			dynamic lambda = new Func<object, object>(p => cache.Invoke(p));
+			var ftype = typeof(MulticastDelegate);
+			var gtype = ftype.MakeGenericType(new []{typeof(object), typeof(object)});
+			
+			var cache = new FuncCache<Func<object, object>>(this, block.tk.Text, GetParamList(map[Symbols.Params] as BlockExpr).ToList());
 
 			string key = map[Symbols.SYMBOL].tk.Text;
-			Scope[key] = lambda;
+			Scope[key] = cache.Invoke;
 
-			return Expression.Constant(lambda);
+			var t = typeof(int);
+
+			return Expression.Constant(Scope[key]);
 		}
 
 		public Expression MakeBlockExpression(KonohaExpr expr, FunctionEnvironment environment, IList<String> param)
