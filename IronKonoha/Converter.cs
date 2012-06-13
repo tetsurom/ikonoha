@@ -41,11 +41,12 @@ namespace IronKonoha
 			{
 				if (_lambda == null)
 				{
-					var e = converter.ConvertFunc<T>(BlockBody, Params);
-					var f = e.Compile();
-					_lambda = f;
+                    _lambda = converter.ConvertFunc<T>(BlockBody, Params).Compile();
+                    this.Invoke = _lambda;
+                    Scope[key] = _lambda;
+                    Scope = null;
+                    key = null;
 				}
-				this.Invoke = _lambda;
 				return _lambda;
 			}
 		}
@@ -62,6 +63,9 @@ namespace IronKonoha
 			var lmd = Expression.Lambda<T>(bodyexpr, paramexprs);
 			Invoke = lmd.Compile();
 		}
+
+        public IDictionary<string, object> Scope { private get; set; }
+        public string key { private get; set; }
 	}
 
 	/// <summary>
@@ -130,7 +134,7 @@ namespace IronKonoha
 			return Expression.Lambda(Expression.Block(ConvertToExprList(block, null, null)));
 		}
 
-		private IList<Expression> ConvertBlock(string body, FunctionEnvironment environment, IList<string> param)
+		private IList<Expression> ConvertTextBlock(string body, FunctionEnvironment environment, IList<string> param)
 		{
 
 			var tokenizer = new Tokenizer(ctx, ks);
@@ -147,10 +151,9 @@ namespace IronKonoha
 				Params = param.Select(p=>Expression.Parameter(typeof(object), p)).ToArray(),
 				ReturnLabel = Expression.Label(typeof(object))
 			};
-			var list = ConvertBlock(body, env, param);
+			var list = ConvertTextBlock(body, env, param);
 			list.Add(Expression.Label(env.ReturnLabel, KNull));
-			Expression root = Expression.Block(list);
-			return Expression.Lambda<T>(root, env.Params);
+            return Expression.Lambda<T>(Expression.Block(list), env.Params);
 		}
 
 		private Dictionary<int, Type> FuncTypes = new Dictionary<int, Type>
@@ -208,7 +211,14 @@ namespace IronKonoha
 
 			if (retType.Keyword == KeywordType.Void)
 			{
-				ftype = ActionTypes[args.Count].MakeGenericType(argtypes.ToArray());
+                if (args.Count > 0)
+                {
+                    ftype = ActionTypes[args.Count].MakeGenericType(argtypes.ToArray());
+                }
+                else
+                {
+                    ftype = ActionTypes[0];
+                }
 			}
 			else
 			{
@@ -223,6 +233,9 @@ namespace IronKonoha
 
 			string key = map[Symbols.SYMBOL].tk.Text;
 			Scope[key] = cache.Invoke;
+
+            cache.Scope = Scope;
+            cache.key = key;
 
 			var t = typeof(int);
 
@@ -258,7 +271,7 @@ namespace IronKonoha
 
 		public Expression MakeBlockExpression(KonohaExpr expr, FunctionEnvironment environment, IList<String> param)
 		{
-			return Expression.Block(ConvertBlock(expr.tk.Text, environment, param));
+			return Expression.Block(ConvertTextBlock(expr.tk.Text, environment, param));
 		}
 
 		public IEnumerable<string> GetParamList(BlockExpr args)
