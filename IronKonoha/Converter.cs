@@ -134,7 +134,7 @@ namespace IronKonoha
 			return Expression.Lambda(Expression.Block(ConvertToExprList(block, null, null)));
 		}
 
-		private IList<Expression> ConvertTextBlock(string body, FunctionEnvironment environment, IList<string> param)
+        private IEnumerable<Expression> ConvertTextBlock(string body, FunctionEnvironment environment, IList<string> param)
 		{
 
 			var tokenizer = new Tokenizer(ctx, ks);
@@ -144,14 +144,14 @@ namespace IronKonoha
 			return ConvertToExprList(block, environment, param);
 		}
 
-		public dynamic ConvertFunc<T>(string body, IList<string> param)
+        public Expression<T> ConvertFunc<T>(string body, IList<string> param)
 		{
 			var env = new FunctionEnvironment()
 			{
 				Params = param.Select(p=>Expression.Parameter(typeof(object), p)).ToArray(),
 				ReturnLabel = Expression.Label(typeof(object))
 			};
-			var list = ConvertTextBlock(body, env, param);
+			var list = ConvertTextBlock(body, env, param).ToList();
 			list.Add(Expression.Label(env.ReturnLabel, KNull));
             return Expression.Lambda<T>(Expression.Block(list), env.Params);
 		}
@@ -264,9 +264,9 @@ namespace IronKonoha
 			return MakeExpression(st.map.Values.First(), environment, funcargs);
 		}
 
-		public List<Expression> ConvertToExprList(BlockExpr block, FunctionEnvironment environment, IList<string> funcargs)
+        public IEnumerable<Expression> ConvertToExprList(BlockExpr block, FunctionEnvironment environment, IList<string> funcargs)
 		{
-			return block.blocks.Select(s => KStatementToExpr(s, environment, funcargs)).ToList();
+            return block.blocks.Select(s => KStatementToExpr(s, environment, funcargs));
 		}
 
 		public Expression MakeBlockExpression(KonohaExpr expr, FunctionEnvironment environment, IList<String> param)
