@@ -54,7 +54,7 @@ namespace KConsole
 					exprstr = input;
 				}
 				{
-					konoha.Eval(exprstr);
+					Console.WriteLine(" => " + konoha.Eval(exprstr));
 				}
 				//try
 				//{

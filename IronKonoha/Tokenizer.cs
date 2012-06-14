@@ -438,17 +438,13 @@ namespace IronKonoha
 			int pos = tokStart;
 			string ts = tenv.Source;
 
-			while (pos < ts.Length)
+			if (pos < ts.Length)
 			{
 				if (ts[pos] == '\r')
 				{
-					if (ts[pos + 1] == '\n')
-					{
-						++pos;
-					}
-					++pos;
+                    ++pos;
 				}
-				else if (ts[pos] == '\n')
+				if (ts[pos] == '\n')
 				{
 					++pos;
 				}
