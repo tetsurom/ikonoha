@@ -36,7 +36,7 @@ namespace IronKonoha
 		public string op2 { get; set; }
 		public string op1 { get; set; }
 		public int priority_op2 { get; set; }
-		public KonohaType type { get; set; }
+		public KType type { get; set; }
 		public StmtParser ParseStmt { get; set; }
 		public ExprParser ParseExpr { get; set; }
 		public StmtTyChecker TopStmtTyCheck { get; set; }
@@ -57,13 +57,13 @@ namespace IronKonoha
 	// kmodsugar_t;
 	public class KModSugar : KModShare
 	{
-		public KonohaClass cToken { get; set; }
-		public KonohaClass cExpr { get; set; }
-		public KonohaClass cStmt { get; set; }
-		public KonohaClass cBlock { get; set; }
-		public KonohaClass cKonohaSpace { get; set; }
-		public KonohaClass cGamma { get; set; }
-		public KonohaClass cTokenArray { get; set; }
+		public KClass cToken { get; set; }
+		public KClass cExpr { get; set; }
+		public KClass cStmt { get; set; }
+		public KClass cBlock { get; set; }
+		public KClass cKonohaSpace { get; set; }
+		public KClass cGamma { get; set; }
+		public KClass cTokenArray { get; set; }
 		public ICollection<string> keywordList { get{ return keywordMap.Keys; } }
 		private IDictionary<string, KKeyWord> keywordMap;
 		public IList<string> packageList { get; set; }
@@ -75,18 +75,18 @@ namespace IronKonoha
 		//public ExprParser ParseExrp_Op { get; set; }
 		public Func<Context, string, uint, Symbol, KKeyWord> keyword { get; set; }
 		private Action<Context, KonohaSpace, int, Tokenizer.FTokenizer, KMethod> KonohaSpace_setTokenizer { get; set; }
-		public Func<Context, KonohaExpr, KonohaType, KObject, KonohaExpr> Expr_setConstValue { get; set; }
-		public Func<Context, KonohaExpr, KonohaType, uint, KonohaExpr> Expr_setNConstValue { get; set; }
-		public Func<Context, KonohaExpr, KonohaExpr, KonohaType, int, KGamma, KonohaExpr> Expr_setVariable { get; set; }
+		public Func<Context, KonohaExpr, KType, KObject, KonohaExpr> Expr_setConstValue { get; set; }
+		public Func<Context, KonohaExpr, KType, uint, KonohaExpr> Expr_setNConstValue { get; set; }
+		public Func<Context, KonohaExpr, KonohaExpr, KType, int, KGamma, KonohaExpr> Expr_setVariable { get; set; }
 		public Func<Context, KStatement, KKeyWord, Token, Token> Stmt_token { get; set; }
 		public Func<Context, KStatement, KKeyWord, KonohaExpr, KonohaExpr> Stmt_expr { get; set; }
 		public Func<Context, KStatement, KKeyWord, string, string> Stmt_text { get; set; }
 		public Func<Context, KStatement, KKeyWord, BlockExpr, BlockExpr> Stmt_block { get; set; }
-		public Func<Context, KonohaExpr, uint, KGamma, KonohaType, int, KonohaExpr> Expr_tyCheckAt { get; set; }
-		public Func<Context, KStatement, Symbol, KGamma, KonohaType, int, bool> Stmt_tyCheckAt { get; set; }
+		public Func<Context, KonohaExpr, uint, KGamma, KType, int, KonohaExpr> Expr_tyCheckAt { get; set; }
+		public Func<Context, KStatement, Symbol, KGamma, KType, int, bool> Stmt_tyCheckAt { get; set; }
 		public Func<Context, BlockExpr, KGamma, bool> Block_tyCheckAt { get; set; }
-		public Func<Context, KonohaExpr, KMethod, KGamma, KonohaType, KonohaExpr> Expr_tyCheckCallParams { get; set; }
-		public Func<Context, KonohaType, KMethod, KGamma, int, object[], KonohaExpr> new_TypedMethodCall { get; set; }
+		public Func<Context, KonohaExpr, KMethod, KGamma, KType, KonohaExpr> Expr_tyCheckCallParams { get; set; }
+		public Func<Context, KType, KMethod, KGamma, int, object[], KonohaExpr> new_TypedMethodCall { get; set; }
 		public Action<Context, KStatement, KMethod, int, object[]> Stmt_toExprCall { get; set; }
 		public Func<Context, int, LineInfo, int, string, object[], uint> p { get; set; }
 		public Func<Context, KonohaExpr, int, LineInfo> Expr_uline { get; set; }
@@ -242,15 +242,22 @@ namespace IronKonoha
 
 	public class KModLocal
 	{
-		public KModSugar modsugar { get; set; }
+		public KModSugar modsugar { get; private set; }
 	}
 
 	public class KShare
 	{
-		public Dictionary<string, Symbol> SymbolMap { get; set; }
+		public Dictionary<string, Symbol> SymbolMap { get; private set; }
+		public Dictionary<KType, KClass> ClassMap { get; private set; }
+		public Dictionary<IList<KParam>, KParamID> ParamDomMap { get; private set; }
 		public KShare()
 		{
 			SymbolMap = new Dictionary<string, Symbol>();
+			ClassMap = new Dictionary<KType, KClass>();
+			ClassMap[KType.Void] = new KClass() { bcid = BCID.CLASS_Tvoid };
+			ClassMap[KType.Int] = new KClass() { bcid = BCID.CLASS_Int };
+			ClassMap[KType.Boolean] = new KClass() { bcid = BCID.CLASS_Boolean };
+			ParamDomMap = new Dictionary<IList<KParam>, KParamID>();
 		}
 	}
 
@@ -277,9 +284,7 @@ namespace IronKonoha
 	public class KObject
 	{
 		public object magicflag { get; set; }
-
-		public KonohaClass kclass { get; private set; }
-
+		public KClass kclass { get; private set; }
 		public KArray kvproto { get; set; }
 	}
 
@@ -443,6 +448,17 @@ namespace IronKonoha
 		public uint SUGAR_P(ReportLevel pe, LineInfo line, int lpos, string format, params object[] param)
 		{
 			return vperrorf(pe, line, lpos, format, param);
+		}
+
+		public KClass CT_(KType ty)
+		{
+			return this.share.ClassMap[ty];
+		}
+
+		public KClass CT_(BCID ty)
+		{
+			return this.share.ClassMap[KType.FromBCID(ty)];
+			//return this.share.ClassMap[ty];
 		}
 
 		// static size_t vperrorf(CTX, int pe, kline_t uline, int lpos, const char *fmt, va_list ap)

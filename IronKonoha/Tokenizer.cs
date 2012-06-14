@@ -76,7 +76,7 @@ namespace IronKonoha
 		FLOAT,         // KW_Float
 		TYPE,          // KW_Type
 		AST_PARENTHESIS,  // KW_Parenthesis
-		AST_BRANCET,      // KW_Brancet
+		AST_BRACKET,      // KW_Brancet
 		AST_BRACE,        // KW_Brace
 
 		OPERATOR,
@@ -89,12 +89,20 @@ namespace IronKonoha
 		AST_OPTIONAL      // for syntax sugar
 	}
 
-	public class KonohaType
+	public class KType
 	{
-		public static readonly KonohaType Unknown = new KonohaType();
-		public static readonly KonohaType Void = new KonohaType();
-		public static readonly KonohaType Int = new KonohaType();
-		public static readonly KonohaType Boolean = new KonohaType();
+		public static readonly KType Unknown = new KType();
+		public static readonly KType Void = new KType();
+		public static readonly KType Int = new KType();
+		public static readonly KType Boolean = new KType();
+		private static readonly Dictionary<BCID, KType> bcidMap = new Dictionary<BCID,KType>();
+		public static KType FromBCID(BCID bcid){
+			if (!bcidMap.ContainsKey(bcid))
+			{
+				bcidMap.Add(bcid, new KType());
+			}
+			return bcidMap[bcid];
+		}
 	}
 
 	[System.Diagnostics.DebuggerDisplay("{Text,nq} [{Type}]")]
@@ -106,7 +114,7 @@ namespace IronKonoha
 		public IList<Token> Sub { get; set; }
 		public char TopChar { get { return Text.Length == 0 ? '\0' : this.Text[0]; } }
 		public KeywordType Keyword { get; set; }
-		public KonohaType KType { get; set; }
+		public KType KType { get; set; }
 		public LineInfo ULine { get; set; }
 
 		public Token(TokenType type, string text, int lpos)
@@ -139,7 +147,7 @@ namespace IronKonoha
 				Syntax syn = ks.GetSyntax(kw.Type);
 				if (syn != null)
 				{
-					if (syn.Type != KonohaType.Unknown)
+					if (syn.Type != KType.Unknown)
 					{
 						this.Keyword = KeywordType.Type;
 						this.Type = TokenType.TYPE;
@@ -155,39 +163,53 @@ namespace IronKonoha
 			return false;
 		}
 
-		internal Token ResolveType(Context ctx, Token tkP)
+		// Token_resolveType(CTX, ...) // old
+		// static struct _kToken* TokenType_resolveGenerics(CTX, kKonohaSpace *ks, struct _kToken *tk, kToken *tkP)
+		internal bool ResolveGenerics(Context ctx, Token tkP)
 		{
-			int i;
-			// 型引数の取得
-			int size = tkP.Sub.Count;
-			var p = new List<KonohaParam>();
-			for (i = 0; i < size; i++)
-			{
-				Token tkT = (tkP.Sub[i]);
-				if (tkT.Keyword == KeywordType.Type)
-				{
-					p.Add(new KonohaParam() { Type = tkT.Type });
+			if(tkP.Type == TokenType.AST_BRACKET) {
+				int i;
+				
+				int size = tkP.Sub.Count;
+				List<KParam> p = new List<KParam>(size);
+				for(i = 0; i < size; i++) {
+					Token tkT = (tkP.Sub[i]);
+					if(tkT.IsType) {
+						p.Add(new KParam() { ty = tkT.KType });
+						continue;
+					}
+					if(tkT.TopChar == ',') continue;
+					//return NULL; // new int[10];  // not generics
+					return false;
 				}
-			}
-			throw new NotImplementedException();
-			// 以下未実装
-			KonohaClass ct;
-			if (p.Count > 0)
-			{
-				ct = null;// this.ctx.share.ca.cts[(int)this.Type];
-				if (ct.cparam == KonohaParam.NULL)
-				{
-					ctx.SUGAR_P(ReportLevel.ERR, this.ULine, 0, "not generic type: %s", this.KType.ToString());
-					return this;
-				}
-				//ct = kClassTable_Generics(ct, TY_void, p.Count, p);
-			}
-			else
-			{
-				//ct = CT_P0(_ctx, CT_Array, this_type(this));
-			}
-			this.Type = (TokenType)ct.cid;
-			return this;
+				int psize = p.Count;
+				KClass ct = null;
+				if(psize > 0) {
+					ct = ctx.CT_(this.KType);
+					if (ct.bcid == BCID.CLASS_Func)
+					{
+						ct = KClassTable.Generics(ctx, ct, p[0].ty, p.Skip(1).ToList());
+					}
+					else if(ct.p0 == KType.Void) {
+						ctx.SUGAR_P(ReportLevel.ERR, this.ULine, 0, "not generic type: {0}", this.KType);
+						//return tk;
+						return true;
+					}
+					else {
+						ct = KClassTable.Generics(ctx, ct, KType.Void, p);
+					}
+ 				}
+				else {
+					var p0 = new List<KParam>();
+					p0.Add(new KParam() { ty = this.KType, fn = null });
+					ct = KClassTable.Generics(ctx, ctx.CT_(BCID.CLASS_Array), this.KType, p0);
+ 				}
+				this.KType = ct.cid;
+				//return tk;
+				return true;
+ 			}
+			//return NULL;
+			return false;
 		}
 
 		public void Print(Context ctx, ReportLevel pe, string fmt, params object[] ap)

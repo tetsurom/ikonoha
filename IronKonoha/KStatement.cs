@@ -134,7 +134,7 @@ namespace IronKonoha
 					ti = next;
 					continue;
 				}
-				else if (rule.Type == TokenType.AST_PARENTHESIS || rule.Type == TokenType.AST_BRACE || rule.Type == TokenType.AST_BRANCET)
+				else if (rule.Type == TokenType.AST_PARENTHESIS || rule.Type == TokenType.AST_BRACE || rule.Type == TokenType.AST_BRACKET)
 				{
 					if (tk.Type == rule.Type && rule.TopChar == tk.TopChar)
 					{

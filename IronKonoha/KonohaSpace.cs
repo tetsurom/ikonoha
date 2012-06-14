@@ -51,7 +51,7 @@ namespace IronKonoha
 		/// 文法の優先度？ 
 		/// </summary>
 		public int priority { get; set; }
-		public KonohaType Type { get; set; }
+		public KType Type { get; set; }
 		public StmtParser ParseStmt { get; set; }
 		public ExprParser ParseExpr { get; set; }
 		public StmtTyChecker TopStmtTyCheck { get; set; }
@@ -307,19 +307,19 @@ namespace IronKonoha
 					rule = "$type [$USYMBOL \".\"] $SYMBOL $params [$block]",
 					ParseStmt = ParseStmt_Type,
 					kw = KeywordType.StmtMethodDecl,
-					type = KonohaType.Void,
+					type = KType.Void,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "int",
 					ParseStmt = ParseStmt_Type,
 					kw = KeywordType.Type,
-					type = KonohaType.Int,
+					type = KType.Int,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "boolean",
 					ParseStmt = ParseStmt_Type,
 					kw = KeywordType.Type,
-					type = KonohaType.Boolean,
+					type = KType.Boolean,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "null",
@@ -473,7 +473,7 @@ namespace IronKonoha
 					var syn = new Syntax()
 					{
 						KeyWord = keyword,
-						Type = KonohaType.Unknown,
+						Type = KType.Unknown,
 						Op1 = null,
 						Op2 = null,
 						ParseExpr = KModSugar.UndefinedParseExpr,
@@ -536,7 +536,7 @@ namespace IronKonoha
 				if (tk.Type == TokenType.TEXT /*|| tk.Type == TK_STEXT*/)
 				{
 					if (checkNestedSyntax(tls, ref i, e, TokenType.AST_PARENTHESIS, '(', ')') ||
-						checkNestedSyntax(tls, ref i, e, TokenType.AST_BRANCET, '[', ']') ||
+						checkNestedSyntax(tls, ref i, e, TokenType.AST_BRACKET, '[', ']') ||
 						checkNestedSyntax(tls, ref i, e, TokenType.AST_BRACE, '{', '}'))
 					{
 					}

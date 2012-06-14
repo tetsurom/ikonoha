@@ -173,7 +173,7 @@ namespace IronKonoha
 				}
 				else if (tk.TopChar == '[')
 				{
-					i = makeTree(TokenType.AST_BRANCET, tokens, i, end, ']', tokensDst, out errorToken);
+					i = makeTree(TokenType.AST_BRACKET, tokens, i, end, ']', tokensDst, out errorToken);
 					tk.Keyword = KeywordType.Brancet;
 					continue;
 				}
@@ -222,7 +222,7 @@ namespace IronKonoha
 				}
 				else if (tk.TopChar == '[')
 				{
-					i = makeTree(TokenType.AST_BRANCET, tokens, i, end, ']', tkP.Sub, out errorToken);
+					i = makeTree(TokenType.AST_BRACKET, tokens, i, end, ']', tkP.Sub, out errorToken);
 					tk.Keyword = KeywordType.Brancet;
 					continue;
 				}
@@ -251,10 +251,10 @@ namespace IronKonoha
 		}
 
 		//static int appendKeyword(CTX, kKonohaSpace *ks, kArray *tls, int s, int e, kArray *dst, kToken **tkERR)
-		private int appendKeyword(IList<Token> tokens, int start, int end, IList<Token> tokensDst, out Token errorToken)
+		private int appendKeyword(IList<Token> tls, int start, int end, IList<Token> dst, out Token errorToken)
 		{
 			int next = start; // don't add
-			Token tk = tokens[start];
+			Token tk = tls[start];
 			if (tk.Type < TokenType.OPERATOR)
 			{
 				tk.Keyword = (KeywordType)tk.Type;
@@ -269,12 +269,12 @@ namespace IronKonoha
 				{
 					throw new NotImplementedException();
 					//KonohaClass ct = kKonohaSpace_getCT(ks, null/*FIXME*/, tk.Text, tk.Text.Length, TY_unknown);
-					object ct = null;
-					if (ct != null)
-					{
-						tk.Keyword = KeywordType.Type;
+					//object ct = null;
+					//if (ct != null)
+					//{
+					//	tk.Keyword = KeywordType.Type;
 						//tk.Type = ct->cid;
-					}
+					//}
 				}
 			}
 			else if (tk.Type == TokenType.OPERATOR)
@@ -293,23 +293,31 @@ namespace IronKonoha
 			}
 			if (tk.IsType)
 			{
+				dst.Add(tk);
 				while (next + 1 < end)
 				{
-					Token tkN = tokens[next + 1];
-					if (tkN.TopChar != '[')
+					Token tkB = tls[next + 1];
+					if (tkB.TopChar != '[')
+					{
 						break;
+					}
 					List<Token> abuf = new List<Token>();
 					int atop = abuf.Count;
-					next = makeTree(TokenType.AST_BRANCET, tokens, next + 1, end, ']', abuf, out errorToken);
-					if (abuf.Count > atop)
+					next = makeTree(TokenType.AST_BRACKET, tls, next + 1, end, ']', abuf, out errorToken);
+					if (abuf.Count <= atop)
 					{
-						tk.ResolveType(this.ctx, abuf[atop]);
+						return next;
+					}
+					else
+					{
+						tkB = abuf[atop];
+						tk.ResolveGenerics(this.ctx, tkB);
 					}
 				}
 			}
 			if (tk.Keyword > KeywordType.Expr)
 			{
-				tokensDst.Add(tk);
+				dst.Add(tk);
 			}
 			errorToken = null;
 			return next;
@@ -317,18 +325,66 @@ namespace IronKonoha
 
 	}
 
-	public class KonohaParam
+	public class KParam
 	{
-		public static readonly KonohaParam NULL;
-
+		public static readonly KParam NULL;
+		public KType ty { get; set; }
+		public Symbol fn { get; set; }
 		public TokenType Type { get; set; }
 	}
 
-	public class KonohaClass
-	{
-		public int cid { get; set; }
+	public enum BCID{
+		CLASS_Tvoid,
+		CLASS_Tvar,
+		CLASS_Object,
+		CLASS_Boolean,
+		CLASS_Int,
+		CLASS_String,
+		CLASS_Array,
+		CLASS_Param,
+		CLASS_Method,
+		CLASS_Func,
+		CLASS_System,
+		CLASS_T0,
+	}
 
-		public KonohaParam cparam { get; set; }
+	public class KParamID
+	{
+
+	}
+
+	public class KDEFINE_CLASS{
+
+	}
+
+	public class KLine
+	{
+
+	}
+
+	// konoha2.h
+	// _kclass_t
+	public class KClass
+	{
+		public KType cid { get; set; }
+		public BCID bcid { get; set; }
+		public KType p0 { get; set; }
+		public KParam cparam { get; set; }
+		public KParamID paramdom { get; set; }
+
+		public KClass searchSimilarClassNULL { get; set; }
+
+		public KClass(){
+
+		}
+		// datatype.h
+		// static struct _kclass* new_CT(CTX, kclass_t *bct, KDEFINE_CLASS *s, kline_t pline)
+		public KClass(Context ctx, KClass bct, KDEFINE_CLASS s, KLine kline)
+		{
+			throw new NotImplementedException();
+		}
+
+		public KClass searchSuperMethodClassNULL { get; set; }
 	}
 
 

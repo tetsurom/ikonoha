@@ -231,6 +231,10 @@ namespace IronKonoha
 
 		public Expression KStatementToExpr(KStatement st, FunctionEnvironment environment, IList<string> funcargs)
 		{
+			if (st.syn.KeyWord == KeywordType.Err)
+			{
+				throw new ArgumentException("invalid statement");
+			}
 			if (st.syn.KeyWord == KeywordType.If)
 			{
 				return MakeIfExpression(st.map, environment, funcargs);
@@ -271,7 +275,9 @@ namespace IronKonoha
 		{
 			if(kexpr is ConsExpr) {
 				return MakeConsExpression((ConsExpr)kexpr, environment, args);
-			} else if(kexpr is TermExpr) {
+			}
+			else if (kexpr is TermExpr)
+			{
 				var text = kexpr.tk.Text;
 				switch(kexpr.tk.Type) {
 				case TokenType.INT:
@@ -288,7 +294,7 @@ namespace IronKonoha
 					return KNull;
 				}
 			}
-			return null;
+			throw new ArgumentException("invalid KonohaExpr.", "kexpr");
 		}
 
 		public ConditionalExpression MakeIfExpression(Dictionary<dynamic, KonohaExpr> map, FunctionEnvironment environment, IList<String> args)

@@ -117,6 +117,7 @@ namespace IronKonoha
 			if (!stmt.parseSyntaxRule(ctx, tokens, start, end))
 			{
 				stmt.toERR(ctx, estart);
+				throw new ArgumentException("undefined syntax rule for");
 			}
 			Debug.Assert(stmt.syn != null);
 		}
