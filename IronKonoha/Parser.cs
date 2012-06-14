@@ -315,7 +315,7 @@ namespace IronKonoha
 					}
 				}
 			}
-			if (tk.Keyword > KeywordType.Expr)
+			else if (tk.Keyword > KeywordType.Expr)
 			{
 				dst.Add(tk);
 			}
