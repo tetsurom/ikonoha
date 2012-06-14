@@ -329,7 +329,13 @@ namespace IronKonoha
 				if (expr.Cons.Count > 2)
 				{
 					Expression p = MakeExpression((KonohaExpr)expr.Cons[2], environment, args);
-					return Expression.Invoke(Expression.Constant(f), p);
+
+					var bind = Binder.Invoke(CSharpBinderFlags.InvokeSimpleName,typeof(Converter),
+					new CSharpArgumentInfo[] {
+						CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+						CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
+					});
+					return Expression.Dynamic(bind,typeof(object),Expression.Constant(f),p);
 				}
 				else
 				{
