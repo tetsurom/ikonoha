@@ -620,6 +620,15 @@ namespace IronKonoha
 					token = new Token(TokenType.TEXT, ts.Substring(tokStart + 1, (pos - 1) - (tokStart + 1)), tokStart + 1);
 					return pos;
 				}
+				if (ch == '\\' && pos < ts.Length)
+				{
+					switch (ts[pos])
+					{
+						case 'n': ch = '\n'; pos++; break;
+						case 't': ch = '\t'; pos++; break;
+						case 'r': ch = '\r'; pos++; break;
+					}
+				}
 				prev = ch;
 			}
 			return pos - 1;
