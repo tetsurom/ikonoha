@@ -354,6 +354,10 @@ namespace IronKonoha
 				},
 			};
 			defineSyntax(syntaxes);
+			//this.GetSyntax(KeywordType.Void).Type = KType.Void;
+			var usynbolRule = new List<Token>();
+			parseSyntaxRule("$USYMBOL \"=\" $expr", new LineInfo(0, ""), out usynbolRule);
+			this.GetSyntax(KeywordType.Usymbol).SyntaxRule = usynbolRule;
 		}
 
 		public IList<Token> tokenize(string script)
