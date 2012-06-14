@@ -27,7 +27,7 @@ namespace IronKonoha
 		TKFloat,
 		Type,
 		Parenthesis,
-		Brancet,
+		Bracket,
 		Brace,
 		StmtTypeDecl,
 		Block,

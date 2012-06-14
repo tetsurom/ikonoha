@@ -174,7 +174,7 @@ namespace IronKonoha
 				else if (tk.TopChar == '[')
 				{
 					i = makeTree(TokenType.AST_BRACKET, tokens, i, end, ']', tokensDst, out errorToken);
-					tk.Keyword = KeywordType.Brancet;
+					tk.Keyword = KeywordType.Bracket;
 					continue;
 				}
 				else if (tk.Type == TokenType.ERR)
@@ -223,7 +223,7 @@ namespace IronKonoha
 				else if (tk.TopChar == '[')
 				{
 					i = makeTree(TokenType.AST_BRACKET, tokens, i, end, ']', tkP.Sub, out errorToken);
-					tk.Keyword = KeywordType.Brancet;
+					tk.Keyword = KeywordType.Bracket;
 					continue;
 				}
 				else if (tk.TopChar == closeChar)

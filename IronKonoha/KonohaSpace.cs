@@ -162,7 +162,7 @@ namespace IronKonoha
 				},
 				new KDEFINE_SYNTAX(){
 					name = "[]",
-					kw = KeywordType.Brancet,
+					kw = KeywordType.Bracket,
 					priority_op2 = 16,
 					flag = SynFlag.ExprPostfixOp2,
 				},
@@ -321,11 +321,11 @@ namespace IronKonoha
 					kw = KeywordType.Type,
 					type = KType.Boolean,
 				},
-				new KDEFINE_SYNTAX(){
-					name = "null",
-					kw = KeywordType.Null,
-					flag = SynFlag.ExprTerm,
-				},
+				//new KDEFINE_SYNTAX(){
+				//    name = "null",
+				//    kw = KeywordType.Null,
+				//    flag = SynFlag.ExprTerm,
+				//},
 				new KDEFINE_SYNTAX(){
 					name = "true",
 					kw = KeywordType.True,
