@@ -21,7 +21,7 @@ namespace IronKonoha
 		StmtJumpSkip = 1 << 10,
 	}
 
-	public delegate void StmtTyChecker(KStatement stmt, Syntax syn, KGamma gma);
+	public delegate bool StmtTyChecker(KStatement stmt, Syntax syn, KGamma gma);
 	public delegate int StmtParser(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int start, int end);
 	public delegate KonohaExpr ExprParser(Context ctx, Syntax syn, KStatement stmt, IList<Token> tokens, int start, int current, int end);
 
@@ -52,13 +52,13 @@ namespace IronKonoha
 		/// </summary>
 		public int priority { get; set; }
 		public KType Type { get; set; }
-		public StmtParser ParseStmt { get; set; }
+		public StmtParser PatternMatch { get; set; }
 		public ExprParser ParseExpr { get; set; }
 		public StmtTyChecker TopStmtTyCheck { get; set; }
 		public StmtTyChecker StmtTyCheck { get; set; }
 		public StmtTyChecker ExprTyCheck { get; set; }
-		public KMethod Op1 { get; set; }
-		public KMethod Op2 { get; set; }
+		public KFunk Op1 { get; set; }
+		public KFunk Op2 { get; set; }
 		public Syntax Parent { get; set; }
 	}
 
@@ -111,20 +111,20 @@ namespace IronKonoha
 				new KDEFINE_SYNTAX(){
 					name = "$expr",
 					rule = "$expr",
-					ParseStmt = ParseStmt_Expr,
+					PatternMatch = PatternMatch_Expr,
 					TopStmtTyCheck = TopStmtTyCheck_Expr,
 					ExprTyCheck = ExprTyCheck_Expr,
 					kw = KeywordType.Expr,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$SYMBOL",
-					ParseStmt = ParseStmt_Symbol,
+					PatternMatch = PatternMatch_Symbol,
 					kw = KeywordType.Symbol,
 					flag = SynFlag.ExprTerm,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$USYMBOL",
-					ParseStmt = ParseStmt_Usymbol,
+					PatternMatch = PatternMatch_Usymbol,
 					kw = KeywordType.Usymbol,
 					flag = SynFlag.ExprTerm,
 				},
@@ -149,7 +149,7 @@ namespace IronKonoha
 				new KDEFINE_SYNTAX(){
 					name = "$type",
 					rule = "$type $expr",
-					ParseStmt = ParseStmt_Type,
+					PatternMatch = PatternMatch_Type,
 					kw = KeywordType.Type,
 					flag = SynFlag.ExprTerm,
 				},
@@ -175,20 +175,20 @@ namespace IronKonoha
 				new KDEFINE_SYNTAX(){
 					name = "$block",
 					kw = KeywordType.Block,
-					ParseStmt = ParseStmt_Block,
+					PatternMatch = PatternMatch_Block,
 					ExprTyCheck = ExprTyCheck_Block,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$params",
 					kw = KeywordType.Params,
-					ParseStmt = ParseStmt_Params,
+					PatternMatch = PatternMatch_Params,
 					TopStmtTyCheck = TopStmtTyCheck_ParamsDecl,
 					ExprTyCheck = ExprTyCheck_MethodCall,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$toks",
 					kw = KeywordType.Toks,
-					ParseStmt = ParseStmt_Toks,
+					PatternMatch = PatternMatch_Toks,
 				},
 				new KDEFINE_SYNTAX(){
 					name = ".",
@@ -305,19 +305,20 @@ namespace IronKonoha
 				new KDEFINE_SYNTAX(){
 					name = "void",
 					rule = "$type [$USYMBOL \".\"] $SYMBOL $params [$block]",
-					ParseStmt = ParseStmt_Type,
+					PatternMatch = PatternMatch_Type,
+					TopStmtTyCheck = TopStmtTyCheck_MethodDecl,
 					kw = KeywordType.StmtMethodDecl,
 					type = KType.Void,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "int",
-					ParseStmt = ParseStmt_Type,
+					PatternMatch = PatternMatch_Type,
 					kw = KeywordType.Type,
 					type = KType.Int,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "boolean",
-					ParseStmt = ParseStmt_Type,
+					PatternMatch = PatternMatch_Type,
 					kw = KeywordType.Type,
 					type = KType.Boolean,
 				},
@@ -373,6 +374,7 @@ namespace IronKonoha
 			var parser = new Parser(ctx, this);
 			var converter = new Converter(ctx, this);
 			var block = parser.CreateBlock(null, tokens, 0, tokens.Count(), ';');
+			block.TyCheckAll(ctx, new KGamma() { ks = this, cid = KType.System, flag = KGammaFlag.TOPLEVEL });
 			dynamic ast = converter.Convert(block);
 			string dbv = typeof(Expression).InvokeMember("DebugView", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetProperty, null, ast, null);
 			Console.WriteLine("### DLR AST Dump ###");
@@ -629,7 +631,7 @@ namespace IronKonoha
 					parseSyntaxRule(syndef.rule, new LineInfo(0, ""), out adst);
 					syn.SyntaxRule = adst;
 				}
-				syn.ParseStmt = syndef.ParseStmt;
+				syn.PatternMatch = syndef.PatternMatch;
 				syn.ParseExpr = syndef.ParseExpr ?? KModSugar.UndefinedParseExpr;
 				syn.TopStmtTyCheck = syndef.TopStmtTyCheck;
 				syn.StmtTyCheck = syndef.StmtTyCheck ?? ctx.kmodsugar.UndefinedStmtTyCheck;
@@ -651,48 +653,75 @@ namespace IronKonoha
 
 		#region ExprTyCheck
 
-		public static void ExprTyCheck_Int(KStatement stmt, Syntax syn, KGamma gma)
+		public static bool ExprTyCheck_Int(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			throw new NotImplementedException();
 		}
-		public static void ExprTyCheck_Float(KStatement stmt, Syntax syn, KGamma gma)
+		public static bool ExprTyCheck_Float(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			throw new NotImplementedException();
 		}
-		public static void ExprTyCheck_Text(KStatement stmt, Syntax syn, KGamma gma)
-		{
-			throw new NotImplementedException();
-		}
-
-		public static void ExprTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
+		public static bool ExprTyCheck_Text(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			throw new NotImplementedException();
 		}
 
-		private static void ExprTyCheck_Block(KStatement stmt, Syntax syn, KGamma gma)
+		public static bool ExprTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			throw new NotImplementedException();
 		}
 
-		public static void TopStmtTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
+		private static bool ExprTyCheck_Block(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			throw new NotImplementedException();
 		}
 
-		private static void TopStmtTyCheck_ParamsDecl(KStatement stmt, Syntax syn, KGamma gma)
-		{
-			throw new NotImplementedException();
-		}
-		private static void ExprTyCheck_MethodCall(KStatement stmt, Syntax syn, KGamma gma)
+		public static bool TopStmtTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			throw new NotImplementedException();
 		}
 
+		private static bool TopStmtTyCheck_ParamsDecl(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			throw new NotImplementedException();
+		}
+		private static bool ExprTyCheck_MethodCall(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			throw new NotImplementedException();
+		}
+		private static bool TopStmtTyCheck_MethodDecl(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			bool r = false;
+			var ks = gma.ks;
+			KFunkFlag flag = 0;// Stmt_flag(_ctx, stmt, MethodDeclFlag, 0);
+			KType cid = stmt.getcid(KeywordType.Usymbol, null);//ks.scrobj.Type);
+			//kmethodn_t mn = Stmt_getmn(_ctx, stmt, ks, KW_Symbol, MN_new);
+			string name = stmt.map[Symbol.Get(ks.ctx, "SYMBOL")].tk.Text;
+			//kParam* pa = Stmt_newMethodParamNULL(_ctx, stmt, gma);
+			var pa = (stmt.map[Symbol.Get(ks.ctx, "params")] as BlockExpr).blocks;
+			//if (TY_isSingleton(cid)) flag |= kMethod_Static;
+			if (pa != null)
+			{
+				var mtd = new KFunk(flag, cid, name, pa);
+				if (ks.DefineMethod(mtd, stmt.ULine))
+				{
+					r = true;
+					stmt.MethodFunc = mtd;
+					stmt.done();
+				}
+			}
+			return r;
+		}
+
+		private bool DefineMethod(KFunk mtd, LineInfo lineInfo)
+		{
+			throw new NotImplementedException();
+		}
 		#endregion
 
-		#region ParseStmt
+		#region PatternMatch
 
-		public static int ParseStmt_Expr(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
+		public static int PatternMatch_Expr(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
 		{
 			int r = -1;
 			var expr = stmt.newExpr2(ctx, tls, s, e);
@@ -706,7 +735,7 @@ namespace IronKonoha
 			return r;
 		}
 
-		public static int ParseStmt_Type(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
+		public static int PatternMatch_Type(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
 		{
 			int r = -1;
 			Token tk = tls[s];
@@ -719,7 +748,7 @@ namespace IronKonoha
 			return r;
 		}
 
-		public static int ParseStmt_Usymbol(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
+		public static int PatternMatch_Usymbol(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
 		{
 			int r = -1;
 			Token tk = tls[s];
@@ -731,7 +760,7 @@ namespace IronKonoha
 			return r;
 		}
 
-		public static int ParseStmt_Symbol(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
+		public static int PatternMatch_Symbol(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
 		{
 			int r = -1;
 			Token tk = tls[s];
@@ -743,8 +772,8 @@ namespace IronKonoha
 			return r;
 		}
 
-		// static KMETHOD ParseStmt_Params(CTX, ksfp_t *sfp _RIX)
-		private static int ParseStmt_Params(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int s, int e)
+		// static KMETHOD PatternMatch_Params(CTX, ksfp_t *sfp _RIX)
+		private static int PatternMatch_Params(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int s, int e)
 		{
 			int r = -1;
 			Token tk = tokens[s];
@@ -762,10 +791,10 @@ namespace IronKonoha
 		}
 
 
-		// static KMETHOD ParseStmt_Block(CTX, ksfp_t *sfp _RIX)
-		private static int ParseStmt_Block(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
+		// static KMETHOD PatternMatch_Block(CTX, ksfp_t *sfp _RIX)
+		private static int PatternMatch_Block(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
 		{
-			//Console.WriteLine("ParseStmt_Block name:" + name.Name);
+			//Console.WriteLine("PatternMatch_Block name:" + name.Name);
 			Token tk = tls[s];
 			if(tk.Type == TokenType.CODE) {
 				stmt.map.Add(name, new CodeExpr(tk));
@@ -785,8 +814,8 @@ namespace IronKonoha
 			}
 		}
 
-		// static KMETHOD ParseStmt_Toks(CTX, ksfp_t *sfp _RIX)
-		private static int ParseStmt_Toks(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
+		// static KMETHOD PatternMatch_Toks(CTX, ksfp_t *sfp _RIX)
+		private static int PatternMatch_Toks(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
 		{
 			if (s < e)
 			{

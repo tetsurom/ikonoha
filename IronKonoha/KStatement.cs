@@ -29,6 +29,8 @@ namespace IronKonoha
 		public StmtType build { get; set; }
 		public Dictionary<KeywordType, bool> annotation { get; private set; }
 		public Dictionary<object, KonohaExpr> map { get; private set; }
+		public bool isERR { get { return build == StmtType.ERR; } }
+		public KFunk MethodFunc { get; set; }
 
 		public KStatement(LineInfo line, KonohaSpace ks)
 		{
@@ -84,7 +86,7 @@ namespace IronKonoha
 				else if (rule.Type == TokenType.METANAME)
 				{
 					Syntax syn = this.ks.GetSyntax(rule.Keyword);
-					if (syn == null || syn.ParseStmt == null)
+					if (syn == null || syn.PatternMatch == null)
 					{
 						tk.Print(ctx, ReportLevel.ERR, "unknown syntax pattern: {0}", rule.Keyword);
 						return -1;
@@ -176,7 +178,7 @@ namespace IronKonoha
 		public int ParseStmt(Context ctx, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
 		{
 			//Console.WriteLine("ParseStmt {0}, {0}", name.Name, tls[s].Text);
-			return syn.ParseStmt(ctx, this, syn, name, tls, s, e);
+			return syn.PatternMatch(ctx, this, syn, name, tls, s, e);
 		}
 
 		// static kExpr *ParseExpr(CTX, ksyntax_t *syn, kStmt *stmt, kArray *tls, int s, int c, int e)
@@ -327,6 +329,49 @@ namespace IronKonoha
 			this.syn = ks.GetSyntax(KeywordType.Err);
 			this.build = StmtType.ERR;
 			//kObject_setObject(stmt, KW_Err, kstrerror(eno));
+		}
+
+		internal bool TyCheck(Context ctx, KGamma gma)
+		{
+			var fo = gma.isTopLevel ? syn.TopStmtTyCheck : syn.StmtTyCheck;
+			bool result;
+			Debug.Assert(fo != null);
+			StmtTyChecker[] a = fo.GetInvocationList() as StmtTyChecker[];
+			if (a != null && a.Length > 1)
+			{ // @Future
+				for (int i = a.Length - 1; i > 0; --i)
+				{
+					result = a[i](this, this.syn, gma);
+					if (syn == null) return true;
+					if (build != StmtType.UNDEFINED) return result;
+				}
+				fo = a[0];
+			}
+			result = fo(this, this.syn, gma);
+			if (this.syn == null) return true; // this means done;
+			if (result == false && this.build == StmtType.UNDEFINED)
+			{
+				ctx.SUGAR_P(ReportLevel.ERR, this.ULine, 0, "statement typecheck error: {0}", syn.KeyWord);
+			}
+			return result;
+		}
+
+		public KType getcid(KeywordType kw, KType defcid)
+		{
+			if (!this.map.ContainsKey(kw))
+			{
+				return defcid;
+			}
+			else
+			{
+				var tk = this.map[kw];
+				Debug.Assert(tk.tk.IsType);
+				return tk.tk.KType;
+			}
+		}
+
+		public void done(){
+			this.syn = null;
 		}
 	}
 

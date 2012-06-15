@@ -37,7 +37,7 @@ namespace IronKonoha
 		public string op1 { get; set; }
 		public int priority_op2 { get; set; }
 		public KType type { get; set; }
-		public StmtParser ParseStmt { get; set; }
+		public StmtParser PatternMatch { get; set; }
 		public ExprParser ParseExpr { get; set; }
 		public StmtTyChecker TopStmtTyCheck { get; set; }
 		public StmtTyChecker StmtTyCheck { get; set; }
@@ -74,7 +74,7 @@ namespace IronKonoha
 		//public ExprParser ParseExpr_Term { get; set; }
 		//public ExprParser ParseExrp_Op { get; set; }
 		public Func<Context, string, uint, Symbol, KKeyWord> keyword { get; set; }
-		private Action<Context, KonohaSpace, int, Tokenizer.FTokenizer, KMethod> KonohaSpace_setTokenizer { get; set; }
+		private Action<Context, KonohaSpace, int, Tokenizer.FTokenizer, KFunk> KonohaSpace_setTokenizer { get; set; }
 		public Func<Context, KonohaExpr, KType, KObject, KonohaExpr> Expr_setConstValue { get; set; }
 		public Func<Context, KonohaExpr, KType, uint, KonohaExpr> Expr_setNConstValue { get; set; }
 		public Func<Context, KonohaExpr, KonohaExpr, KType, int, KGamma, KonohaExpr> Expr_setVariable { get; set; }
@@ -85,9 +85,9 @@ namespace IronKonoha
 		public Func<Context, KonohaExpr, uint, KGamma, KType, int, KonohaExpr> Expr_tyCheckAt { get; set; }
 		public Func<Context, KStatement, Symbol, KGamma, KType, int, bool> Stmt_tyCheckAt { get; set; }
 		public Func<Context, BlockExpr, KGamma, bool> Block_tyCheckAt { get; set; }
-		public Func<Context, KonohaExpr, KMethod, KGamma, KType, KonohaExpr> Expr_tyCheckCallParams { get; set; }
-		public Func<Context, KType, KMethod, KGamma, int, object[], KonohaExpr> new_TypedMethodCall { get; set; }
-		public Action<Context, KStatement, KMethod, int, object[]> Stmt_toExprCall { get; set; }
+		public Func<Context, KonohaExpr, KFunk, KGamma, KType, KonohaExpr> Expr_tyCheckCallParams { get; set; }
+		public Func<Context, KType, KFunk, KGamma, int, object[], KonohaExpr> new_TypedMethodCall { get; set; }
+		public Action<Context, KStatement, KFunk, int, object[]> Stmt_toExprCall { get; set; }
 		public Func<Context, int, LineInfo, int, string, object[], uint> p { get; set; }
 		public Func<Context, KonohaExpr, int, LineInfo> Expr_uline { get; set; }
 		public Func<Context, KonohaSpace, Symbol, int, Syntax> KonohaSpace_syntax { get; set; }
@@ -136,7 +136,7 @@ namespace IronKonoha
 			Token tk = tls[c];
 			KonohaExpr expr = null;
 			KonohaExpr rexpr = stmt.newExpr2(ctx, tls, c + 1, e);
-			KMethod mn = (s == c) ? syn.Op1 : syn.Op2;
+			KFunk mn = (s == c) ? syn.Op1 : syn.Op2;
 			if (mn != null && syn.ExprTyCheck == ctx.kmodsugar.UndefinedExprTyCheck)
 			{
 				//kToken_setmn(tk, mn, (s == c) ? MNTYPE_unary: MNTYPE_binary);
@@ -190,9 +190,44 @@ namespace IronKonoha
 		}
 	}
 
+	[Flags]
+	public enum KGammaFlag
+	{
+		TOPLEVEL = 1,
+		ERROR = 1 << 1,
+	}
+
 	public class KGamma : KObject
 	{
+		public KGammaFlag flag { get; set; }
+		public KFunk mtd { get; set; }
+		public KonohaSpace ks { get; set; }
+		public KType cid { get; set; }
+		public KType static_cid { get; set; }
+		public Stack<object> lvar{ get; private set; }
+		public Stack<object> fvar{ get; private set; }
+		public IList<object> lvarlst { get; private set; }
+		public int lvarlst_top { get { return lvarlst.Count - 1; } }
+		public bool isERROR { get { return (flag & KGammaFlag.ERROR) != 0; } }
+		public bool isTopLevel { get { return (flag & KGammaFlag.TOPLEVEL) != 0; } }
 
+		public KGamma()
+		{
+			lvar = new Stack<object>();
+			fvar = new Stack<object>();
+			lvarlst = new List<object>();
+		}
+
+		public void setERROR(bool f){
+			if (f)
+			{
+				flag |= KGammaFlag.ERROR;
+			}
+			else
+			{
+				flag ^= KGammaFlag.ERROR;
+			}
+		}
 	}
 
 	public class Errors
@@ -216,7 +251,7 @@ namespace IronKonoha
 		public BlockExpr singleBlock { get; private set; }
 		public KGamma gma { get; private set; }
 		public IList<object> lvarlist { get; private set; }
-		public IList<KMethod> definedMethods { get; private set; }
+		public IList<KFunk> definedMethods { get; private set; }
 
 		public CTXSugar()
 		{
@@ -432,14 +467,14 @@ namespace IronKonoha
 					{
 						return "(info)";
 					}*/
-					return null;
+					//return null;
 				case ReportLevel.DEBUG:
 					throw new NotImplementedException();
 					/*if (verbose_sugar)
 					{
 						return "(debug)";
 					}*/
-					return null;
+					//return null;
 			}
 			return "(unknown)";
 		}

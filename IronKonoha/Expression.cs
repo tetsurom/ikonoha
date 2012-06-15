@@ -103,7 +103,14 @@ namespace IronKonoha
 
 	public class BlockExpr : KonohaExpr
 	{
+		/// <summary>
+		/// KStatement list which this block contains.
+		/// </summary>
 		public List<KStatement> blocks = new List<KStatement>();
+		/// <summary>
+		/// ?
+		/// </summary>
+		public KonohaExpr esp { get; set; }
 
 		// static void Block_addStmtLine(CTX, kBlock *bk, kArray *tls, int s, int e, kToken *tkERR)
 		public void AddStatementLine(Context ctx, KonohaSpace ks, IList<Token> tokens, int start, int end, out Token tkERR)
@@ -120,6 +127,34 @@ namespace IronKonoha
 				throw new ArgumentException("undefined syntax rule for");
 			}
 			Debug.Assert(stmt.syn != null);
+		}
+
+		// tycheck.h
+		// static kbool_t Block_tyCheckAll(CTX, kBlock *bk, kGamma *gma)
+		public bool TyCheckAll(Context ctx, KGamma gma)
+		{
+			bool result = true;
+			int lvarsize = gma.lvar.Count;
+			for (int i = 0; i < blocks.Count; i++)
+			{
+				var stmt = blocks[i];
+				var syn = stmt.syn;
+				//dumpStmt(_ctx, stmt);
+				if (syn == null) continue; /* This means 'done' */
+				if (stmt.isERR || !stmt.TyCheck(ctx, gma))
+				{
+					Debug.Assert(stmt.isERR);
+					gma.setERROR(true);
+					result = false;
+					break;
+				}
+			}
+			//kExpr_setVariable(this.esp, LOCAL_, KType.Void, gma.lvar.Count, gma);
+			while (lvarsize < gma.lvar.Count)
+			{
+				gma.lvar.Pop();
+			}
+			return result;
 		}
 	}
 }

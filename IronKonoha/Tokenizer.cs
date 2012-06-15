@@ -8,12 +8,32 @@ using System.Diagnostics;
 
 namespace IronKonoha
 {
+
+	[Flags]
+	public enum KFunkFlag
+	{
+
+	}
 	/// <summary>
 	/// temporaly
 	/// </summary>
-	public class KMethod
+	public class KFunk
 	{
-		public static readonly KMethod NoName = new KMethod();
+		public static readonly KFunk NoName = new KFunk();
+		public KFunk(KFunkFlag flag, KType cid, string name, IList<KStatement> param)
+		{
+
+		}
+		public KFunk()
+		{
+
+		}
+	}
+
+	public class KFunk<D> : KFunk
+	{
+		public D Delegate { get; set; }
+
 	}
 
 	public enum KeywordType
@@ -91,11 +111,13 @@ namespace IronKonoha
 
 	public class KType
 	{
+		private static readonly Dictionary<BCID, KType> bcidMap = new Dictionary<BCID, KType>();
 		public static readonly KType Unknown = new KType();
-		public static readonly KType Void = new KType();
-		public static readonly KType Int = new KType();
-		public static readonly KType Boolean = new KType();
-		private static readonly Dictionary<BCID, KType> bcidMap = new Dictionary<BCID,KType>();
+		public static readonly KType Void = KType.FromBCID(BCID.CLASS_Tvoid);
+		public static readonly KType Int = KType.FromBCID(BCID.CLASS_Int);
+		public static readonly KType Boolean = KType.FromBCID(BCID.CLASS_Boolean);
+		public static readonly KType System = KType.FromBCID(BCID.CLASS_System);
+
 		public static KType FromBCID(BCID bcid){
 			if (!bcidMap.ContainsKey(bcid))
 			{
@@ -129,6 +151,7 @@ namespace IronKonoha
 		}
 
 		// static void Token_toERR(CTX, struct _kToken *tk, size_t errref)
+		[Obsolete]
 		public void toERR(Context ctx, uint errorcode)
 		{
 			this.Type = TokenType.ERR;
@@ -251,7 +274,7 @@ namespace IronKonoha
 		/// <param name="tokStart">トークンの開始位置</param>
 		/// <param name="thunk"></param>
 		/// <returns>次のトークンの開始位置</returns>
-		public delegate int FTokenizer(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk);
+		public delegate int FTokenizer(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunk thunk);
 
 		#region 定数
 
@@ -380,7 +403,7 @@ namespace IronKonoha
 
 		#region トークナイズ関数郡
 
-		static int TokenizeSkip(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeSkip(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunk thunk)
 		{
 			token = null;
 			return ++tokStart;
@@ -406,7 +429,7 @@ namespace IronKonoha
 			return IsAlphaOrNum(c) || c == '_';
 		}
 
-		static int TokenizeIndent(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeIndent(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunk thunk)
 		{
 			int pos = tokStart;
 			string ts = tenv.Source;
@@ -433,7 +456,7 @@ namespace IronKonoha
 			return pos;
 		}
 
-		static int TokenizeNextline(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeNextline(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunk thunk)
 		{
 			int pos = tokStart;
 			string ts = tenv.Source;
@@ -455,7 +478,7 @@ namespace IronKonoha
 			return TokenizeIndent(ctx, out token, tenv, pos, thunk);
 		}
 
-		static int TokenizeNumber(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeNumber(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunk thunk)
 		{
 			int pos = tokStart;
 			bool dotAppeared = false;
@@ -500,7 +523,7 @@ namespace IronKonoha
 			return pos;  // next
 		}
 
-		static int TokenizeSymbol(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeSymbol(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunk thunk)
 		{
 			int pos = tokStart;
 			string ts = tenv.Source;
@@ -512,13 +535,13 @@ namespace IronKonoha
 			return pos;
 		}
 
-		static int TokenizeOneCharOperator(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeOneCharOperator(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunk thunk)
 		{
 			token = new Token(TokenType.OPERATOR, tenv.Source.Substring(tokStart, 1), tokStart);
 			return ++tokStart;
 		}
 
-		static int TokenizeOperator(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeOperator(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunk thunk)
 		{
 			int pos = tokStart;
 			string ts = tenv.Source;
@@ -555,7 +578,7 @@ namespace IronKonoha
 			return pos;
 		}
 
-		static int TokenizeLine(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeLine(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunk thunk)
 		{
 			string ts = tenv.Source;
 			int pos = tokStart;
@@ -565,7 +588,7 @@ namespace IronKonoha
 			return pos;
 		}
 
-		static int TokenizeComment(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeComment(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunk thunk)
 		{
 			string ts = tenv.Source;
 			int pos = tokStart + 2;
@@ -581,7 +604,9 @@ namespace IronKonoha
 				{
 					tenv.Line.LineNumber += 1;
 					if (ts[pos] == '\n')
+					{
 						++pos;
+					}
 				}
 				else if (ch == '\n')
 				{
@@ -591,7 +616,9 @@ namespace IronKonoha
 				{
 					level--;
 					if (level == 0)
+					{
 						return pos;
+					}
 				}
 				else if (prev == '/' && ch == '*')
 				{
@@ -603,7 +630,7 @@ namespace IronKonoha
 			return pos;
 		}
 
-		static int TokenizeSlash(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeSlash(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunk thunk)
 		{
 			string ts = tenv.Source;
 			if (ts[tokStart + 1] == '/')
@@ -617,7 +644,7 @@ namespace IronKonoha
 			return TokenizeOperator(ctx, out token, tenv, tokStart, thunk);
 		}
 
-		static int TokenizeDoubleQuote(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeDoubleQuote(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunk thunk)
 		{
 			string ts = tenv.Source;
 			char ch = '\0';
@@ -652,13 +679,13 @@ namespace IronKonoha
 			return pos - 1;
 		}
 
-		static int TokenizeUndefined(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeUndefined(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunk thunk)
 		{
 			token = null;
 			return tokStart;
 		}
 
-		static int TokenizeBlock(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KMethod thunk)
+		static int TokenizeBlock(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunk thunk)
 		{
 			string ts = tenv.Source;
 			char ch = '\0';

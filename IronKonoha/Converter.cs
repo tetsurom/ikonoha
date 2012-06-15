@@ -116,8 +116,6 @@ namespace IronKonoha
 			}
 		}
 
-
-
 		readonly SymbolConst Symbols;
 
 		private IDictionary<string, object> Scope { get { return ks.scope as IDictionary<string, object>; } }
@@ -155,6 +153,8 @@ namespace IronKonoha
 			list.Add(Expression.Label(env.ReturnLabel, KNull));
             return Expression.Lambda<T>(Expression.Block(list), env.Params);
 		}
+
+		#region Delegates
 
 		private Dictionary<int, Type> FuncTypes = new Dictionary<int, Type>
 		{
@@ -197,6 +197,8 @@ namespace IronKonoha
 			{15, typeof(Action<,,,,,,,,,,,,,,>)},
 			{16, typeof(Action<,,,,,,,,,,,,,,,>)},
 		};
+
+		#endregion
 
 		public Expression MakeFuncDeclExpression (Dictionary<object, KonohaExpr> map)
 		{
