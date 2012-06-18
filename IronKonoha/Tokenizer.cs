@@ -9,32 +9,7 @@ using System.Diagnostics;
 namespace IronKonoha
 {
 
-	[Flags]
-	public enum KFunkFlag
-	{
 
-	}
-	/// <summary>
-	/// temporaly
-	/// </summary>
-	public class KFunk
-	{
-		public static readonly KFunk NoName = new KFunk();
-		public KFunk(KFunkFlag flag, KType cid, string name, IList<KStatement> param)
-		{
-
-		}
-		public KFunk()
-		{
-
-		}
-	}
-
-	public class KFunk<D> : KFunk
-	{
-		public D Delegate { get; set; }
-
-	}
 
 	public enum KeywordType
 	{

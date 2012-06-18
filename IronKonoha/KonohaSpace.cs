@@ -9,58 +9,10 @@ using System.Reflection;
 
 namespace IronKonoha
 {
-	[Flags]
-	public enum SynFlag
-	{
-		ExprTerm = 1,
-		ExprOp = 1 << 1,
-		ExprLeftJoinOp2 = 1 << 2,
-		ExprPostfixOp2 = 1 << 3,
-		StmtBreakExec = 1 << 8,
-		StmtJumpAhead = 1 << 9,
-		StmtJumpSkip = 1 << 10,
-	}
 
 	public delegate bool StmtTyChecker(KStatement stmt, Syntax syn, KGamma gma);
 	public delegate int StmtParser(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int start, int end);
 	public delegate KonohaExpr ExprParser(Context ctx, Syntax syn, KStatement stmt, IList<Token> tokens, int start, int current, int end);
-
-	/*
-	typedef const struct _ksyntax ksyntax_t;
-	struct _ksyntax {
-		keyword_t kw;  kflag_t flag;
-		kArray   *syntaxRulenull;
-		kMethod  *ParseStmtnull;
-		kMethod  *ParseExpr;
-		kMethod  *TopStmtTyCheck;
-		kMethod  *StmtTyCheck;
-		kMethod  *ExprTyCheck;
-		// binary
-		ktype_t    ty;   kshort_t priority;
-		kmethodn_t op2;  kmethodn_t op1;      // & a
-		//kshort_t dummy;
-	};
-	*/
-	[System.Diagnostics.DebuggerDisplay("{KeyWord}")]
-	public class Syntax
-	{
-		public IList<Token> SyntaxRule { get; set; }
-		public KeywordType KeyWord { get; set; }
-		public SynFlag Flag { get; set; }
-		/// <summary>
-		/// 文法の優先度？ 
-		/// </summary>
-		public int priority { get; set; }
-		public KType Type { get; set; }
-		public StmtParser PatternMatch { get; set; }
-		public ExprParser ParseExpr { get; set; }
-		public StmtTyChecker TopStmtTyCheck { get; set; }
-		public StmtTyChecker StmtTyCheck { get; set; }
-		public StmtTyChecker ExprTyCheck { get; set; }
-		public KFunk Op1 { get; set; }
-		public KFunk Op2 { get; set; }
-		public Syntax Parent { get; set; }
-	}
 
 	/*
     typedef const struct _kKonohaSpace kKonohaSpace;
@@ -85,16 +37,19 @@ namespace IronKonoha
 		public Dictionary<KeywordType, Syntax> syntaxMap { get; set; }
 		public KonohaSpace parent { get; set; }
 		public ExpandoObject scope {get; set;}
+		public readonly SymbolConst Symbols;
 		
 		public KonohaSpace(Context ctx)
 		{
 			this.ctx = ctx;
 			this.scope = new ExpandoObject();
+			Symbols = new SymbolConst(ctx);
 			defineDefaultSyntax();
 		}
 		
 		public KonohaSpace(Context ctx,int child)
 		{
+			Symbols = new SymbolConst(ctx);
 			this.ctx = ctx;
 		}
 
@@ -380,6 +335,11 @@ namespace IronKonoha
 			Console.WriteLine("### DLR AST Dump ###");
 			Console.WriteLine(dbv);
 			var f = ast.Compile();
+			if (f.Method.ReturnType == typeof(void))
+			{
+				f();
+				return null;
+			}
 			return f();
 		}
 
@@ -696,13 +656,14 @@ namespace IronKonoha
 			KFunkFlag flag = 0;// Stmt_flag(_ctx, stmt, MethodDeclFlag, 0);
 			KType cid = stmt.getcid(KeywordType.Usymbol, null);//ks.scrobj.Type);
 			//kmethodn_t mn = Stmt_getmn(_ctx, stmt, ks, KW_Symbol, MN_new);
-			string name = stmt.map[Symbol.Get(ks.ctx, "SYMBOL")].tk.Text;
+			string name = stmt.map[ks.Symbols.SYMBOL].tk.Text;
+			string body = stmt.map[ks.Symbols.Block].tk.Text;
 			//kParam* pa = Stmt_newMethodParamNULL(_ctx, stmt, gma);
-			var pa = (stmt.map[Symbol.Get(ks.ctx, "params")] as BlockExpr).blocks;
+			var pa = (stmt.map[ks.Symbols.Params] as BlockExpr).blocks;
 			//if (TY_isSingleton(cid)) flag |= kMethod_Static;
 			if (pa != null)
 			{
-				var mtd = new KFunk(flag, cid, name, pa);
+				var mtd = new KFunk(ks, flag, cid, name, pa, body);
 				if (ks.DefineMethod(mtd, stmt.ULine))
 				{
 					r = true;
@@ -713,10 +674,77 @@ namespace IronKonoha
 			return r;
 		}
 
+		// static kbool_t KonohaSpace_defineMethod(CTX, kKonohaSpace *ks, kMethod *mtd, kline_t pline)
 		private bool DefineMethod(KFunk mtd, LineInfo lineInfo)
 		{
-			throw new NotImplementedException();
+			if(mtd.packid == 0) {
+				mtd.packid = this.packid;
+			}
+			KClass ct = ctx.CT_(mtd.cid);
+			if(ct != null && ct.packdom == this.packdom && mtd.isPublic) {
+				//ct.addMethod(ctx, mtd);
+			}
+			else {
+				addMethod(mtd);
+			}
+			return true;
 		}
+
+		private void addMethod(KFunk mtd)
+		{
+			Type retType = GetCSTypeFromKType(mtd.cid);
+
+			var args = mtd.paramNames.ToList();
+			var argtypes = mtd.paramTypes.Select(t => GetCSTypeFromKType(t)).ToList();
+
+			Type ftype = null;
+
+			if (retType == typeof(void))
+			{
+				if (args.Count > 0)
+				{
+					ftype = Converter.ActionTypes[args.Count].MakeGenericType(argtypes.ToArray());
+				}
+				else
+				{
+					ftype = Converter.ActionTypes[0];
+				}
+			}
+			else
+			{
+				argtypes.Add(typeof(object));
+				ftype = Converter.FuncTypes[args.Count].MakeGenericType(argtypes.ToArray());
+			}
+
+			Type fctype = typeof(FuncCache<>).MakeGenericType(ftype);
+
+			dynamic cache = Activator.CreateInstance(fctype, new Converter(ctx, this), mtd.Body, args);
+
+			var sc= this.scope as IDictionary<string, object>;
+
+			sc[mtd.Name] = cache.Invoke;
+
+			cache.Scope = this.scope;
+			cache.key = mtd.Name;
+		}
+
+		private Type GetCSTypeFromKType(KType kType)
+		{
+			if (kType == KType.Void)
+			{
+				return typeof(void);
+			}
+			else if (kType == KType.Int)
+			{
+				return typeof(long);
+			}
+			else if (kType == KType.Boolean)
+			{
+				return typeof(bool);
+			}
+			return typeof(object);
+		}
+
 		#endregion
 
 		#region PatternMatch
@@ -887,5 +915,9 @@ namespace IronKonoha
 			if (c + 1 < e) c++;
 			return new ConsExpr(ctx, syn, tls[c], ReportLevel.ERR, "expected field name: not " + tls[c].Text);
 		}
+
+		public int packid { get; set; }
+
+		public object packdom { get; set; }
 	}
 }

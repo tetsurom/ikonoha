@@ -31,6 +31,7 @@ namespace IronKonoha
 		public Dictionary<object, KonohaExpr> map { get; private set; }
 		public bool isERR { get { return build == StmtType.ERR; } }
 		public KFunk MethodFunc { get; set; }
+		public bool TyCheckDone { get; set; }
 
 		public KStatement(LineInfo line, KonohaSpace ks)
 		{
@@ -348,7 +349,7 @@ namespace IronKonoha
 				fo = a[0];
 			}
 			result = fo(this, this.syn, gma);
-			if (this.syn == null) return true; // this means done;
+			if (/*this.syn == null*/ this.TyCheckDone) return true; // this means done;
 			if (result == false && this.build == StmtType.UNDEFINED)
 			{
 				ctx.SUGAR_P(ReportLevel.ERR, this.ULine, 0, "statement typecheck error: {0}", syn.KeyWord);
@@ -371,8 +372,10 @@ namespace IronKonoha
 		}
 
 		public void done(){
-			this.syn = null;
+			//this.syn = null;
+			this.TyCheckDone = true;
 		}
+
 	}
 
 }

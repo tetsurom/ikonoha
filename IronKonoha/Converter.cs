@@ -12,7 +12,7 @@ namespace IronKonoha
 {
 	//public delegate object FuncLambda(params object[] args);
 
-	abstract class Cache
+	public abstract class Cache
 	{
 		protected string BlockBody;
 		protected IList<string> Params;
@@ -32,7 +32,7 @@ namespace IronKonoha
 		public LabelTarget ReturnLabel { get; set; }
 	}
 
-	class FuncCache<T> : Cache
+	public class FuncCache<T> : Cache
 	{
 		private T _lambda;
 		public T Lambda
@@ -97,25 +97,6 @@ namespace IronKonoha
 			};
 		//internal static readonly Expression KEmptyString = Expression.Constant(null,typeof(KString));
 
-		private class SymbolConst
-		{
-			public readonly Symbol Expr;
-			public readonly Symbol Block;
-			public readonly Symbol If;
-			public readonly Symbol Else;
-			public readonly Symbol SYMBOL;
-			public readonly Symbol Params;
-			internal SymbolConst(Context ctx)
-			{
-				Expr = Symbol.Get(ctx, "expr");
-				Block = Symbol.Get(ctx, "block");
-				If = Symbol.Get(ctx, "if");
-				Else = Symbol.Get(ctx, "else");
-				SYMBOL = Symbol.Get(ctx, "SYMBOL");
-				Params = Symbol.Get(ctx, "params");
-			}
-		}
-
 		readonly SymbolConst Symbols;
 
 		private IDictionary<string, object> Scope { get { return ks.scope as IDictionary<string, object>; } }
@@ -156,7 +137,7 @@ namespace IronKonoha
 
 		#region Delegates
 
-		private Dictionary<int, Type> FuncTypes = new Dictionary<int, Type>
+		public static readonly Dictionary<int, Type> FuncTypes = new Dictionary<int, Type>
 		{
 			{0, typeof(Func<>)},
 			{1, typeof(Func<,>)},
@@ -177,7 +158,7 @@ namespace IronKonoha
 			{16, typeof(Func<,,,,,,,,,,,,,,,,>)},
 		};
 
-		private Dictionary<int, Type> ActionTypes = new Dictionary<int, Type>
+		public static readonly Dictionary<int, Type> ActionTypes = new Dictionary<int, Type>
 		{
 			{0, typeof(Action)},
 			{1, typeof(Action<>)},
@@ -202,9 +183,11 @@ namespace IronKonoha
 
 		public Expression MakeFuncDeclExpression (Dictionary<object, KonohaExpr> map)
 		{
+			return null;
+			/*
 			CodeExpr block = map[Symbols.Block] as CodeExpr;
 
-			var retType = map[Symbol.Get(ctx, "type")].tk;
+			var retType = map[Symbols.Type].tk;
 
 			var args = GetParamList(map[Symbols.Params] as BlockExpr).ToList();
 			var argtypes = args.Select(a => typeof(object)).ToList();
@@ -242,6 +225,7 @@ namespace IronKonoha
 			var t = typeof(int);
 
 			return Expression.Constant(Scope[key]);
+			*/
 		}
 
 		public Expression KStatementToExpr(KStatement st, FunctionEnvironment environment, IList<string> funcargs)
@@ -256,7 +240,7 @@ namespace IronKonoha
 			}
 			if (st.syn.KeyWord == KeywordType.StmtMethodDecl)
 			{
-				return MakeFuncDeclExpression(st.map);
+				return Expression.Empty();//MakeFuncDeclExpression(st.map);
 			}
 			if (st.syn.KeyWord == KeywordType.Return)
 			{

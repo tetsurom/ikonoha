@@ -487,6 +487,10 @@ namespace IronKonoha
 
 		public KClass CT_(KType ty)
 		{
+			if (ty == null || !this.share.ClassMap.ContainsKey(ty))
+			{
+				return null;
+			}
 			return this.share.ClassMap[ty];
 		}
 

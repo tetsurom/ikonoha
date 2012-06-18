@@ -18,7 +18,7 @@ namespace KFibo
 			dynamic global = konoha.space.scope;
 			global.csfibo = new Func<long, long>(csfibo);
 
-			dynamic fibo = konoha.Eval(@"
+			konoha.Eval(@"
                 int fibo(int n){
                     if(n < 3){
                         return 1;
@@ -28,9 +28,9 @@ namespace KFibo
                 }
             ");
 			Console.ReadLine(); // fibo is not compiled yet.
-			Console.WriteLine(fibo(36)); // here fibo is compiled first and calc fibo.
-			Console.ReadLine();
-			Console.WriteLine(konoha.Eval("csfibo(36)")); // call fibo defined in C# code.
+			Console.WriteLine(global.fibo(36)); // here fibo is compiled first and calc fibo.
+			//Console.ReadLine();
+			//Console.WriteLine(konoha.Eval("csfibo(36)")); // call fibo defined in C# code.
 			Console.ReadLine();
 		}
 	}

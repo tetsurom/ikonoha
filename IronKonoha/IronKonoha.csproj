@@ -45,9 +45,12 @@
     <Compile Include="Exception.cs" />
     <Compile Include="Expression.cs" />
     <Compile Include="KClassTable.cs" />
+    <Compile Include="KFunk.cs" />
     <Compile Include="Konoha.cs" />
     <Compile Include="KonohaSpace.cs" />
     <Compile Include="KStatement.cs" />
+    <Compile Include="Symbol.cs" />
+    <Compile Include="Syntax.cs" />
     <Compile Include="Tokenizer.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
