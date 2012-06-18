@@ -42,6 +42,15 @@ namespace IronKonoha
 			}
 			return ctx.share.SymbolMap[name];
 		}
+		private static readonly Dictionary<KeywordType, string> nameTable = new Dictionary<KeywordType, string>()
+		{
+			{KeywordType.Expr, "expr"},
+			{KeywordType.Block, "block"},
+			{KeywordType.If, "if"},
+			{KeywordType.Symbol, "SYMBOL"},
+			{KeywordType.Params, "params"},
+			{KeywordType.Type, "type"},
+		};
 		public static Symbol Get(Context ctx, string name)
 		{
 			if (!ctx.share.SymbolMap.ContainsKey(name))
@@ -49,6 +58,10 @@ namespace IronKonoha
 				ctx.share.SymbolMap.Add(name, new Symbol() { Name = name });
 			}
 			return ctx.share.SymbolMap[name];
+		}
+		public static Symbol Get(Context ctx, KeywordType kw)
+		{
+			return Get(ctx, nameTable[kw]);
 		}
 	}
 

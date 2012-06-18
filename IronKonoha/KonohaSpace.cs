@@ -11,8 +11,17 @@ namespace IronKonoha
 {
 
 	public delegate bool StmtTyChecker(KStatement stmt, Syntax syn, KGamma gma);
+	public delegate KonohaExpr ExprTyChecker(KStatement stmt, KonohaExpr expr, KGamma gma, KType reqty);
 	public delegate int StmtParser(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int start, int end);
 	public delegate KonohaExpr ExprParser(Context ctx, Syntax syn, KStatement stmt, IList<Token> tokens, int start, int current, int end);
+
+	[Flags]
+	public enum TPOL{
+		NOCHECK       =       1,
+		ALLOWVOID     = (1 << 1),
+		COERCION      = (1 << 2),
+		CONST         = (1 << 4),
+	}
 
 	/*
     typedef const struct _kKonohaSpace kKonohaSpace;
@@ -32,7 +41,7 @@ namespace IronKonoha
     */
 	public class KonohaSpace : KObject
 	{
-		private Context ctx;
+		public Context ctx { get; private set; }
 
 		public Dictionary<KeywordType, Syntax> syntaxMap { get; set; }
 		public KonohaSpace parent { get; set; }
@@ -66,45 +75,49 @@ namespace IronKonoha
 				new KDEFINE_SYNTAX(){
 					name = "$expr",
 					rule = "$expr",
-					PatternMatch = PatternMatch_Expr,
-					TopStmtTyCheck = TopStmtTyCheck_Expr,
-					ExprTyCheck = ExprTyCheck_Expr,
+					PatternMatch = PatternMatch.Expr,
+					TopStmtTyCheck = TyCheck.TopStmtTyCheck.Expr,
+					ExprTyCheck = TyCheck.ExprTyCheck.Expr,
 					kw = KeywordType.Expr,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$SYMBOL",
-					PatternMatch = PatternMatch_Symbol,
+					PatternMatch = PatternMatch.Symbol,
+					ExprTyCheck = TyCheck.ExprTyCheck.Symbol,
 					kw = KeywordType.Symbol,
 					flag = SynFlag.ExprTerm,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$USYMBOL",
-					PatternMatch = PatternMatch_Usymbol,
+					PatternMatch = PatternMatch.Usymbol,
+					TopStmtTyCheck = TyCheck.TopStmtTyCheck.ConstDecl,
+					ExprTyCheck = TyCheck.ExprTyCheck.USymbol,
 					kw = KeywordType.Usymbol,
 					flag = SynFlag.ExprTerm,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$TEXT",
-					ExprTyCheck = ExprTyCheck_Text,
+					ExprTyCheck = TyCheck.ExprTyCheck.Text,
 					kw = KeywordType.Text,
 					flag = SynFlag.ExprTerm,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$INT",
-					ExprTyCheck = ExprTyCheck_Int,
+					ExprTyCheck = TyCheck.ExprTyCheck.Int,
 					kw = KeywordType.TKInt,
 					flag = SynFlag.ExprTerm,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$FLOAT",
-					ExprTyCheck = ExprTyCheck_Float,
+					ExprTyCheck = TyCheck.ExprTyCheck.Float,
 					kw = KeywordType.TKFloat,
 					flag = SynFlag.ExprTerm,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$type",
 					rule = "$type $expr",
-					PatternMatch = PatternMatch_Type,
+					PatternMatch = PatternMatch.Type,
+					ExprTyCheck = TyCheck.ExprTyCheck.Type,
 					kw = KeywordType.Type,
 					flag = SynFlag.ExprTerm,
 				},
@@ -112,6 +125,7 @@ namespace IronKonoha
 					name = "()",
 					kw = KeywordType.Parenthesis,
 					ParseExpr = ParseExpr_Parenthesis,
+					ExprTyCheck = TyCheck.ExprTyCheck.FuncStyleCall,
 					priority_op2 = 16,
 					flag = SynFlag.ExprPostfixOp2,
 				},
@@ -130,20 +144,20 @@ namespace IronKonoha
 				new KDEFINE_SYNTAX(){
 					name = "$block",
 					kw = KeywordType.Block,
-					PatternMatch = PatternMatch_Block,
-					ExprTyCheck = ExprTyCheck_Block,
+					PatternMatch = PatternMatch.Block,
+					ExprTyCheck = TyCheck.ExprTyCheck.Block,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$params",
 					kw = KeywordType.Params,
-					PatternMatch = PatternMatch_Params,
-					TopStmtTyCheck = TopStmtTyCheck_ParamsDecl,
-					ExprTyCheck = ExprTyCheck_MethodCall,
+					PatternMatch = PatternMatch.Params,
+					TopStmtTyCheck = TyCheck.TopStmtTyCheck.ParamsDecl,
+					ExprTyCheck = TyCheck.ExprTyCheck.MethodCall,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "$toks",
 					kw = KeywordType.Toks,
-					PatternMatch = PatternMatch_Toks,
+					PatternMatch = PatternMatch.Toks,
 				},
 				new KDEFINE_SYNTAX(){
 					name = ".",
@@ -236,6 +250,7 @@ namespace IronKonoha
 					priority_op2 = 1024,
 					kw = KeywordType.AND,
 					flag = SynFlag.ExprOp,
+					ExprTyCheck = TyCheck.ExprTyCheck.And,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "||",
@@ -243,6 +258,7 @@ namespace IronKonoha
 					priority_op2 = 2048,
 					kw = KeywordType.OR,
 					flag = SynFlag.ExprOp,
+					ExprTyCheck = TyCheck.ExprTyCheck.Or,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "=",
@@ -260,20 +276,20 @@ namespace IronKonoha
 				new KDEFINE_SYNTAX(){
 					name = "void",
 					rule = "$type [$USYMBOL \".\"] $SYMBOL $params [$block]",
-					PatternMatch = PatternMatch_Type,
-					TopStmtTyCheck = TopStmtTyCheck_MethodDecl,
+					PatternMatch = PatternMatch.Type,
+					TopStmtTyCheck = TyCheck.TopStmtTyCheck.MethodDecl,
 					kw = KeywordType.StmtMethodDecl,
 					type = KType.Void,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "int",
-					PatternMatch = PatternMatch_Type,
+					PatternMatch = PatternMatch.Type,
 					kw = KeywordType.Type,
 					type = KType.Int,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "boolean",
-					PatternMatch = PatternMatch_Type,
+					PatternMatch = PatternMatch.Type,
 					kw = KeywordType.Type,
 					type = KType.Boolean,
 				},
@@ -286,27 +302,34 @@ namespace IronKonoha
 					name = "true",
 					kw = KeywordType.True,
 					flag = SynFlag.ExprTerm,
+					ExprTyCheck = TyCheck.ExprTyCheck.True,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "false",
 					kw = KeywordType.False,
 					flag = SynFlag.ExprTerm,
+					ExprTyCheck = TyCheck.ExprTyCheck.False,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "else",
 					kw = KeywordType.Else,
 					rule = "\"else\" $block",
+					TopStmtTyCheck = TyCheck.TopStmtTyCheck.Else,
+					StmtTyCheck = TyCheck.StmtTyCheck.Else,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "if",
 					kw = KeywordType.If,
 					rule = "\"if\" \"(\" $expr \")\" $block [\"else\" else: $block]",
+					TopStmtTyCheck = TyCheck.TopStmtTyCheck.If,
+					StmtTyCheck = TyCheck.StmtTyCheck.If,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "return",
 					kw = KeywordType.Return,
 					rule = "\"return\" [$expr]",
 					flag = SynFlag.StmtBreakExec,
+					StmtTyCheck = TyCheck.StmtTyCheck.Return,
 				},
 			};
 			defineSyntax(syntaxes);
@@ -395,7 +418,7 @@ namespace IronKonoha
 			syn.StmtTyCheck = checker;
 		}
 
-		public void SYN_setExprTyCheck(KeywordType ks, StmtTyChecker checker)
+		public void SYN_setExprTyCheck(KeywordType ks, ExprTyChecker checker)
 		{
 			var syn = GetSyntax(ks, true);
 			syn.ExprTyCheck = checker;
@@ -611,71 +634,8 @@ namespace IronKonoha
 			//Console.WriteLine("syntax size={0}, hmax={1}", syntaxMap.Count, syntaxMap.);
 		}
 
-		#region ExprTyCheck
-
-		public static bool ExprTyCheck_Int(KStatement stmt, Syntax syn, KGamma gma)
-		{
-			throw new NotImplementedException();
-		}
-		public static bool ExprTyCheck_Float(KStatement stmt, Syntax syn, KGamma gma)
-		{
-			throw new NotImplementedException();
-		}
-		public static bool ExprTyCheck_Text(KStatement stmt, Syntax syn, KGamma gma)
-		{
-			throw new NotImplementedException();
-		}
-
-		public static bool ExprTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
-		{
-			throw new NotImplementedException();
-		}
-
-		private static bool ExprTyCheck_Block(KStatement stmt, Syntax syn, KGamma gma)
-		{
-			throw new NotImplementedException();
-		}
-
-		public static bool TopStmtTyCheck_Expr(KStatement stmt, Syntax syn, KGamma gma)
-		{
-			throw new NotImplementedException();
-		}
-
-		private static bool TopStmtTyCheck_ParamsDecl(KStatement stmt, Syntax syn, KGamma gma)
-		{
-			throw new NotImplementedException();
-		}
-		private static bool ExprTyCheck_MethodCall(KStatement stmt, Syntax syn, KGamma gma)
-		{
-			throw new NotImplementedException();
-		}
-		private static bool TopStmtTyCheck_MethodDecl(KStatement stmt, Syntax syn, KGamma gma)
-		{
-			bool r = false;
-			var ks = gma.ks;
-			KFunkFlag flag = 0;// Stmt_flag(_ctx, stmt, MethodDeclFlag, 0);
-			KType cid = stmt.getcid(KeywordType.Usymbol, null);//ks.scrobj.Type);
-			//kmethodn_t mn = Stmt_getmn(_ctx, stmt, ks, KW_Symbol, MN_new);
-			string name = stmt.map[ks.Symbols.SYMBOL].tk.Text;
-			string body = stmt.map[ks.Symbols.Block].tk.Text;
-			//kParam* pa = Stmt_newMethodParamNULL(_ctx, stmt, gma);
-			var pa = (stmt.map[ks.Symbols.Params] as BlockExpr).blocks;
-			//if (TY_isSingleton(cid)) flag |= kMethod_Static;
-			if (pa != null)
-			{
-				var mtd = new KFunk(ks, flag, cid, name, pa, body);
-				if (ks.DefineMethod(mtd, stmt.ULine))
-				{
-					r = true;
-					stmt.MethodFunc = mtd;
-					stmt.done();
-				}
-			}
-			return r;
-		}
-
 		// static kbool_t KonohaSpace_defineMethod(CTX, kKonohaSpace *ks, kMethod *mtd, kline_t pline)
-		private bool DefineMethod(KFunk mtd, LineInfo lineInfo)
+		internal bool DefineMethod(KFunc mtd, LineInfo lineInfo)
 		{
 			if(mtd.packid == 0) {
 				mtd.packid = this.packid;
@@ -690,7 +650,7 @@ namespace IronKonoha
 			return true;
 		}
 
-		private void addMethod(KFunk mtd)
+		private void addMethod(KFunc mtd)
 		{
 			Type retType = GetCSTypeFromKType(mtd.cid);
 
@@ -744,124 +704,6 @@ namespace IronKonoha
 			}
 			return typeof(object);
 		}
-
-		#endregion
-
-		#region PatternMatch
-
-		public static int PatternMatch_Expr(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
-		{
-			int r = -1;
-			var expr = stmt.newExpr2(ctx, tls, s, e);
-			if (expr != null)
-			{
-				//dumpExpr(_ctx, 0, 0, expr);
-				//kObject_setObject(stmt, name, expr);
-				stmt.map.Add(name, expr);
-				r = e;
-			}
-			return r;
-		}
-
-		public static int PatternMatch_Type(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
-		{
-			int r = -1;
-			Token tk = tls[s];
-			if (tk.IsType)
-			{
-				//kObject_setObject(stmt, name, tk);
-				stmt.map.Add(name, new SingleTokenExpr(tk));
-				r = s + 1;
-			}
-			return r;
-		}
-
-		public static int PatternMatch_Usymbol(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
-		{
-			int r = -1;
-			Token tk = tls[s];
-			if (tk.Type == TokenType.USYMBOL)
-			{
-				stmt.map.Add(name, new SingleTokenExpr(tk));
-				r = s + 1;
-			}
-			return r;
-		}
-
-		public static int PatternMatch_Symbol(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
-		{
-			int r = -1;
-			Token tk = tls[s];
-			if (tk.Type == TokenType.SYMBOL)
-			{
-				stmt.map.Add(name, new SingleTokenExpr(tk));
-				r = s + 1;
-			}
-			return r;
-		}
-
-		// static KMETHOD PatternMatch_Params(CTX, ksfp_t *sfp _RIX)
-		private static int PatternMatch_Params(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int s, int e)
-		{
-			int r = -1;
-			Token tk = tokens[s];
-			if (tk.Type == TokenType.AST_PARENTHESIS)
-			{
-				var tls = tk.Sub;
-				int ss = 0;
-				int ee = tls.Count;
-				if (0 < ee && tls[0].Keyword == KeywordType.Void) ss = 1;  //  f(void) = > f()
-				BlockExpr bk = new Parser(ctx, stmt.ks).CreateBlock(stmt, tls, ss, ee, ',');
-				stmt.map.Add(name, bk);
-				r = s + 1;
-			}
-			return r;
-		}
-
-
-		// static KMETHOD PatternMatch_Block(CTX, ksfp_t *sfp _RIX)
-		private static int PatternMatch_Block(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
-		{
-			//Console.WriteLine("PatternMatch_Block name:" + name.Name);
-			Token tk = tls[s];
-			if(tk.Type == TokenType.CODE) {
-				stmt.map.Add(name, new CodeExpr(tk));
-				return s + 1;
-			}
-			var parser = new Parser(ctx, stmt.ks);
-			if (tk.Type == TokenType.AST_BRACE)
-			{
-				BlockExpr bk = parser.CreateBlock(stmt, tk.Sub, 0, tk.Sub.Count, ';');
-				stmt.map.Add(name, bk);
-				return s + 1;
-			}
-			else {
-				BlockExpr bk = parser.CreateBlock(stmt, tls, s, e, ';');
-				stmt.map.Add(name, bk);
-				return e;
-			}
-		}
-
-		// static KMETHOD PatternMatch_Toks(CTX, ksfp_t *sfp _RIX)
-		private static int PatternMatch_Toks(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tls, int s, int e)
-		{
-			if (s < e)
-			{
-				var a = new List<Token>();
-				while (s < e)
-				{
-					a.Add(tls[s]);
-					s++;
-				}
-				//kObject_setObject(stmt, name, a);
-				//stmt.map.Add(name, a);
-				throw new NotImplementedException();
-				return e;
-			}
-			return -1;
-		}
-
-		#endregion
 
 		// static KMETHOD ParseExpr_Parenthesis(CTX, ksfp_t *sfp _RIX)
 		private static KonohaExpr ParseExpr_Parenthesis(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int s, int c, int e)
@@ -919,5 +761,10 @@ namespace IronKonoha
 		public int packid { get; set; }
 
 		public object packdom { get; set; }
+
+		internal KFunc getCastMethod(KType kType, KType reqty)
+		{
+			throw new NotImplementedException();
+		}
 	}
 }

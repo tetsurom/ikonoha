@@ -6,22 +6,33 @@ using System.Text;
 namespace IronKonoha
 {
 	[Flags]
-	public enum KFunkFlag
+	public enum KFuncFlag
 	{
-
+		Public               = (1<<0),
+		Virtual              = (1<<1),
+		Hidden               = (1<<2),
+		Const                = (1<<3),
+		Static               = (1<<4),
+		Immutable            = (1<<5),
+		Restricted           = (1<<6),
+		Overloaded           = (1<<7),
+		CALLCC               = (1<<8),
+		FASTCALL             = (1<<9),
+		D                    = (1<<10),
+		Abstract             = (1<<11),
+		Coercion             = (1<<12),
+		SmartReturn          = (1<<13),
 	}
-	/// <summary>
-	/// temporaly
-	/// </summary>
-	public class KFunk
+
+	public class KFunc
 	{
 		public KonohaSpace ks { get; private set; }
-		public static readonly KFunk NoName = new KFunk();
+		public static readonly KFunc NoName = new KFunc();
 		public string Name { get; private set; }
 		public string Body { get; private set; }
 		public KType cid { get; set; }
 		public IList<KStatement> param { get; set; }
-		public KFunkFlag flag { get; set; }
+		public KFuncFlag flag { get; set; }
 		public IEnumerable<string> paramNames
 		{
 			get
@@ -38,7 +49,7 @@ namespace IronKonoha
 		}
 		public bool isPublic { get { return true; } }
 
-		public KFunk(KonohaSpace ks, KFunkFlag flag, KType cid, string name, IList<KStatement> param, string body)
+		public KFunc(KonohaSpace ks, KFuncFlag flag, KType cid, string name, IList<KStatement> param, string body)
 		{
 			this.ks = ks;
 			this.Name = name;
@@ -47,15 +58,17 @@ namespace IronKonoha
 			this.param = param;
 			this.Body = body;
 		}
-		public KFunk()
+		public KFunc()
 		{
 
 		}
 
 		public int packid { get; set; }
+
+		public bool isCoercion { get { return (flag & KFuncFlag.Coercion) != 0; } }
 	}
 
-	public class KFunk<D> : KFunk
+	public class KFunk<D> : KFunc
 	{
 		public D Delegate { get; set; }
 

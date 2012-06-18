@@ -47,9 +47,9 @@ namespace IronKonoha
 		public ExprParser ParseExpr { get; set; }
 		public StmtTyChecker TopStmtTyCheck { get; set; }
 		public StmtTyChecker StmtTyCheck { get; set; }
-		public StmtTyChecker ExprTyCheck { get; set; }
-		public KFunk Op1 { get; set; }
-		public KFunk Op2 { get; set; }
+		public ExprTyChecker ExprTyCheck { get; set; }
+		public KFunc Op1 { get; set; }
+		public KFunc Op2 { get; set; }
 		public Syntax Parent { get; set; }
 	}
 }

@@ -30,7 +30,7 @@ namespace IronKonoha
 		public Dictionary<KeywordType, bool> annotation { get; private set; }
 		public Dictionary<object, KonohaExpr> map { get; private set; }
 		public bool isERR { get { return build == StmtType.ERR; } }
-		public KFunk MethodFunc { get; set; }
+		public KFunc MethodFunc { get; set; }
 		public bool TyCheckDone { get; set; }
 
 		public KStatement(LineInfo line, KonohaSpace ks)
@@ -376,6 +376,34 @@ namespace IronKonoha
 			this.TyCheckDone = true;
 		}
 
+
+		internal bool tyCheckExpr(Context ctx, KeywordType nameid, KGamma gma, KType reqty, TPOL pol)
+		{
+			var k = Symbol.Get(ctx, nameid);
+			if (this.map.ContainsKey(k))
+			{
+				var expr = this.map[k];
+				var texpr = expr.tyCheck(ctx, this, gma, reqty, pol);
+				Console.WriteLine("reqty={0}, texpr.ty={1} isnull={2}", reqty, texpr.ty, texpr == null);
+				if (texpr != null)
+				{
+					if (texpr != expr)
+					{
+						this.map[k] = texpr;
+					}
+					return true;
+				}
+			}
+			return false;
+		}
+
+		internal void typed(KStatement stmt, StmtType build)
+		{
+			if (stmt.build != StmtType.ERR)
+			{
+				stmt.build = build;
+			}
+		}
 	}
 
 }

@@ -33,6 +33,77 @@ namespace IronKonoha
 			}
 			return string.Empty;
 		}
+
+		internal KonohaExpr tyCheck(Context ctx, KStatement stmt, KGamma gma, KType reqty, TPOL pol)
+		{
+			var texpr = this;
+			if (stmt.isERR) texpr = null;
+			if (this.ty == KType.FromBCID(BCID.CLASS_Tvar))
+			{
+				ExprTyChecker fo = syn.ExprTyCheck;
+				Debug.Assert(fo != null);
+				ExprTyChecker[] a = fo.GetInvocationList() as ExprTyChecker[];
+				if (a != null && a.Length > 1)
+				{ // @Future
+					for (int i = a.Length - 1; i > 0; --i)
+					{
+						texpr = a[i](stmt, this, gma, reqty);
+						if (stmt.isERR) return null;
+						if (texpr.ty != KType.TVar) return texpr;
+					}
+					fo = a[0];
+				}
+				texpr = fo(stmt, this, gma, reqty);
+			}
+			if (stmt.isERR) texpr = null;
+			if (texpr != null)
+			{
+				//DBG_P("type=%s, reqty=%s", TY_t(expr->ty), TY_t(reqty));
+				if (texpr.ty == KType.Void)
+				{
+					if ((pol & TPOL.ALLOWVOID) == 0)
+					{
+						//texpr = kExpr_p(stmt, expr, ERR_, "void is not acceptable")
+						ctx.SUGAR_P(ReportLevel.ERR, new LineInfo(0, ""), 0, "void is not acceptable");
+					}
+					//return texpr;
+					return null;
+				}
+				if (reqty == KType.FromBCID(BCID.CLASS_Tvar) || texpr.ty == reqty || (pol & TPOL.NOCHECK) != 0)
+				{
+					return texpr;
+				}
+				if (texpr.ty == reqty)
+				{
+					if (ctx.CT_(texpr.ty).isUnbox && !ctx.CT_(reqty).isUnbox)
+					{
+						return KonohaExpr.BoxingExpr(ctx, this, reqty);
+					}
+					return texpr;
+				}
+				KFunc mtd = gma.ks.getCastMethod(texpr.ty, reqty);
+				Console.WriteLine("finding cast {0} => {1}: {2}", texpr.ty, reqty, mtd);
+				if (mtd != null && (mtd.isCoercion || (pol & TPOL.COERCION) != 0))
+				{
+					return KonohaExpr.TypedMethodCall(ctx, stmt, reqty, mtd, gma, 1, texpr);
+				}
+				//return kExpr_p(stmt, expr, ERR_, "%s is requested, but %s is given", TY_t(reqty), TY_t(texpr->ty));
+				return null;
+			}
+			return texpr;
+		}
+
+		private static KonohaExpr TypedMethodCall(Context ctx, KStatement stmt, KType reqty, KFunc mtd, KGamma gma, int p, KonohaExpr texpr)
+		{
+			throw new NotImplementedException();
+		}
+
+		private static KonohaExpr BoxingExpr(Context ctx, KonohaExpr konohaExpr, KType reqty)
+		{
+			throw new NotImplementedException();
+		}
+
+		public KType ty { get; set; }
 	}
 
 	[System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]

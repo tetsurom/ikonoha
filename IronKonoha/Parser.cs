@@ -317,6 +317,21 @@ namespace IronKonoha
 
 	}
 
+
+	[Flags]
+	public enum KClassFlag
+	{
+		Ref             = (1<<0),
+		Prototype       = (1<<1),
+		Immutable       = (1<<2),
+		Private         = (1<<4),
+		Final           = (1<<5),
+		Singleton       = (1<<6),
+		UnboxType       = (1<<7),
+		Interface       = (1<<8),
+		TypeVar         = (1<<9),
+	}
+
 	// konoha2.h
 	// _kclass_t
 	public class KClass
@@ -326,7 +341,7 @@ namespace IronKonoha
 		public KType p0 { get; set; }
 		public KParam cparam { get; set; }
 		public KParamID paramdom { get; set; }
-
+		public KClassFlag flag { get; set; }
 		public KClass searchSimilarClassNULL { get; set; }
 
 		public KClass(){
@@ -342,6 +357,8 @@ namespace IronKonoha
 		public KClass searchSuperMethodClassNULL { get; set; }
 
 		public object packdom { get; set; }
+
+		public bool isUnbox { get { return (flag & KClassFlag.UnboxType) != 0; } }
 	}
 
 

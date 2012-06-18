@@ -41,7 +41,7 @@ namespace IronKonoha
 		public ExprParser ParseExpr { get; set; }
 		public StmtTyChecker TopStmtTyCheck { get; set; }
 		public StmtTyChecker StmtTyCheck { get; set; }
-		public StmtTyChecker ExprTyCheck { get; set; }
+		public ExprTyChecker ExprTyCheck { get; set; }
 	}
 
 	[Flags]
@@ -70,11 +70,11 @@ namespace IronKonoha
 		public IDictionary<string, KPackage> packageMap;
 		//public ExprParser UndefinedParseExpr { get; set; }
 		public StmtTyChecker UndefinedStmtTyCheck { get; set; }
-		public StmtTyChecker UndefinedExprTyCheck { get; set; }
+		public ExprTyChecker UndefinedExprTyCheck { get; set; }
 		//public ExprParser ParseExpr_Term { get; set; }
 		//public ExprParser ParseExrp_Op { get; set; }
 		public Func<Context, string, uint, Symbol, KKeyWord> keyword { get; set; }
-		private Action<Context, KonohaSpace, int, Tokenizer.FTokenizer, KFunk> KonohaSpace_setTokenizer { get; set; }
+		private Action<Context, KonohaSpace, int, Tokenizer.FTokenizer, KFunc> KonohaSpace_setTokenizer { get; set; }
 		public Func<Context, KonohaExpr, KType, KObject, KonohaExpr> Expr_setConstValue { get; set; }
 		public Func<Context, KonohaExpr, KType, uint, KonohaExpr> Expr_setNConstValue { get; set; }
 		public Func<Context, KonohaExpr, KonohaExpr, KType, int, KGamma, KonohaExpr> Expr_setVariable { get; set; }
@@ -85,9 +85,9 @@ namespace IronKonoha
 		public Func<Context, KonohaExpr, uint, KGamma, KType, int, KonohaExpr> Expr_tyCheckAt { get; set; }
 		public Func<Context, KStatement, Symbol, KGamma, KType, int, bool> Stmt_tyCheckAt { get; set; }
 		public Func<Context, BlockExpr, KGamma, bool> Block_tyCheckAt { get; set; }
-		public Func<Context, KonohaExpr, KFunk, KGamma, KType, KonohaExpr> Expr_tyCheckCallParams { get; set; }
-		public Func<Context, KType, KFunk, KGamma, int, object[], KonohaExpr> new_TypedMethodCall { get; set; }
-		public Action<Context, KStatement, KFunk, int, object[]> Stmt_toExprCall { get; set; }
+		public Func<Context, KonohaExpr, KFunc, KGamma, KType, KonohaExpr> Expr_tyCheckCallParams { get; set; }
+		public Func<Context, KType, KFunc, KGamma, int, object[], KonohaExpr> new_TypedMethodCall { get; set; }
+		public Action<Context, KStatement, KFunc, int, object[]> Stmt_toExprCall { get; set; }
 		public Func<Context, int, LineInfo, int, string, object[], uint> p { get; set; }
 		public Func<Context, KonohaExpr, int, LineInfo> Expr_uline { get; set; }
 		public Func<Context, KonohaSpace, Symbol, int, Syntax> KonohaSpace_syntax { get; set; }
@@ -136,7 +136,7 @@ namespace IronKonoha
 			Token tk = tls[c];
 			KonohaExpr expr = null;
 			KonohaExpr rexpr = stmt.newExpr2(ctx, tls, c + 1, e);
-			KFunk mn = (s == c) ? syn.Op1 : syn.Op2;
+			KFunc mn = (s == c) ? syn.Op1 : syn.Op2;
 			if (mn != null && syn.ExprTyCheck == ctx.kmodsugar.UndefinedExprTyCheck)
 			{
 				//kToken_setmn(tk, mn, (s == c) ? MNTYPE_unary: MNTYPE_binary);
@@ -200,7 +200,7 @@ namespace IronKonoha
 	public class KGamma : KObject
 	{
 		public KGammaFlag flag { get; set; }
-		public KFunk mtd { get; set; }
+		public KFunc mtd { get; set; }
 		public KonohaSpace ks { get; set; }
 		public KType cid { get; set; }
 		public KType static_cid { get; set; }
@@ -251,7 +251,7 @@ namespace IronKonoha
 		public BlockExpr singleBlock { get; private set; }
 		public KGamma gma { get; private set; }
 		public IList<object> lvarlist { get; private set; }
-		public IList<KFunk> definedMethods { get; private set; }
+		public IList<KFunc> definedMethods { get; private set; }
 
 		public CTXSugar()
 		{
