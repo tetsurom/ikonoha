@@ -34,6 +34,8 @@ namespace IronKonoha
 			return string.Empty;
 		}
 
+		// tycheck.h
+		// static kExpr *Expr_tyCheck(CTX, kStmt *stmt, kExpr *expr, kGamma *gma, ktype_t reqty, int pol)
 		internal KonohaExpr tyCheck(Context ctx, KStatement stmt, KGamma gma, KType reqty, TPOL pol)
 		{
 			var texpr = this;

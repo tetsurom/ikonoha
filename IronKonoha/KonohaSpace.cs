@@ -321,7 +321,7 @@ namespace IronKonoha
 					name = "if",
 					kw = KeywordType.If,
 					rule = "\"if\" \"(\" $expr \")\" $block [\"else\" else: $block]",
-					TopStmtTyCheck = TyCheck.TopStmtTyCheck.If,
+					TopStmtTyCheck = TyCheck.StmtTyCheck.If,
 					StmtTyCheck = TyCheck.StmtTyCheck.If,
 				},
 				new KDEFINE_SYNTAX(){
@@ -762,9 +762,19 @@ namespace IronKonoha
 
 		public object packdom { get; set; }
 
-		internal KFunc getCastMethod(KType kType, KType reqty)
+
+		// static kMethod* KonohaSpace_getCastMethodNULL(CTX, kKonohaSpace *ks, kcid_t cid, kcid_t tcid)
+		internal KFunc getCastMethod(KType cid, KType tcid)
 		{
 			throw new NotImplementedException();
+			/*
+			KFunc mtd = KonohaSpace_getMethod(cid, "to"+tcid);
+			if (mtd == null)
+			{
+				mtd = KonohaSpace_getMethod(cid, "as"+tcid);
+			}
+			return mtd;
+			*/
 		}
 	}
 }

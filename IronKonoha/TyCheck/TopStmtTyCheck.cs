@@ -44,11 +44,6 @@ namespace IronKonoha.TyCheck
 			throw new NotImplementedException();
 		}
 
-		internal static bool If(KStatement stmt, Syntax syn, KGamma gma)
-		{
-			throw new NotImplementedException();
-		}
-
 		internal static bool Else(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			throw new NotImplementedException();

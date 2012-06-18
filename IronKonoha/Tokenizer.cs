@@ -84,6 +84,7 @@ namespace IronKonoha
 		AST_OPTIONAL      // for syntax sugar
 	}
 
+	[System.Diagnostics.DebuggerDisplay("{bcid}")]
 	public class KType
 	{
 		private static readonly Dictionary<BCID, KType> bcidMap = new Dictionary<BCID, KType>();
@@ -97,10 +98,12 @@ namespace IronKonoha
 		public static KType FromBCID(BCID bcid){
 			if (!bcidMap.ContainsKey(bcid))
 			{
-				bcidMap.Add(bcid, new KType());
+				bcidMap.Add(bcid, new KType() { bcid = bcid });
 			}
 			return bcidMap[bcid];
 		}
+
+		public BCID bcid { get; private set; }
 
 		public bool isUnbox
 		{
