@@ -15,7 +15,7 @@ namespace KFibo
 		static void Main(string[] args)
 		{
 			var konoha = new IronKonoha.Konoha();
-			dynamic global = konoha.space.scope;
+			dynamic global = konoha.space.Scope;
 			global.csfibo = new Func<long, long>(csfibo);
 
 			konoha.Eval(@"

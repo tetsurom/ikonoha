@@ -38,7 +38,7 @@ namespace IronKonoha
 		{
 			int r = -1;
 			Token tk = tls[s];
-			if (tk.Type == TokenType.USYMBOL)
+			if (tk.TokenType == TokenType.USYMBOL)
 			{
 				stmt.map.Add(name, new SingleTokenExpr(tk));
 				r = s + 1;
@@ -50,7 +50,7 @@ namespace IronKonoha
 		{
 			int r = -1;
 			Token tk = tls[s];
-			if (tk.Type == TokenType.SYMBOL)
+			if (tk.TokenType == TokenType.SYMBOL)
 			{
 				stmt.map.Add(name, new SingleTokenExpr(tk));
 				r = s + 1;
@@ -63,7 +63,7 @@ namespace IronKonoha
 		{
 			int r = -1;
 			Token tk = tokens[s];
-			if (tk.Type == TokenType.AST_PARENTHESIS)
+			if (tk.TokenType == TokenType.AST_PARENTHESIS)
 			{
 				var tls = tk.Sub;
 				int ss = 0;
@@ -82,13 +82,13 @@ namespace IronKonoha
 		{
 			//Console.WriteLine("PatternMatch_Block name:" + name.Name);
 			Token tk = tls[s];
-			if (tk.Type == TokenType.CODE)
+			if (tk.TokenType == TokenType.CODE)
 			{
 				stmt.map.Add(name, new CodeExpr(tk));
 				return s + 1;
 			}
 			var parser = new Parser(ctx, stmt.ks);
-			if (tk.Type == TokenType.AST_BRACE)
+			if (tk.TokenType == TokenType.AST_BRACE)
 			{
 				BlockExpr bk = parser.CreateBlock(stmt, tk.Sub, 0, tk.Sub.Count, ';');
 				stmt.map.Add(name, bk);

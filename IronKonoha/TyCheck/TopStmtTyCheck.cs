@@ -12,7 +12,7 @@ namespace IronKonoha.TyCheck
 			bool r = false;
 			var ks = gma.ks;
 			KFuncFlag flag = 0;// Stmt_flag(_ctx, stmt, MethodDeclFlag, 0);
-			KType cid = stmt.getcid(KeywordType.Usymbol, null);//ks.scrobj.Type);
+			Type cid = stmt.getcid(KeywordType.Usymbol, null);//ks.scrobj.Type);
 			//kmethodn_t mn = Stmt_getmn(_ctx, stmt, ks, KW_Symbol, MN_new);
 			string name = stmt.map[ks.Symbols.SYMBOL].tk.Text;
 			string body = stmt.map[ks.Symbols.Block].tk.Text;

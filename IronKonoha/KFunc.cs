@@ -30,7 +30,7 @@ namespace IronKonoha
 		public static readonly KFunc NoName = new KFunc();
 		public string Name { get; private set; }
 		public string Body { get; private set; }
-		public KType cid { get; set; }
+		public Type ReturnType { get; set; }
 		public IList<KStatement> param { get; set; }
 		public KFuncFlag flag { get; set; }
 		public IEnumerable<string> paramNames
@@ -40,21 +40,31 @@ namespace IronKonoha
 				return param.Select(stmt => stmt.map[ks.Symbols.Expr].tk.Text);
 			}
 		}
-		public IEnumerable<KType> paramTypes
+		public IEnumerable<Type> paramTypes
 		{
 			get
 			{
-				return param.Select(stmt => stmt.map[ks.Symbols.Type].tk.KType);
+				return param.Select(stmt => stmt.map[ks.Symbols.Type].tk.Type);
+			}
+		}
+		public IEnumerable<FuncParam> Parameters
+		{
+			get
+			{
+				return from stmt in param
+ 					   let name = stmt.map[ks.Symbols.Expr].tk.Text
+					   let type = stmt.map[ks.Symbols.Type].tk.Type
+					   select new FuncParam(name, type);
 			}
 		}
 		public bool isPublic { get { return true; } }
 
-		public KFunc(KonohaSpace ks, KFuncFlag flag, KType cid, string name, IList<KStatement> param, string body)
+		public KFunc(KonohaSpace ks, KFuncFlag flag, Type cid, string name, IList<KStatement> param, string body)
 		{
 			this.ks = ks;
 			this.Name = name;
 			this.flag = flag;
-			this.cid = cid;
+			this.ReturnType = cid;
 			this.param = param;
 			this.Body = body;
 		}

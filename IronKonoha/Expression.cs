@@ -36,11 +36,11 @@ namespace IronKonoha
 
 		// tycheck.h
 		// static kExpr *Expr_tyCheck(CTX, kStmt *stmt, kExpr *expr, kGamma *gma, ktype_t reqty, int pol)
-		internal KonohaExpr tyCheck(Context ctx, KStatement stmt, KGamma gma, KType reqty, TPOL pol)
+		internal KonohaExpr tyCheck(Context ctx, KStatement stmt, KGamma gma, Type reqty, TPOL pol)
 		{
 			var texpr = this;
 			if (stmt.isERR) texpr = null;
-			if (this.ty == KType.FromBCID(BCID.CLASS_Tvar))
+			if (this.ty == BCID.CLASS_Tvar)
 			{
 				ExprTyChecker fo = syn.ExprTyCheck;
 				Debug.Assert(fo != null);
@@ -71,16 +71,16 @@ namespace IronKonoha
 					//return texpr;
 					return null;
 				}
-				if (reqty == KType.FromBCID(BCID.CLASS_Tvar) || texpr.ty == reqty || (pol & TPOL.NOCHECK) != 0)
+				if (reqty == BCID.CLASS_Tvar || texpr.ty == reqty || (pol & TPOL.NOCHECK) != 0)
 				{
 					return texpr;
 				}
 				if (texpr.ty == reqty)
 				{
-					if (ctx.CT_(texpr.ty).isUnbox && !ctx.CT_(reqty).isUnbox)
-					{
-						return KonohaExpr.BoxingExpr(ctx, this, reqty);
-					}
+					//if (ctx.CT_(texpr.ty).isUnbox && !ctx.CT_(reqty).isUnbox)
+					//{
+					//	return KonohaExpr.BoxingExpr(ctx, this, reqty);
+					//}
 					return texpr;
 				}
 				KFunc mtd = gma.ks.getCastMethod(texpr.ty, reqty);
@@ -95,17 +95,17 @@ namespace IronKonoha
 			return texpr;
 		}
 
-		private static KonohaExpr TypedMethodCall(Context ctx, KStatement stmt, KType reqty, KFunc mtd, KGamma gma, int p, KonohaExpr texpr)
+		private static KonohaExpr TypedMethodCall(Context ctx, KStatement stmt, Type reqty, KFunc mtd, KGamma gma, int p, KonohaExpr texpr)
 		{
 			throw new NotImplementedException();
 		}
 
-		private static KonohaExpr BoxingExpr(Context ctx, KonohaExpr konohaExpr, KType reqty)
+		private static KonohaExpr BoxingExpr(Context ctx, KonohaExpr konohaExpr, Type reqty)
 		{
 			throw new NotImplementedException();
 		}
 
-		public KType ty { get; set; }
+		public Type ty { get; set; }
 	}
 
 	[System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]

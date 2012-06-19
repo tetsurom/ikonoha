@@ -11,7 +11,7 @@ namespace IronKonoha
 {
 
 	public delegate bool StmtTyChecker(KStatement stmt, Syntax syn, KGamma gma);
-	public delegate KonohaExpr ExprTyChecker(KStatement stmt, KonohaExpr expr, KGamma gma, KType reqty);
+	public delegate KonohaExpr ExprTyChecker(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty);
 	public delegate int StmtParser(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int start, int end);
 	public delegate KonohaExpr ExprParser(Context ctx, Syntax syn, KStatement stmt, IList<Token> tokens, int start, int current, int end);
 
@@ -45,13 +45,20 @@ namespace IronKonoha
 
 		public Dictionary<KeywordType, Syntax> syntaxMap { get; set; }
 		public KonohaSpace parent { get; set; }
-		public ExpandoObject scope {get; set;}
+		public ExpandoObject Scope { get; private set; }
+		public IDictionary<string, object> ScopeDictionary
+		{
+			get
+			{
+				return Scope as IDictionary<string, object>;
+			}
+		}
 		public readonly SymbolConst Symbols;
 		
 		public KonohaSpace(Context ctx)
 		{
 			this.ctx = ctx;
-			this.scope = new ExpandoObject();
+			this.Scope = new ExpandoObject();
 			Symbols = new SymbolConst(ctx);
 			defineDefaultSyntax();
 		}
@@ -373,10 +380,10 @@ namespace IronKonoha
 			if (tk.IsType)
 			{
 				tk = (s + 1 < e) ? tls[s + 1] : null;
-				if (tk != null && (tk.Type == TokenType.SYMBOL || tk.Type == TokenType.USYMBOL))
+				if (tk != null && (tk.TokenType == TokenType.SYMBOL || tk.TokenType == TokenType.USYMBOL))
 				{
 					tk = (s + 2 < e) ? tls[s + 2] : null;
-					if (tk != null && (tk.Type == TokenType.AST_PARENTHESIS || tk.Keyword == KeywordType.DOT))
+					if (tk != null && (tk.TokenType == TokenType.AST_PARENTHESIS || tk.Keyword == KeywordType.DOT))
 					{
 						return GetSyntax(KeywordType.StmtMethodDecl); //
 					}
@@ -485,7 +492,7 @@ namespace IronKonoha
 			for (i = s; i < e; i++)
 			{
 				Token tk = tls[i];
-				if (tk.Type == tt && tk.TopChar == closech) return i;
+				if (tk.TokenType == tt && tk.TopChar == closech) return i;
 			}
 			Debug.Assert(i != e);  // Must not happen
 			return e;
@@ -499,8 +506,8 @@ namespace IronKonoha
 			string t = tk.Text;
 			if (t[0] == opench && t.Length == 1)
 			{
-				int ne = findTopCh(tls, i + 1, e, tk.Type, closech);
-				tk.Type = tt;
+				int ne = findTopCh(tls, i + 1, e, tk.TokenType, closech);
+				tk.TokenType = tt;
 				tk.Keyword = (KeywordType)tt;
 				List<Token> sub;
 				//tk->topch = opench; tk.losech = closech;
@@ -521,8 +528,8 @@ namespace IronKonoha
 			for (i = s; i < e; i++)
 			{
 				Token tk = tls[i];
-				if (tk.Type == TokenType.INDENT) continue;
-				if (tk.Type == TokenType.TEXT /*|| tk.Type == TK_STEXT*/)
+				if (tk.TokenType == TokenType.INDENT) continue;
+				if (tk.TokenType == TokenType.TEXT /*|| tk.Type == TK_STEXT*/)
 				{
 					if (checkNestedSyntax(tls, ref i, e, TokenType.AST_PARENTHESIS, '(', ')') ||
 						checkNestedSyntax(tls, ref i, e, TokenType.AST_BRACKET, '[', ']') ||
@@ -531,19 +538,19 @@ namespace IronKonoha
 					}
 					else
 					{
-						tk.Type = TokenType.CODE;
+						tk.TokenType = TokenType.CODE;
 						tk.Keyword = ctx.kmodsugar.keyword_(tk.Text, Symbol.NewID).Type;
 					}
 					adst.Add(tk);
 					continue;
 				}
-				if (tk.Type == TokenType.SYMBOL)
+				if (tk.TokenType == TokenType.SYMBOL)
 				{
 					if (i > 0 && tls[i - 1].TopChar == '$')
 					{
 						var name = string.Format("${0}", tk.Text);
 						tk.Keyword = ctx.kmodsugar.keyword_(name, Symbol.NewID).Type;
-						tk.Type = TokenType.METANAME;
+						tk.TokenType = TokenType.METANAME;
 						if (nameid == null) nameid = Symbol.Get(ctx, tk.Text);
 						tk.nameid = nameid;
 						nameid = null;
@@ -558,7 +565,7 @@ namespace IronKonoha
 						continue;
 					}
 				}
-				if (tk.Type == TokenType.OPERATOR)
+				if (tk.TokenType == TokenType.OPERATOR)
 				{
 					if (checkNestedSyntax(tls, ref i, e, TokenType.AST_OPTIONAL, '[', ']'))
 					{
@@ -640,69 +647,30 @@ namespace IronKonoha
 			if(mtd.packid == 0) {
 				mtd.packid = this.packid;
 			}
-			KClass ct = ctx.CT_(mtd.cid);
-			if(ct != null && ct.packdom == this.packdom && mtd.isPublic) {
+			Type ct = mtd.ReturnType;
+			//if(ct != null && ct.packdom == this.packdom && mtd.isPublic) {
 				//ct.addMethod(ctx, mtd);
-			}
-			else {
+			//}
+			//else {
 				addMethod(mtd);
-			}
+			//}
 			return true;
 		}
 
 		private void addMethod(KFunc mtd)
 		{
-			Type retType = GetCSTypeFromKType(mtd.cid);
-
-			var args = mtd.paramNames.ToList();
-			var argtypes = mtd.paramTypes.Select(t => GetCSTypeFromKType(t)).ToList();
-
-			Type ftype = null;
-
-			if (retType == typeof(void))
-			{
-				if (args.Count > 0)
-				{
-					ftype = Converter.ActionTypes[args.Count].MakeGenericType(argtypes.ToArray());
-				}
-				else
-				{
-					ftype = Converter.ActionTypes[0];
-				}
-			}
-			else
-			{
-				argtypes.Add(typeof(object));
-				ftype = Converter.FuncTypes[args.Count].MakeGenericType(argtypes.ToArray());
-			}
-
+			var argtypes = mtd.paramTypes.ToList();
+			argtypes.Add(mtd.ReturnType ?? typeof(void));
+			argtypes[0] = typeof(long);
+			Type ftype = Expression.GetDelegateType(argtypes.ToArray());
 			Type fctype = typeof(FuncCache<>).MakeGenericType(ftype);
 
-			dynamic cache = Activator.CreateInstance(fctype, new Converter(ctx, this), mtd.Body, args);
+			dynamic cache = Activator.CreateInstance(fctype, new Converter(ctx, this), mtd.Body, mtd.Parameters.ToList());
 
-			var sc= this.scope as IDictionary<string, object>;
+			ScopeDictionary[mtd.Name] = cache.Invoke;
 
-			sc[mtd.Name] = cache.Invoke;
-
-			cache.Scope = this.scope;
+			cache.Scope = this.Scope;
 			cache.key = mtd.Name;
-		}
-
-		private Type GetCSTypeFromKType(KType kType)
-		{
-			if (kType == KType.Void)
-			{
-				return typeof(void);
-			}
-			else if (kType == KType.Int)
-			{
-				return typeof(long);
-			}
-			else if (kType == KType.Boolean)
-			{
-				return typeof(bool);
-			}
-			return typeof(object);
 		}
 
 		// static KMETHOD ParseExpr_Parenthesis(CTX, ksfp_t *sfp _RIX)
@@ -739,7 +707,7 @@ namespace IronKonoha
 		{
 			if(c+1 < e) {
 				Token tk = tls[c+1];
-				return (tk.Type == TokenType.SYMBOL || tk.Type == TokenType.USYMBOL || tk.Type == TokenType.MSYMBOL);
+				return (tk.TokenType == TokenType.SYMBOL || tk.TokenType == TokenType.USYMBOL || tk.TokenType == TokenType.MSYMBOL);
 			}
 			return false;
 		}
@@ -764,7 +732,7 @@ namespace IronKonoha
 
 
 		// static kMethod* KonohaSpace_getCastMethodNULL(CTX, kKonohaSpace *ks, kcid_t cid, kcid_t tcid)
-		internal KFunc getCastMethod(KType cid, KType tcid)
+		internal KFunc getCastMethod(Type cid, Type tcid)
 		{
 			throw new NotImplementedException();
 			/*

@@ -36,7 +36,7 @@ namespace IronKonoha
 		public string op2 { get; set; }
 		public string op1 { get; set; }
 		public int priority_op2 { get; set; }
-		public KType type { get; set; }
+		public Type type { get; set; }
 		public StmtParser PatternMatch { get; set; }
 		public ExprParser ParseExpr { get; set; }
 		public StmtTyChecker TopStmtTyCheck { get; set; }
@@ -202,8 +202,8 @@ namespace IronKonoha
 		public KGammaFlag flag { get; set; }
 		public KFunc mtd { get; set; }
 		public KonohaSpace ks { get; set; }
-		public KType cid { get; set; }
-		public KType static_cid { get; set; }
+		public Type cid { get; set; }
+		public Type static_cid { get; set; }
 		public Stack<object> lvar{ get; private set; }
 		public Stack<object> fvar{ get; private set; }
 		public IList<object> lvarlst { get; private set; }
@@ -283,15 +283,15 @@ namespace IronKonoha
 	public class KShare
 	{
 		public Dictionary<string, Symbol> SymbolMap { get; private set; }
-		public Dictionary<KType, KClass> ClassMap { get; private set; }
+		//public Dictionary<KType, KClass> ClassMap { get; private set; }
 		public Dictionary<IList<KParam>, KParamID> ParamDomMap { get; private set; }
 		public KShare()
 		{
 			SymbolMap = new Dictionary<string, Symbol>();
-			ClassMap = new Dictionary<KType, KClass>();
-			ClassMap[KType.Void] = new KClass() { bcid = BCID.CLASS_Tvoid };
-			ClassMap[KType.Int] = new KClass() { bcid = BCID.CLASS_Int };
-			ClassMap[KType.Boolean] = new KClass() { bcid = BCID.CLASS_Boolean };
+			//ClassMap = new Dictionary<KType, KClass>();
+			//ClassMap[KType.Void] = new KClass() { bcid = BCID.CLASS_Tvoid };
+			//ClassMap[KType.Int] = new KClass() { bcid = BCID.CLASS_Int };
+			//ClassMap[KType.Boolean] = new KClass() { bcid = BCID.CLASS_Boolean };
 			ParamDomMap = new Dictionary<IList<KParam>, KParamID>();
 		}
 	}
@@ -485,19 +485,10 @@ namespace IronKonoha
 			return vperrorf(pe, line, lpos, format, param);
 		}
 
-		public KClass CT_(KType ty)
+		[Obsolete]
+		public Type CT_(Type ty)
 		{
-			if (ty == null || !this.share.ClassMap.ContainsKey(ty))
-			{
-				return null;
-			}
-			return this.share.ClassMap[ty];
-		}
-
-		public KClass CT_(BCID ty)
-		{
-			return this.share.ClassMap[KType.FromBCID(ty)];
-			//return this.share.ClassMap[ty];
+			return ty;
 		}
 
 		// static size_t vperrorf(CTX, int pe, kline_t uline, int lpos, const char *fmt, va_list ap)

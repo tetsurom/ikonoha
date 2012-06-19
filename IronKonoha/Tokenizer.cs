@@ -84,16 +84,25 @@ namespace IronKonoha
 		AST_OPTIONAL      // for syntax sugar
 	}
 
+	class Variant
+	{
+
+	}
+
+	[Obsolete]
 	[System.Diagnostics.DebuggerDisplay("{bcid}")]
 	public class KType
 	{
 		private static readonly Dictionary<BCID, KType> bcidMap = new Dictionary<BCID, KType>();
-		public static readonly KType Unknown = new KType();
-		public static readonly KType Void = KType.FromBCID(BCID.CLASS_Tvoid);
-		public static readonly KType Int = KType.FromBCID(BCID.CLASS_Int);
-		public static readonly KType Boolean = KType.FromBCID(BCID.CLASS_Boolean);
-		public static readonly KType System = KType.FromBCID(BCID.CLASS_System);
-		public static readonly KType TVar = KType.FromBCID(BCID.CLASS_Tvar);
+		public static readonly Type Unknown = null;
+		public static readonly Type Void = typeof(void);
+		public static readonly Type Int = typeof(int);
+		public static readonly Type Boolean = typeof(bool);
+		/// <summary>
+		/// not implemented.
+		/// </summary>
+		public static readonly Type System = null;
+		public static readonly Type TVar = typeof(Variant);
 
 		public static KType FromBCID(BCID bcid){
 			if (!bcidMap.ContainsKey(bcid))
@@ -118,17 +127,23 @@ namespace IronKonoha
 	public class Token
 	{
 
-		public TokenType Type { get; set; }
+		/// <summary>
+		/// トークンの種類
+		/// </summary>
+		public TokenType TokenType { get; set; }
 		public string Text { get; private set; }
 		public IList<Token> Sub { get; set; }
 		public char TopChar { get { return Text.Length == 0 ? '\0' : this.Text[0]; } }
 		public KeywordType Keyword { get; set; }
-		public KType KType { get; set; }
+		/// <summary>
+		/// トークンが表す型
+		/// </summary>
+		public Type Type { get; set; }
 		public LineInfo ULine { get; set; }
 
 		public Token(TokenType type, string text, int lpos)
 		{
-			this.Type = type;
+			this.TokenType = type;
 			this.Text = text;
 		}
 
@@ -141,7 +156,7 @@ namespace IronKonoha
 		[Obsolete]
 		public void toERR(Context ctx, uint errorcode)
 		{
-			this.Type = TokenType.ERR;
+			this.TokenType = TokenType.ERR;
 			this.Text = ctx.ctxsugar.errors.strings[(int)errorcode];
 		}
 
@@ -157,11 +172,11 @@ namespace IronKonoha
 				Syntax syn = ks.GetSyntax(kw.Type);
 				if (syn != null)
 				{
-					if (syn.Type != KType.Unknown)
+					if (syn.Type != null)
 					{
 						this.Keyword = KeywordType.Type;
-						this.Type = TokenType.TYPE;
-						this.KType = syn.Type;
+						this.TokenType = TokenType.TYPE;
+						this.Type = syn.Type;
 					}
 					else
 					{
@@ -177,48 +192,42 @@ namespace IronKonoha
 		// static struct _kToken* TokenType_resolveGenerics(CTX, kKonohaSpace *ks, struct _kToken *tk, kToken *tkP)
 		internal bool ResolveGenerics(Context ctx, Token tkP)
 		{
-			if(tkP.Type == TokenType.AST_BRACKET) {
+			if(tkP.TokenType == TokenType.AST_BRACKET) {
 				int i;
 				
 				int size = tkP.Sub.Count;
-				List<KParam> p = new List<KParam>(size);
+				var p = new List<Type>(size);
 				for(i = 0; i < size; i++) {
 					Token tkT = (tkP.Sub[i]);
 					if(tkT.IsType) {
-						p.Add(new KParam() { ty = tkT.KType });
+						p.Add(tkT.Type);
 						continue;
 					}
 					if(tkT.TopChar == ',') continue;
-					//return NULL; // new int[10];  // not generics
 					return false;
 				}
 				int psize = p.Count;
-				KClass ct = null;
+				Type ct = this.Type;
 				if(psize > 0) {
-					ct = ctx.CT_(this.KType);
-					if (ct.bcid == BCID.CLASS_Func)
+					if (ct == typeof(Delegate))
 					{
-						ct = KClassTable.Generics(ctx, ct, p[0].ty, p.Skip(1).ToList());
+						ct = KClassTable.Generics(ct, p[0], p.Skip(1).ToList());
 					}
-					else if(ct.p0 == KType.Void) {
-						ctx.SUGAR_P(ReportLevel.ERR, this.ULine, 0, "not generic type: {0}", this.KType);
+					else if(!ct.IsGenericType) {
+						ctx.SUGAR_P(ReportLevel.ERR, this.ULine, 0, "not generic type: {0}", this.Type);
 						//return tk;
 						return true;
 					}
 					else {
-						ct = KClassTable.Generics(ctx, ct, KType.Void, p);
+						ct = KClassTable.Generics(ct, null, p);
 					}
  				}
 				else {
-					var p0 = new List<KParam>();
-					p0.Add(new KParam() { ty = this.KType, fn = null });
-					ct = KClassTable.Generics(ctx, ctx.CT_(BCID.CLASS_Array), this.KType, p0);
+					ct = KClassTable.Generics(typeof(Array), null, new List<Type>() { this.Type });
  				}
-				this.KType = ct.cid;
-				//return tk;
+				this.Type = ct;
 				return true;
  			}
-			//return NULL;
 			return false;
 		}
 
@@ -748,7 +757,7 @@ namespace IronKonoha
 
 			foreach (var tk in tokens)
 			{
-				Console.WriteLine("{0} [{1}]", tk.Text, tk.Type);
+				Console.WriteLine("{0} [{1}]", tk.Text, tk.TokenType);
 			}
 
 			return tokens;

@@ -69,8 +69,8 @@ namespace IronKonoha
 				Token rule = rules[ri];
 				Token tk = tls[ti];
 				uline = tk.ULine;
-				Console.WriteLine("matching rule={0},{1},{2} token={3},{4},{5}", ri, rule.Type, rule.Keyword, ti - s, tk.Type, tk.Text);
-				if (rule.Type == TokenType.CODE)
+				Console.WriteLine("matching rule={0},{1},{2} token={3},{4},{5}", ri, rule.TokenType, rule.Keyword, ti - s, tk.TokenType, tk.Text);
+				if (rule.TokenType == TokenType.CODE)
 				{
 					if (rule.Keyword != tk.Keyword)
 					{
@@ -84,7 +84,7 @@ namespace IronKonoha
 					ti++;
 					continue;
 				}
-				else if (rule.Type == TokenType.METANAME)
+				else if (rule.TokenType == TokenType.METANAME)
 				{
 					Syntax syn = this.ks.GetSyntax(rule.Keyword);
 					if (syn == null || syn.PatternMatch == null)
@@ -93,7 +93,7 @@ namespace IronKonoha
 						return -1;
 					}
 					int c = e;
-					if (ri + 1 < rule_size && rules[ri + 1].Type == TokenType.CODE)
+					if (ri + 1 < rule_size && rules[ri + 1].TokenType == TokenType.CODE)
 					{
 						c = lookAheadKeyword(tls, ti + 1, e, rules[ri + 1]);
 						if (c == -1)
@@ -127,7 +127,7 @@ namespace IronKonoha
 					ti = (c == e) ? next : c + 1;
 					continue;
 				}
-				else if (rule.Type == TokenType.AST_OPTIONAL)
+				else if (rule.TokenType == TokenType.AST_OPTIONAL)
 				{
 					int next = matchSyntaxRule(ctx, rule.Sub, uline, tls, ti, e, true);
 					if (next == -1)
@@ -137,9 +137,9 @@ namespace IronKonoha
 					ti = next;
 					continue;
 				}
-				else if (rule.Type == TokenType.AST_PARENTHESIS || rule.Type == TokenType.AST_BRACE || rule.Type == TokenType.AST_BRACKET)
+				else if (rule.TokenType == TokenType.AST_PARENTHESIS || rule.TokenType == TokenType.AST_BRACE || rule.TokenType == TokenType.AST_BRACKET)
 				{
-					if (tk.Type == rule.Type && rule.TopChar == tk.TopChar)
+					if (tk.TokenType == rule.TokenType && rule.TopChar == tk.TopChar)
 					{
 						int next = matchSyntaxRule(ctx, rule.Sub, uline, tk.Sub, 0, tk.Sub.Count, false);
 						if (next == -1)
@@ -164,7 +164,7 @@ namespace IronKonoha
 				for (; ri < rules.Count; ri++)
 				{
 					Token rule = rules[ri];
-					if (rule.Type != TokenType.AST_OPTIONAL)
+					if (rule.TokenType != TokenType.AST_OPTIONAL)
 					{
 						ctx.SUGAR_P(ReportLevel.ERR, uline, -1, "{0} needs syntax pattern: {1}", this.syn.KeyWord, rule.Keyword);
 						return -1;
@@ -285,14 +285,14 @@ namespace IronKonoha
 			for (i = s; i < e; i++)
 			{
 				Token tk = tls[i];
-				if (tk.Type != TokenType.METANAME)
+				if (tk.TokenType != TokenType.METANAME)
 					break;
 				if (i + 1 < e)
 				{
 					var kw = ctx.kmodsugar.keyword_("@" + tk.Text, Symbol.NewID).Type;
 					Token tk1 = tls[i + 1];
 					KonohaExpr value = null;
-					if (tk1.Type == TokenType.AST_PARENTHESIS)
+					if (tk1.TokenType == TokenType.AST_PARENTHESIS)
 					{
 						value = this.newExpr2(ctx, tk1.Sub, 0, tk1.Sub.Count);
 						i++;
@@ -357,7 +357,7 @@ namespace IronKonoha
 			return result;
 		}
 
-		public KType getcid(KeywordType kw, KType defcid)
+		public Type getcid(KeywordType kw, Type defcid)
 		{
 			if (!this.map.ContainsKey(kw))
 			{
@@ -367,7 +367,7 @@ namespace IronKonoha
 			{
 				var tk = this.map[kw];
 				Debug.Assert(tk.tk.IsType);
-				return tk.tk.KType;
+				return tk.tk.Type;
 			}
 		}
 
@@ -377,7 +377,7 @@ namespace IronKonoha
 		}
 
 
-		internal bool tyCheckExpr(Context ctx, KeywordType nameid, KGamma gma, KType reqty, TPOL pol)
+		internal bool tyCheckExpr(Context ctx, KeywordType nameid, KGamma gma, Type reqty, TPOL pol)
 		{
 			var k = Symbol.Get(ctx, nameid);
 			if (this.map.ContainsKey(k))

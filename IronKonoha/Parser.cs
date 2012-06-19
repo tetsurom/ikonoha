@@ -80,9 +80,9 @@ namespace IronKonoha
 				Token tk1 = tokens[i + 1];
 				if (tk.Keyword != 0)
 					break;  // already parsed
-				if (tk.TopChar == '@' && (tk1.Type == TokenType.SYMBOL || tk1.Type == TokenType.USYMBOL))
+				if (tk.TopChar == '@' && (tk1.TokenType == TokenType.SYMBOL || tk1.TokenType == TokenType.USYMBOL))
 				{
-					tk1.Type = TokenType.METANAME;
+					tk1.TokenType = TokenType.METANAME;
 					tk1.Keyword = 0;
 					tokensDst.Add(tk1);
 					i++;
@@ -92,17 +92,17 @@ namespace IronKonoha
 					}
 					continue;
 				}
-				if (tk.Type == TokenType.METANAME)
+				if (tk.TokenType == TokenType.METANAME)
 				{  // already parsed
 					tokensDst.Add(tk);
-					if (tk1.Type == TokenType.AST_PARENTHESIS)
+					if (tk1.TokenType == TokenType.AST_PARENTHESIS)
 					{
 						tokensDst.Add(tk1);
 						i++;
 					}
 					continue;
 				}
-				if (tk.Type != TokenType.INDENT)
+				if (tk.TokenType != TokenType.INDENT)
 					break;
 				if (indent == 0)
 					indent = tk.Text.Length;
@@ -110,7 +110,7 @@ namespace IronKonoha
 			for (; i < end; i++)
 			{
 				var tk = tokens[i];
-				if (tk.TopChar == delim && tk.Type == TokenType.OPERATOR)
+				if (tk.TopChar == delim && tk.TokenType == TokenType.OPERATOR)
 				{
 					errorToken = null;
 					return i + 1;
@@ -132,11 +132,11 @@ namespace IronKonoha
 					tk.Keyword = KeywordType.Bracket;
 					continue;
 				}
-				else if (tk.Type == TokenType.ERR)
+				else if (tk.TokenType == TokenType.ERR)
 				{
 					errorToken = tk;
 				}
-				if (tk.Type == TokenType.INDENT)
+				if (tk.TokenType == TokenType.INDENT)
 				{
 					if (tk.Text.Length <= indent)
 					{
@@ -166,7 +166,7 @@ namespace IronKonoha
 			{
 				tk = tokens[i];
 				Debug.Assert(tk.Keyword == 0);
-				if (tk.Type == TokenType.ERR)
+				if (tk.TokenType == TokenType.ERR)
 					break;  // ERR
 				Debug.Assert(tk.TopChar != '{');
 				if (tk.TopChar == '(')
@@ -186,20 +186,20 @@ namespace IronKonoha
 					errorToken = null;
 					return i;
 				}
-				if ((closeChar == ')' || closeChar == ']') && tk.Type == TokenType.CODE)
+				if ((closeChar == ')' || closeChar == ']') && tk.TokenType == TokenType.CODE)
 					probablyCloseBefore = i;
-				if (tk.Type == TokenType.INDENT && closeChar != '}')
+				if (tk.TokenType == TokenType.INDENT && closeChar != '}')
 					continue;  // remove INDENT;
 				i = appendKeyword(tokens, i, end, tkP.Sub, out errorToken);
 			}
-			if (tk.Type != TokenType.ERR)
+			if (tk.TokenType != TokenType.ERR)
 			{
 				uint errref = ctx.SUGAR_P(ReportLevel.ERR, tk.ULine, 0, "'{0}' is expected (probably before {1})", closeChar.ToString(), tokens[probablyCloseBefore].Text);
 				tkP.toERR(this.ctx, errref);
 			}
 			else
 			{
-				tkP.Type = TokenType.ERR;
+				tkP.TokenType = TokenType.ERR;
 			}
 			errorToken = tkP;
 			return end;
@@ -210,15 +210,15 @@ namespace IronKonoha
 		{
 			int next = start; // don't add
 			Token tk = tls[start];
-			if (tk.Type < TokenType.OPERATOR)
+			if (tk.TokenType < TokenType.OPERATOR)
 			{
-				tk.Keyword = (KeywordType)tk.Type;
+				tk.Keyword = (KeywordType)tk.TokenType;
 			}
-			if (tk.Type == TokenType.SYMBOL)
+			if (tk.TokenType == TokenType.SYMBOL)
 			{
 				tk.IsResolved(ctx, ks);
 			}
-			else if (tk.Type == TokenType.USYMBOL)
+			else if (tk.TokenType == TokenType.USYMBOL)
 			{
 				if (!tk.IsResolved(ctx, ks))
 				{
@@ -232,7 +232,7 @@ namespace IronKonoha
 					//}
 				}
 			}
-			else if (tk.Type == TokenType.OPERATOR)
+			else if (tk.TokenType == TokenType.OPERATOR)
 			{
 				if (!tk.IsResolved(ctx, ks))
 				{
@@ -242,7 +242,7 @@ namespace IronKonoha
 					return end;
 				}
 			}
-			else if (tk.Type == TokenType.CODE)
+			else if (tk.TokenType == TokenType.CODE)
 			{
 				tk.Keyword = KeywordType.Brace;
 			}
@@ -287,27 +287,27 @@ namespace IronKonoha
 		public Symbol fn { get; set; }
 		public TokenType Type { get; set; }
 	}
-
-	public enum BCID{
-		CLASS_Tvoid,
-		CLASS_Tvar,
-		CLASS_Object,
-		CLASS_Boolean,
-		CLASS_Int,
-		CLASS_String,
-		CLASS_Array,
-		CLASS_Param,
-		CLASS_Method,
-		CLASS_Func,
-		CLASS_System,
-		CLASS_T0,
+	[Obsolete]
+	public class BCID{
+		public static readonly Type CLASS_Tvoid = typeof(void);
+		public static readonly Type CLASS_Tvar = typeof(Variant);
+		public static readonly Type CLASS_Object = typeof(object);
+		public static readonly Type CLASS_Boolean = typeof(bool);
+		public static readonly Type CLASS_Int = typeof(int);
+		public static readonly Type CLASS_String = typeof(string);
+		public static readonly Type CLASS_Array = typeof(Array);
+		public static readonly Type CLASS_Param = typeof(KParam);
+		public static readonly Type CLASS_Method = typeof(Delegate);
+		public static readonly Type CLASS_Func = typeof(Delegate);
+		public static readonly Type CLASS_System = typeof(object);
+		public static readonly Type CLASS_T0 = typeof(object);
 	}
 
 	public class KParamID
 	{
 
 	}
-
+	[Obsolete]
 	public class KDEFINE_CLASS{
 
 	}
@@ -317,7 +317,7 @@ namespace IronKonoha
 
 	}
 
-
+	[Obsolete]
 	[Flags]
 	public enum KClassFlag
 	{
@@ -334,6 +334,7 @@ namespace IronKonoha
 
 	// konoha2.h
 	// _kclass_t
+	[Obsolete]
 	public class KClass
 	{
 		public KType cid { get; set; }

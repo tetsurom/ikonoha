@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Linq.Expressions;
 
 namespace IronKonoha
 {
@@ -21,36 +22,24 @@ namespace IronKonoha
 		/// </summary>
 		/// <param name="ctx"></param>
 		/// <param name="ct">ジェネリック型</param>
-		/// <param name="rtype">?</param>
-		/// <param name="psize">?</param>
+		/// <param name="rtype">戻り値の型</param>
 		/// <param name="p">型引数</param>
 		/// <returns></returns>
 		/// 
 		// datatype.h
 		// static kclass_t *CT_Generics(CTX, kclass_t *ct, ktype_t rtype, int psize, kparam_t *p)
-		public static KClass Generics(Context ctx, KClass ct, KType rtype, IList<KParam> p)
+		public static Type Generics(Type ct, Type rtype, IList<Type> p)
 		{
-			int psize = p.Count;
-			KParamID paramdom = Kparamdom(ctx, p);
-			KClass ct0 = ct;
-			var isNotFuncClass = (ct.bcid != BCID.CLASS_Func);
-			do {
-				if(ct.paramdom == paramdom && (isNotFuncClass || ct.p0 == rtype)) {
-					return ct;
+			if (ct == typeof(Delegate))
+			{
+				if (rtype == null)
+				{
+					rtype = typeof(void);
 				}
-				if(ct.searchSimilarClassNULL == null) break;
-				ct = ct.searchSimilarClassNULL;
-			} while(ct != null);
-			KClass newct = new KClass(ctx, ct0, null, null){
-				paramdom = paramdom,
-				p0 = isNotFuncClass ? p[0].ty : rtype
-			};
-			//newct.methods, K_EMPTYARRAY);
-			if(newct.searchSuperMethodClassNULL == null) {
-				newct.searchSuperMethodClassNULL = ct0;
+				p.Add(rtype);
+				return Expression.GetDelegateType(p.ToArray());
 			}
-			ct.searchSimilarClassNULL = newct;
-			return ct.searchSimilarClassNULL;
+			return ct.MakeGenericType(p.ToArray());
 		}
 
 	}
