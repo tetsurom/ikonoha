@@ -36,7 +36,7 @@ namespace IronKonoha
 	public class Syntax
 	{
 		public IList<Token> SyntaxRule { get; set; }
-		public KeywordType KeyWord { get; set; }
+		public KKeyWord KeyWord { get; set; }
 		public SynFlag Flag { get; set; }
 		/// <summary>
 		/// 文法の優先度？ 

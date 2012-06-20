@@ -68,7 +68,7 @@ namespace IronKonoha
 				var tls = tk.Sub;
 				int ss = 0;
 				int ee = tls.Count;
-				if (0 < ee && tls[0].Keyword == KeywordType.Void) ss = 1;  //  f(void) = > f()
+				if (0 < ee && tls[0].Keyword == KeyWordTable.Void) ss = 1;  //  f(void) = > f()
 				BlockExpr bk = new Parser(ctx, stmt.ks).CreateBlock(stmt, tls, ss, ee, ',');
 				stmt.map.Add(name, bk);
 				r = s + 1;

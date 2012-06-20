@@ -31,5 +31,9 @@ namespace IronKonoha.TyCheck
 			throw new NotImplementedException();
 		}
 
+		internal static bool TypeDecl(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			throw new NotImplementedException();
+		}
 	}
 }

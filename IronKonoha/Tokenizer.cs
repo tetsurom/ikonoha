@@ -8,58 +8,6 @@ using System.Diagnostics;
 
 namespace IronKonoha
 {
-
-
-
-	public enum KeywordType
-	{
-		Err,
-		Expr,
-		Symbol,
-		Usymbol,
-		Text,
-		TKInt,
-		TKFloat,
-		Type,
-		Parenthesis,
-		Bracket,
-		Brace,
-		StmtTypeDecl,
-		Block,
-		Params,
-		ExprMethodCall,
-		Toks,
-		DOT,
-		DIV,
-		MOD,
-		MUL,
-		ADD,
-		SUB,
-		LT,
-		LTE,
-		GT,
-		GTE,
-		EQ,
-		NEQ,
-		AND,
-		OR,
-		NOT,
-		COLON,
-		LET,
-		COMMA,
-		DOLLAR,
-		Void,
-		StmtMethodDecl,
-		Boolean,
-		Int,
-		Null,
-		True,
-		False,
-		If,
-		Else,
-		Return
-	}
-
 	public enum TokenType
 	{
 		NONE,          // KW_Err
@@ -134,7 +82,20 @@ namespace IronKonoha
 		public string Text { get; private set; }
 		public IList<Token> Sub { get; set; }
 		public char TopChar { get { return Text.Length == 0 ? '\0' : this.Text[0]; } }
-		public KeywordType Keyword { get; set; }
+
+		private KKeyWord _keyword;
+		public KKeyWord Keyword
+		{
+			get
+			{
+				return _keyword ?? KeyWordTable.Map[0];
+			}
+			set
+			{
+				Debug.Assert(value != null);
+				_keyword = value ?? KeyWordTable.Map[0];
+			}
+		}
 		/// <summary>
 		/// トークンが表す型
 		/// </summary>
@@ -160,27 +121,28 @@ namespace IronKonoha
 			this.Text = ctx.ctxsugar.errors.strings[(int)errorcode];
 		}
 
-		public bool IsType { get { return Keyword == KeywordType.Type; } }
+		public bool IsType { get { return Keyword.Type == KeywordType.Type; } }
 
 
 		// static kbool_t Token_resolved(CTX, kKonohaSpace *ks, struct _kToken *tk)
-		public bool IsResolved(Context ctx, KonohaSpace ks)
+		public bool Resolve(Context ctx, KonohaSpace ks)
 		{
-			KKeyWord kw = ctx.kmodsugar.keyword_(this.Text, null);
-			if (kw != null && kw != Symbol.NONAME)
+			KKeyWord kw = ctx.kmodsugar.keyword_(this.Text);
+			if (kw != null && kw.Name != null && kw.Name != string.Empty)
 			{
-				Syntax syn = ks.GetSyntax(kw.Type);
+				Syntax syn = ks.GetSyntax(kw);
 				if (syn != null)
 				{
 					if (syn.Type != null)
 					{
-						this.Keyword = KeywordType.Type;
+						this.Keyword = KeyWordTable.Type;
 						this.TokenType = TokenType.TYPE;
 						this.Type = syn.Type;
 					}
 					else
 					{
-						this.Keyword = kw.Type;
+						Debug.Assert(kw != null);
+						this.Keyword = kw;
 					}
 					return true;
 				}

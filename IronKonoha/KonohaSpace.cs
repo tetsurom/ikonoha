@@ -43,7 +43,7 @@ namespace IronKonoha
 	{
 		public Context ctx { get; private set; }
 
-		public Dictionary<KeywordType, Syntax> syntaxMap { get; set; }
+		public Dictionary<string, Syntax> syntaxMap { get; set; }
 		public KonohaSpace parent { get; set; }
 		public ExpandoObject Scope { get; private set; }
 		public IDictionary<string, object> ScopeDictionary
@@ -124,6 +124,7 @@ namespace IronKonoha
 					name = "$type",
 					rule = "$type $expr",
 					PatternMatch = PatternMatch.Type,
+					StmtTyCheck = TyCheck.StmtTyCheck.TypeDecl,
 					ExprTyCheck = TyCheck.ExprTyCheck.Type,
 					kw = KeywordType.Type,
 					flag = SynFlag.ExprTerm,
@@ -286,19 +287,19 @@ namespace IronKonoha
 					PatternMatch = PatternMatch.Type,
 					TopStmtTyCheck = TyCheck.TopStmtTyCheck.MethodDecl,
 					kw = KeywordType.StmtMethodDecl,
-					type = KType.Void,
+					type = typeof(void),
 				},
 				new KDEFINE_SYNTAX(){
 					name = "int",
 					PatternMatch = PatternMatch.Type,
 					kw = KeywordType.Type,
-					type = KType.Int,
+					type = typeof(long),
 				},
 				new KDEFINE_SYNTAX(){
 					name = "boolean",
 					PatternMatch = PatternMatch.Type,
 					kw = KeywordType.Type,
-					type = KType.Boolean,
+					type = typeof(bool),
 				},
 				//new KDEFINE_SYNTAX(){
 				//    name = "null",
@@ -343,7 +344,7 @@ namespace IronKonoha
 			//this.GetSyntax(KeywordType.Void).Type = KType.Void;
 			var usynbolRule = new List<Token>();
 			parseSyntaxRule("$USYMBOL \"=\" $expr", new LineInfo(0, ""), out usynbolRule);
-			this.GetSyntax(KeywordType.Usymbol).SyntaxRule = usynbolRule;
+			this.GetSyntax(KeyWordTable.Usymbol).SyntaxRule = usynbolRule;
 		}
 
 		public IList<Token> tokenize(string script)
@@ -383,13 +384,13 @@ namespace IronKonoha
 				if (tk != null && (tk.TokenType == TokenType.SYMBOL || tk.TokenType == TokenType.USYMBOL))
 				{
 					tk = (s + 2 < e) ? tls[s + 2] : null;
-					if (tk != null && (tk.TokenType == TokenType.AST_PARENTHESIS || tk.Keyword == KeywordType.DOT))
+					if (tk != null && (tk.TokenType == TokenType.AST_PARENTHESIS || tk.Keyword == KeyWordTable.DOT))
 					{
-						return GetSyntax(KeywordType.StmtMethodDecl); //
+						return GetSyntax(KeyWordTable.StmtMethodDecl); //
 					}
-					return GetSyntax(KeywordType.Type);  //
+					return GetSyntax(KeyWordTable.StmtTypeDecl);  //
 				}
-				return GetSyntax(KeywordType.Expr);  // expression
+				return GetSyntax(KeyWordTable.Expr);  // expression
 			}
 			Syntax syn = GetSyntax(tk.Keyword);
 
@@ -407,46 +408,45 @@ namespace IronKonoha
 						return syn;
 					}
 				}
-				return GetSyntax(KeywordType.Expr);
+				return GetSyntax(KeyWordTable.Expr);
 			}
 			return syn;
 		}
 
 
-		public void SYN_setTopStmtTyCheck(KeywordType ks, StmtTyChecker checker)
+		public void SYN_setTopStmtTyCheck(KKeyWord ks, StmtTyChecker checker)
 		{
 			var syn = GetSyntax(ks, true);
 			syn.TopStmtTyCheck = checker;
 		}
 
-		public void SYN_setStmtTyCheck(KeywordType ks, StmtTyChecker checker)
+		public void SYN_setStmtTyCheck(KKeyWord ks, StmtTyChecker checker)
 		{
 			var syn = GetSyntax(ks, true);
 			syn.StmtTyCheck = checker;
 		}
 
-		public void SYN_setExprTyCheck(KeywordType ks, ExprTyChecker checker)
+		public void SYN_setExprTyCheck(KKeyWord ks, ExprTyChecker checker)
 		{
 			var syn = GetSyntax(ks, true);
 			syn.ExprTyCheck = checker;
 		}
 
-		internal Syntax GetSyntax(KeywordType keyword)
+		internal Syntax GetSyntax(KKeyWord keyword)
 		{
-			//return GetSyntax(keyword, true);
 			return GetSyntax(keyword, false);
 		}
 
 		//KonohaSpace_syntax
-		internal Syntax GetSyntax(KeywordType keyword, bool isnew)
+		internal Syntax GetSyntax(KKeyWord keyword, bool isnew)
 		{
-			
+			Debug.Assert(keyword != null);
 			Syntax syntaxParent = null;
 			for (KonohaSpace ks = this; ks != null; ks = ks.parent)
 			{
-				if (ks.syntaxMap != null && ks.syntaxMap.ContainsKey(keyword))
+				if (ks.syntaxMap != null && ks.syntaxMap.ContainsKey(keyword.Name))
 				{
-					syntaxParent = ks.syntaxMap[keyword];
+					syntaxParent = ks.syntaxMap[keyword.Name];
 					break;
 				}
 			}
@@ -455,21 +455,21 @@ namespace IronKonoha
 				Console.WriteLine("creating new syntax {0} old={1}", keyword.ToString(), syntaxParent);
 				if (this.syntaxMap == null)
 				{
-					this.syntaxMap = new Dictionary<KeywordType, Syntax>();
+					this.syntaxMap = new Dictionary<string, Syntax>();
 				}
 
-				this.syntaxMap[keyword] = new Syntax();
+				this.syntaxMap[keyword.Name] = new Syntax();
 
 				if (syntaxParent != null)
 				{  // TODO: RCGC
-					this.syntaxMap[keyword] = syntaxParent;
+					this.syntaxMap[keyword.Name] = syntaxParent;
 				}
 				else
 				{
 					var syn = new Syntax()
 					{
 						KeyWord = keyword,
-						Type = KType.Unknown,
+						Type = null,
 						Op1 = null,
 						Op2 = null,
 						ParseExpr = KModSugar.UndefinedParseExpr,
@@ -477,10 +477,10 @@ namespace IronKonoha
 						StmtTyCheck = ctx.kmodsugar.UndefinedStmtTyCheck,
 						ExprTyCheck = ctx.kmodsugar.UndefinedExprTyCheck,
 					};
-					this.syntaxMap[keyword] = syn;
+					this.syntaxMap[keyword.Name] = syn;
 				}
-				this.syntaxMap[keyword].Parent = syntaxParent;
-				return this.syntaxMap[keyword];
+				this.syntaxMap[keyword.Name].Parent = syntaxParent;
+				return this.syntaxMap[keyword.Name];
 			}
 			return syntaxParent;
 		}
@@ -508,7 +508,11 @@ namespace IronKonoha
 			{
 				int ne = findTopCh(tls, i + 1, e, tk.TokenType, closech);
 				tk.TokenType = tt;
-				tk.Keyword = (KeywordType)tt;
+				tk.Keyword = KeyWordTable.Map[(int)tt];
+				if (tt != TokenType.AST_OPTIONAL)
+				{
+					Debug.Assert(tk.Keyword != null);
+				}
 				List<Token> sub;
 				//tk->topch = opench; tk.losech = closech;
 				makeSyntaxRule(tls, i + 1, ne, out sub);
@@ -539,7 +543,8 @@ namespace IronKonoha
 					else
 					{
 						tk.TokenType = TokenType.CODE;
-						tk.Keyword = ctx.kmodsugar.keyword_(tk.Text, Symbol.NewID).Type;
+						tk.Keyword = ctx.kmodsugar.keyword_(tk.Text);
+						Debug.Assert(tk.Keyword != null);
 					}
 					adst.Add(tk);
 					continue;
@@ -549,7 +554,8 @@ namespace IronKonoha
 					if (i > 0 && tls[i - 1].TopChar == '$')
 					{
 						var name = string.Format("${0}", tk.Text);
-						tk.Keyword = ctx.kmodsugar.keyword_(name, Symbol.NewID).Type;
+						tk.Keyword = ctx.kmodsugar.keyword_(name);
+						Debug.Assert(tk.Keyword != null);
 						tk.TokenType = TokenType.METANAME;
 						if (nameid == null) nameid = Symbol.Get(ctx, tk.Text);
 						tk.nameid = nameid;
@@ -598,13 +604,13 @@ namespace IronKonoha
 			foreach (var syndef in syndefs)
 			{
 				ctx.kmodsugar.AddKeyword(syndef.name, syndef.kw);
-				KeywordType kw = ctx.kmodsugar.keyword_(syndef.name, Symbol.NewID).Type;
+				KKeyWord kw = ctx.kmodsugar.keyword_(syndef.name);
 				Syntax syn = GetSyntax(kw, true);
 				//syn.token = syndef.name;
 				syn.Flag |= syndef.flag;
-				//if(syndef.type != null) {
-				//    syn.Type = syndef.type;
-				//}
+				if(syndef.type != null) {
+				    syn.Type = syndef.type;
+				}
 				//if(syndef.op1 != null) {
 				//    syn.Op1 = null;// syndef.op1;//Symbol.Get(ctx, syndef.op1, Symbol.NewID, SymPol.MsETHOD);
 				//}
@@ -632,6 +638,10 @@ namespace IronKonoha
 					{
 						syn.ParseExpr = KModSugar.ParseExpr_Op;
 					}
+					if (syn.Flag == SynFlag.ExprPostfixOp2)
+					{
+						syn.ParseExpr = KModSugar.ParseExpr_Op;
+					}
 					else if (syn.Flag == SynFlag.ExprTerm)
 					{
 						syn.ParseExpr = KModSugar.ParseExpr_Term;
@@ -652,18 +662,18 @@ namespace IronKonoha
 				//ct.addMethod(ctx, mtd);
 			//}
 			//else {
-				addMethod(mtd);
+				AddMethod(mtd);
 			//}
 			return true;
 		}
 
-		private void addMethod(KFunc mtd)
+		private void AddMethod(KFunc mtd)
 		{
 			var argtypes = mtd.paramTypes.ToList();
-			argtypes.Add(mtd.ReturnType ?? typeof(void));
-			argtypes[0] = typeof(long);
+			var retType = mtd.ReturnType ?? typeof(void);
+			argtypes.Add(retType);
 			Type ftype = Expression.GetDelegateType(argtypes.ToArray());
-			Type fctype = typeof(FuncCache<>).MakeGenericType(ftype);
+			Type fctype = typeof(FuncCache<,>).MakeGenericType(ftype, retType);
 
 			dynamic cache = Activator.CreateInstance(fctype, new Converter(ctx, this), mtd.Body, mtd.Parameters.ToList());
 
@@ -690,12 +700,13 @@ namespace IronKonoha
 				{
 					lexpr.syn = stmt.ks.GetSyntax(lexpr.tk.Keyword);
 				}
-				if(lexpr.syn.KeyWord == KeywordType.DOT) {
-					lexpr.syn = stmt.ks.GetSyntax(KeywordType.ExprMethodCall); // CALL
+				if(lexpr.syn.KeyWord == KeyWordTable.DOT) {
+					lexpr.syn = stmt.ks.GetSyntax(KeyWordTable.ExprMethodCall); // CALL
 				}
-				else if(lexpr.syn.KeyWord != KeywordType.ExprMethodCall) {
+				else if (lexpr.syn.KeyWord != KeyWordTable.ExprMethodCall)
+				{
 					Console.WriteLine("function calls  .. ");
-					syn = stmt.ks.GetSyntax(KeywordType.Parenthesis);    // (f null ())
+					syn = stmt.ks.GetSyntax(KeyWordTable.Parenthesis);    // (f null ())
 					lexpr  = new ConsExpr(ctx, syn, lexpr, null);
 				}
 				stmt.addExprParams(ctx, lexpr, tk.Sub, 0, tk.Sub.Count, true/*allowEmpty*/);

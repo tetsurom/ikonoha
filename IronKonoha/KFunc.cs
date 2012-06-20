@@ -44,7 +44,7 @@ namespace IronKonoha
 		{
 			get
 			{
-				return param.Select(stmt => stmt.map[ks.Symbols.Type].tk.Type);
+				return param.Select(stmt => stmt.map[ks.Symbols.Type].tk.Type ?? typeof(object));
 			}
 		}
 		public IEnumerable<FuncParam> Parameters
@@ -53,7 +53,7 @@ namespace IronKonoha
 			{
 				return from stmt in param
  					   let name = stmt.map[ks.Symbols.Expr].tk.Text
-					   let type = stmt.map[ks.Symbols.Type].tk.Type
+					   let type = stmt.map[ks.Symbols.Type].tk.Type ?? typeof(object)
 					   select new FuncParam(name, type);
 			}
 		}

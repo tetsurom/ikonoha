@@ -46,7 +46,7 @@ namespace IronKonoha
 		{
 			bool ret = false;
 			Syntax syn = this.ks.GetSyntaxRule(tls, s, e);
-			//Debug.Assert(syn != null);
+			Debug.Assert(syn != null);
 			if (syn != null && syn.SyntaxRule != null)
 			{
 				this.syn = syn;
@@ -289,7 +289,7 @@ namespace IronKonoha
 					break;
 				if (i + 1 < e)
 				{
-					var kw = ctx.kmodsugar.keyword_("@" + tk.Text, Symbol.NewID).Type;
+					var kw = ctx.kmodsugar.keyword_("@" + tk.Text).Type;
 					Token tk1 = tls[i + 1];
 					KonohaExpr value = null;
 					if (tk1.TokenType == TokenType.AST_PARENTHESIS)
@@ -312,7 +312,8 @@ namespace IronKonoha
 			int i, start = s;
 			for(i = s; i < e; i++) {
 				Token tk = tls[i];
-				if(tk.Keyword == KeywordType.COMMA) {
+				if (tk.Keyword == KeyWordTable.COMMA)
+				{
 					((ConsExpr)expr).Add(ctx, newExpr2(ctx, tls, start, i));
 					start = i + 1;
 				}
@@ -327,7 +328,7 @@ namespace IronKonoha
 		// Stmt_toERR
 		public void toERR(Context ctx, uint estart)
 		{
-			this.syn = ks.GetSyntax(KeywordType.Err);
+			this.syn = ks.GetSyntax(KeyWordTable.Err);
 			this.build = StmtType.ERR;
 			//kObject_setObject(stmt, KW_Err, kstrerror(eno));
 		}
@@ -357,7 +358,7 @@ namespace IronKonoha
 			return result;
 		}
 
-		public Type getcid(KeywordType kw, Type defcid)
+		public Type getcid(Symbol kw, Type defcid)
 		{
 			if (!this.map.ContainsKey(kw))
 			{

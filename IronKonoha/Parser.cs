@@ -78,12 +78,12 @@ namespace IronKonoha
 			{
 				Token tk = tokens[i];
 				Token tk1 = tokens[i + 1];
-				if (tk.Keyword != 0)
+				if (tk.Keyword != KeyWordTable.Err)
 					break;  // already parsed
 				if (tk.TopChar == '@' && (tk1.TokenType == TokenType.SYMBOL || tk1.TokenType == TokenType.USYMBOL))
 				{
 					tk1.TokenType = TokenType.METANAME;
-					tk1.Keyword = 0;
+					tk1.Keyword = KeyWordTable.Err;
 					tokensDst.Add(tk1);
 					i++;
 					if (i + 1 < end && tokens[i + 1].TopChar == '(')
@@ -115,7 +115,7 @@ namespace IronKonoha
 					errorToken = null;
 					return i + 1;
 				}
-				if (tk.Keyword != 0)
+				if (tk.Keyword != KeyWordTable.Err)
 				{
 					tokensDst.Add(tk);
 					continue;
@@ -123,13 +123,13 @@ namespace IronKonoha
 				else if (tk.TopChar == '(')
 				{
 					i = makeTree(TokenType.AST_PARENTHESIS, tokens, i, end, ')', tokensDst, out errorToken);
-					tk.Keyword = KeywordType.Parenthesis;
+					tk.Keyword = KeyWordTable.Parenthesis;
 					continue;
 				}
 				else if (tk.TopChar == '[')
 				{
 					i = makeTree(TokenType.AST_BRACKET, tokens, i, end, ']', tokensDst, out errorToken);
-					tk.Keyword = KeywordType.Bracket;
+					tk.Keyword = KeyWordTable.Bracket;
 					continue;
 				}
 				else if (tk.TokenType == TokenType.ERR)
@@ -157,28 +157,28 @@ namespace IronKonoha
 		{
 			int i, probablyCloseBefore = end - 1;
 			Token tk = tokens[start];
-			Debug.Assert(tk.Keyword == 0);
+			Debug.Assert(tk.Keyword == KeyWordTable.Err);
 
-			Token tkP = new Token(tokentype, tk.Text, closeChar) { Keyword = (KeywordType)tokentype };
+			Token tkP = new Token(tokentype, tk.Text, closeChar) { Keyword = KeyWordTable.Map[(int)tokentype] };
 			tokensDst.Add(tkP);
 			tkP.Sub = new List<Token>();
 			for (i = start + 1; i < end; i++)
 			{
 				tk = tokens[i];
-				Debug.Assert(tk.Keyword == 0);
+				Debug.Assert(tk.Keyword == KeyWordTable.Err);
 				if (tk.TokenType == TokenType.ERR)
 					break;  // ERR
 				Debug.Assert(tk.TopChar != '{');
 				if (tk.TopChar == '(')
 				{
 					i = makeTree(TokenType.AST_PARENTHESIS, tokens, i, end, ')', tkP.Sub, out errorToken);
-					tk.Keyword = KeywordType.Parenthesis;
+					tk.Keyword = KeyWordTable.Parenthesis;
 					continue;
 				}
 				else if (tk.TopChar == '[')
 				{
 					i = makeTree(TokenType.AST_BRACKET, tokens, i, end, ']', tkP.Sub, out errorToken);
-					tk.Keyword = KeywordType.Bracket;
+					tk.Keyword = KeyWordTable.Bracket;
 					continue;
 				}
 				else if (tk.TopChar == closeChar)
@@ -205,22 +205,33 @@ namespace IronKonoha
 			return end;
 		}
 
+		
 		//static int appendKeyword(CTX, kKonohaSpace *ks, kArray *tls, int s, int e, kArray *dst, kToken **tkERR)
+		/// <summary>
+		/// TokenにKeywordを設定する。また、Tokenが型名の場合、型を解決する。
+		/// </summary>
+		/// <param name="tls"></param>
+		/// <param name="start"></param>
+		/// <param name="end"></param>
+		/// <param name="dst"></param>
+		/// <param name="errorToken"></param>
+		/// <returns></returns>
 		private int appendKeyword(IList<Token> tls, int start, int end, IList<Token> dst, out Token errorToken)
 		{
 			int next = start; // don't add
 			Token tk = tls[start];
 			if (tk.TokenType < TokenType.OPERATOR)
 			{
-				tk.Keyword = (KeywordType)tk.TokenType;
+				tk.Keyword = KeyWordTable.Map[(int)tk.TokenType];
+				Debug.Assert(tk.Keyword != null);
 			}
 			if (tk.TokenType == TokenType.SYMBOL)
 			{
-				tk.IsResolved(ctx, ks);
+				tk.Resolve(ctx, ks);
 			}
 			else if (tk.TokenType == TokenType.USYMBOL)
 			{
-				if (!tk.IsResolved(ctx, ks))
+				if (!tk.Resolve(ctx, ks))
 				{
 					throw new NotImplementedException();
 					//KonohaClass ct = kKonohaSpace_getCT(ks, null/*FIXME*/, tk.Text, tk.Text.Length, TY_unknown);
@@ -234,7 +245,7 @@ namespace IronKonoha
 			}
 			else if (tk.TokenType == TokenType.OPERATOR)
 			{
-				if (!tk.IsResolved(ctx, ks))
+				if (!tk.Resolve(ctx, ks))
 				{
 					uint errref = ctx.SUGAR_P(ReportLevel.ERR, tk.ULine, 0, "undefined token: {0}", tk.Text);
 					tk.toERR(this.ctx, errref);
@@ -244,7 +255,7 @@ namespace IronKonoha
 			}
 			else if (tk.TokenType == TokenType.CODE)
 			{
-				tk.Keyword = KeywordType.Brace;
+				tk.Keyword = KeyWordTable.Brace;
 			}
 			if (tk.IsType)
 			{
@@ -270,7 +281,7 @@ namespace IronKonoha
 					}
 				}
 			}
-			else if (tk.Keyword > KeywordType.Expr)
+			else if (tk.Keyword.Type > KeywordType.Expr)
 			{
 				dst.Add(tk);
 			}

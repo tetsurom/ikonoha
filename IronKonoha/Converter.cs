@@ -32,7 +32,7 @@ namespace IronKonoha
 		public LabelTarget ReturnLabel { get; set; }
 	}
 
-	public class FuncCache<T> : Cache
+	public class FuncCache<T, RT> : Cache
 	{
 		private T _lambda;
 		public T Lambda
@@ -41,7 +41,7 @@ namespace IronKonoha
 			{
 				if (_lambda == null)
 				{
-                    _lambda = converter.ConvertFunc<T>(BlockBody, Params).Compile();
+                    _lambda = converter.ConvertFunc<T, RT>(BlockBody, Params).Compile();
                     this.Invoke = _lambda;
                     Scope[key] = _lambda;
                     Scope = null;
@@ -123,38 +123,39 @@ namespace IronKonoha
 			return ConvertToExprList(block, environment);
 		}
 
-        public Expression<T> ConvertFunc<T>(string body, IList<FuncParam> param)
+		public Expression<T> ConvertFunc<T, RT>(string body, IList<FuncParam> param)
 		{
 			var env = new FunctionEnvironment()
 			{
 				Params = param.Select(p=>Expression.Parameter(p.Type, p.Name)).ToArray(),
-				ReturnLabel = Expression.Label(typeof(object))
+				ReturnLabel = Expression.Label(typeof(RT))
 			};
 			var list = ConvertTextBlock(body, env).ToList();
-			list.Add(Expression.Label(env.ReturnLabel, KNull));
-            return Expression.Lambda<T>(Expression.Block(list), env.Params);
+			list.Add(Expression.Label(env.ReturnLabel, Expression.Constant(default(RT), typeof(RT))));
+			var block = Expression.Block(typeof(RT), list);
+			return Expression.Lambda<T>(block, env.Params);
 		}
 
 		public Expression KStatementToExpr(KStatement st, FunctionEnvironment environment)
 		{
-			if (st.syn.KeyWord == KeywordType.Err)
+			if (st.syn != null && st.syn.KeyWord == KeyWordTable.Err)
 			{
 				throw new ArgumentException("invalid statement");
 			}
-			if (st.syn.KeyWord == KeywordType.If)
+			if (st.syn != null && st.syn.KeyWord == KeyWordTable.If || st.build == StmtType.IF)
 			{
 				return MakeIfExpression(st.map, environment);
 			}
-			if (st.syn.KeyWord == KeywordType.StmtMethodDecl)
+			if (st.syn != null && st.syn.KeyWord == KeyWordTable.StmtMethodDecl)
 			{
 				return Expression.Empty();//MakeFuncDeclExpression(st.map);
 			}
-			if (st.syn.KeyWord == KeywordType.Return)
+			if (st.syn != null && st.syn.KeyWord == KeyWordTable.Return || st.build == StmtType.RETURN)
 			{
 				var exp = MakeExpression(st.map.Values.First(), environment);
-				if (exp.Type != typeof(object))
+				if (exp.Type != environment.ReturnLabel.Type)
 				{
-					exp = Expression.Convert(exp, typeof(object));
+					exp = Expression.Convert(exp, environment.ReturnLabel.Type);
 				}
 				return Expression.Return(environment.ReturnLabel, exp);
 			}
@@ -229,7 +230,7 @@ namespace IronKonoha
 				switch (tk.TokenType)
 				{
 					case TokenType.OPERATOR:
-						return Expression.Dynamic(GetBinaryBinder(BinaryOperationType[tk.Keyword]),
+						return Expression.Dynamic(GetBinaryBinder(BinaryOperationType[tk.Keyword.Type]),
 							typeof(object),
 							param.ElementAt(0),
 							param.ElementAt(1)

@@ -45,6 +45,7 @@
     <Compile Include="Exception.cs" />
     <Compile Include="Expression.cs" />
     <Compile Include="FuncParam.cs" />
+    <Compile Include="KKeyWord.cs" />
     <Compile Include="TyCheck\ExprTyCheck.cs" />
     <Compile Include="KClassTable.cs" />
     <Compile Include="KFunc.cs" />

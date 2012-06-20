@@ -28,7 +28,7 @@ namespace KFibo
                 }
             ");
 			Console.ReadLine(); // fibo is not compiled yet.
-			Console.WriteLine(global.fibo(36)); // here fibo is compiled first and calc fibo.
+			Console.WriteLine(global.fibo((long)36)); // here fibo is compiled first and calc fibo.
 			//Console.ReadLine();
 			//Console.WriteLine(konoha.Eval("csfibo(36)")); // call fibo defined in C# code.
 			Console.ReadLine();

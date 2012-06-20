@@ -16,11 +16,6 @@ namespace IronKonoha
 		DEBUG,
 	}
 
-	public class KKeyWord : Symbol
-	{
-		public KeywordType Type { get; set; }
-	}
-
 	public class KPackage
 	{
 
@@ -113,12 +108,17 @@ namespace IronKonoha
 
 		public void AddKeyword(string name, KeywordType kw)
 		{
-			keywordMap.Add(name, new KKeyWord() { Type = kw });
+			var keyword = new KKeyWord(name, kw);
+			keywordMap.Add(name, keyword);
 		}
 
-		public KKeyWord keyword_(string name, Symbol def)
+		public KKeyWord keyword_(string name)
 		{
-			return kmap_getcode(name, SPOL.ASCII | SPOL.POOL, def);
+			if (keywordMap.ContainsKey(name))
+			{
+				return keywordMap[name];
+			}
+			return null;
 		}
 
 		// ast.h
@@ -140,7 +140,7 @@ namespace IronKonoha
 			if (mn != null && syn.ExprTyCheck == ctx.kmodsugar.UndefinedExprTyCheck)
 			{
 				//kToken_setmn(tk, mn, (s == c) ? MNTYPE_unary: MNTYPE_binary);
-				syn = stmt.ks.GetSyntax(KeywordType.ExprMethodCall);  // switch type checker
+				syn = stmt.ks.GetSyntax(new KKeyWord(KeywordType.ExprMethodCall));  // switch type checker
 			}
 			if (s == c)
 			{ // unary operator
@@ -175,6 +175,7 @@ namespace IronKonoha
 			return expr;
 		}
 
+		[Obsolete]
 		public KKeyWord kmap_getcode(string name, SPOL spol, Symbol def)
 		{
 			if (keywordMap.ContainsKey(name))
