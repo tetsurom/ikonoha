@@ -15,8 +15,8 @@ namespace KFibo
 		static void Main(string[] args)
 		{
 			var konoha = new IronKonoha.Konoha();
-			dynamic global = konoha.space.Scope;
-			global.csfibo = new Func<long, long>(csfibo);
+			//dynamic global = konoha.space.Scope;
+			//global.csfibo = new Func<long, long>(csfibo);
 
 			konoha.Eval(@"
                 int fibo(int n){
@@ -27,11 +27,12 @@ namespace KFibo
                     }
                 }
             ");
-			Console.ReadLine(); // fibo is not compiled yet.
-			Console.WriteLine(global.fibo((long)36)); // here fibo is compiled first and calc fibo.
+			Console.WriteLine(konoha.Eval(@"fibo(36);"));
+			//Console.ReadLine(); // fibo is not compiled yet.
+			//Console.WriteLine(global.fibo((long)36)); // here fibo is compiled first and calc fibo.
 			//Console.ReadLine();
 			//Console.WriteLine(konoha.Eval("csfibo(36)")); // call fibo defined in C# code.
-			Console.ReadLine();
+			//Console.ReadLine();
 		}
 	}
 }

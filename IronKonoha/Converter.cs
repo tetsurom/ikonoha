@@ -226,14 +226,22 @@ namespace IronKonoha
 			if (expr.Cons[0] is Token)
 			{
 				Token tk = expr.Cons[0] as Token;
-				var param = expr.Cons.Skip(1).Select(p => MakeExpression(p as KonohaExpr, environment));
+				var param = expr.Cons.Skip(1).Select(p => MakeExpression(p as KonohaExpr, environment)).ToArray();
 				switch (tk.TokenType)
 				{
 					case TokenType.OPERATOR:
+						if (param[0].Type.IsPrimitive && param[0].Type == param[1].Type)
+						{
+							return Expression.MakeBinary(
+								BinaryOperationType[tk.Keyword.Type],
+								param[0],
+								param[1]
+							);
+						}
 						return Expression.Dynamic(GetBinaryBinder(BinaryOperationType[tk.Keyword.Type]),
 							typeof(object),
-							param.ElementAt(0),
-							param.ElementAt(1)
+							param[0],
+							param[1]
 						);
 				}
 			}
@@ -244,7 +252,14 @@ namespace IronKonoha
 
 				if (expr.Cons.Count > 2)
 				{
+					dynamic df = f;
+					var t = df.GetType().GetGenericArguments()[0];
 					Expression p = MakeExpression((KonohaExpr)expr.Cons[2], environment);
+					if (p.Type == t)
+					{
+						return Expression.Invoke(Expression.Constant(f), new[] { p });
+					}
+
 					var bind = Binder.Invoke(CSharpBinderFlags.InvokeSimpleName,typeof(Converter),
 					new CSharpArgumentInfo[] {
 						CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
