@@ -363,9 +363,10 @@ namespace IronKonoha
 			block.TyCheckAll(ctx, new KGamma() { ks = this, cid = KType.System, flag = KGammaFlag.TOPLEVEL });
 			dynamic ast = converter.Convert(block);
 			string dbv = typeof(Expression).InvokeMember("DebugView", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetProperty, null, ast, null);
-			Console.WriteLine("### DLR AST Dump ###");
-			Console.WriteLine(dbv);
+			Debug.WriteLine("### DLR AST Dump ###");
+			Debug.WriteLine(dbv);
 			var f = ast.Compile();
+			
 			if (f.Method.ReturnType == typeof(void))
 			{
 				f();
@@ -452,7 +453,7 @@ namespace IronKonoha
 			}
 			if (isnew == true)
 			{
-				Console.WriteLine("creating new syntax {0} old={1}", keyword.ToString(), syntaxParent);
+				Debug.WriteLine("creating new syntax {0} old={1}", keyword.ToString(), syntaxParent);
 				if (this.syntaxMap == null)
 				{
 					this.syntaxMap = new Dictionary<string, Syntax>();
@@ -705,7 +706,7 @@ namespace IronKonoha
 				}
 				else if (lexpr.syn.KeyWord != KeyWordTable.ExprMethodCall)
 				{
-					Console.WriteLine("function calls  .. ");
+					//Console.WriteLine("function calls  .. ");
 					syn = stmt.ks.GetSyntax(KeyWordTable.Parenthesis);    // (f null ())
 					lexpr  = new ConsExpr(ctx, syn, lexpr, null);
 				}
@@ -725,7 +726,7 @@ namespace IronKonoha
 
 		private static KonohaExpr ParseExpr_Dot(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int s, int c, int e)
 		{
-			Console.WriteLine("s={0}, c={1}", s, c);
+			//Console.WriteLine("s={0}, c={1}", s, c);
 			Debug.Assert(s < c);
 			if (isFieldName(tls, c, e))
 			{
@@ -743,17 +744,24 @@ namespace IronKonoha
 
 
 		// static kMethod* KonohaSpace_getCastMethodNULL(CTX, kKonohaSpace *ks, kcid_t cid, kcid_t tcid)
-		internal KFunc getCastMethod(Type cid, Type tcid)
+		internal MethodInfo getCastMethod(Type cid, Type tcid)
 		{
-			throw new NotImplementedException();
-			/*
-			KFunc mtd = KonohaSpace_getMethod(cid, "to"+tcid);
+			if (cid == null)
+			{
+				throw new ArgumentNullException("cid");
+			}
+			if (tcid == null)
+			{
+				throw new ArgumentNullException("tcid");
+			}
+
+			var mtd = cid.GetMethod("to" + tcid);
+			//KFunc mtd = KonohaSpace_getMethod(cid, "to"+tcid);
 			if (mtd == null)
 			{
-				mtd = KonohaSpace_getMethod(cid, "as"+tcid);
+				mtd = cid.GetMethod("as" + tcid);
 			}
 			return mtd;
-			*/
 		}
 	}
 }

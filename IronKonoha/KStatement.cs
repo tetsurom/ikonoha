@@ -69,7 +69,7 @@ namespace IronKonoha
 				Token rule = rules[ri];
 				Token tk = tls[ti];
 				uline = tk.ULine;
-				Console.WriteLine("matching rule={0},{1},{2} token={3},{4},{5}", ri, rule.TokenType, rule.Keyword, ti - s, tk.TokenType, tk.Text);
+				Debug.WriteLine("matching rule={0},{1},{2} token={3},{4},{5}", ri, rule.TokenType, rule.Keyword, ti - s, tk.TokenType, tk.Text);
 				if (rule.TokenType == TokenType.CODE)
 				{
 					if (rule.Keyword != tk.Keyword)
@@ -109,7 +109,7 @@ namespace IronKonoha
 					}
 					int err_count = ctx.ctxsugar.err_count;
 					int next = ParseStmt(ctx, syn, rule.nameid, tls, ti, c);
-					Console.WriteLine("matched '{0}' nameid='{1}', next={2}=>{3}", rule.Keyword, rule.nameid.Name, ti, next);
+					Debug.WriteLine("matched '{0}' nameid='{1}', next={2}=>{3}", rule.Keyword, rule.nameid.Name, ti, next);
 					if (next == -1)
 					{
 						if (optional)
@@ -200,7 +200,7 @@ namespace IronKonoha
 				Syntax syn = null;
 				int idx = findBinaryOp(ctx, tls, s, e, ref syn);
 				if(idx != -1) {
-					Console.WriteLine("** Found BinaryOp: s={0}, idx={1}, e={2}, '{3}' **", s, idx, e, tls[idx].Text);
+					Debug.WriteLine("** Found BinaryOp: s={0}, idx={1}, e={2}, '{3}' **", s, idx, e, tls[idx].Text);
 					return ParseExpr(ctx, syn, tls, s, idx, e);
 				}
 				int c = s;
@@ -385,7 +385,7 @@ namespace IronKonoha
 			{
 				var expr = this.map[k];
 				var texpr = expr.tyCheck(ctx, this, gma, reqty, pol);
-				Console.WriteLine("reqty={0}, texpr.ty={1} isnull={2}", reqty, texpr.ty, texpr == null);
+				Debug.WriteLine("reqty={0}, texpr.ty={1} isnull={2}", reqty, texpr.ty, texpr == null);
 				if (texpr != null)
 				{
 					if (texpr != expr)

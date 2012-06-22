@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace IronKonoha
 {
@@ -40,7 +41,7 @@ namespace IronKonoha
 		{
 			var texpr = this;
 			if (stmt.isERR) texpr = null;
-			if (this.ty == BCID.CLASS_Tvar)
+			if (this.ty == typeof(Variant))
 			{
 				ExprTyChecker fo = syn.ExprTyCheck;
 				Debug.Assert(fo != null);
@@ -51,7 +52,7 @@ namespace IronKonoha
 					{
 						texpr = a[i](stmt, this, gma, reqty);
 						if (stmt.isERR) return null;
-						if (texpr.ty != KType.TVar) return texpr;
+						if (texpr.ty != typeof(Variant)) return texpr;
 					}
 					fo = a[0];
 				}
@@ -61,7 +62,7 @@ namespace IronKonoha
 			if (texpr != null)
 			{
 				//DBG_P("type=%s, reqty=%s", TY_t(expr->ty), TY_t(reqty));
-				if (texpr.ty == KType.Void)
+				if (texpr.ty == typeof(void))
 				{
 					if ((pol & TPOL.ALLOWVOID) == 0)
 					{
@@ -83,9 +84,9 @@ namespace IronKonoha
 					//}
 					return texpr;
 				}
-				KFunc mtd = gma.ks.getCastMethod(texpr.ty, reqty);
-				Console.WriteLine("finding cast {0} => {1}: {2}", texpr.ty, reqty, mtd);
-				if (mtd != null && (mtd.isCoercion || (pol & TPOL.COERCION) != 0))
+				var mtd = gma.ks.getCastMethod(texpr.ty, reqty);
+				Debug.WriteLine("finding cast {0} => {1}: {2}", texpr.ty, reqty, mtd);
+				if (mtd != null /*&& (mtd.isCoercion || (pol & TPOL.COERCION) != 0)*/)
 				{
 					return KonohaExpr.TypedMethodCall(ctx, stmt, reqty, mtd, gma, 1, texpr);
 				}
@@ -95,8 +96,10 @@ namespace IronKonoha
 			return texpr;
 		}
 
-		private static KonohaExpr TypedMethodCall(Context ctx, KStatement stmt, Type reqty, KFunc mtd, KGamma gma, int p, KonohaExpr texpr)
+		private static KonohaExpr TypedMethodCall(Context ctx, KStatement stmt, Type reqty, MethodInfo mtd, KGamma gma, int p, KonohaExpr texpr)
 		{
+			var expr = new ConsExpr(ctx, stmt.syn);
+			expr.Cons.Add(mtd);
 			throw new NotImplementedException();
 		}
 

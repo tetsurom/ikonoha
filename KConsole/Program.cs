@@ -17,6 +17,7 @@ namespace KConsole
 			string key = null;
 			return args
 					.GroupBy(s => optionsDef.Contains(s) ? key = s : key)
+					.Where(g=>g.Key != null)
 					.ToDictionary(g => g.Key, g => g.Skip(1).FirstOrDefault());
 		}
 
@@ -31,7 +32,15 @@ namespace KConsole
 			}
 
 			var konoha = new IronKonoha.Konoha();
-			var grobalScope = IronKonoha.Konoha.CreateScope();
+
+			if (scriptName != null)
+			{
+				var sr = new StreamReader(scriptName);
+				Console.WriteLine(konoha.Eval(sr.ReadToEnd()));
+				return;
+			}
+			
+			//var grobalScope = IronKonoha.Konoha.CreateScope();
 			string prompt = ">>> ";
 			string input = null;
 			string exprstr = "";

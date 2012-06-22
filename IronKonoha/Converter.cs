@@ -120,6 +120,7 @@ namespace IronKonoha
 			var parser = new Parser(ctx, ks);
 			var tokens = tokenizer.Tokenize(body);
 			var block = parser.CreateBlock(null, tokens, 0, tokens.Count(), ';');
+			block.TyCheckAll(ctx, new KGamma() { ks = this.ks, cid = KType.System, flag = KGammaFlag.TOPLEVEL });
 			return ConvertToExprList(block, environment);
 		}
 

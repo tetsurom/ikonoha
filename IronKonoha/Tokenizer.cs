@@ -717,10 +717,10 @@ namespace IronKonoha
 				}
 			}
 
-			foreach (var tk in tokens)
-			{
-				Console.WriteLine("{0} [{1}]", tk.Text, tk.TokenType);
-			}
+			//foreach (var tk in tokens)
+			//{
+			//    Console.WriteLine("{0} [{1}]", tk.Text, tk.TokenType);
+			//}
 
 			return tokens;
 		}

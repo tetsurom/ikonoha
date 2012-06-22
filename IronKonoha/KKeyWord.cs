@@ -89,7 +89,7 @@ namespace IronKonoha
 			return !(a == b);
 		}
 	}
-	public class KeyWordTable
+	public static class KeyWordTable
 	{
 		public static readonly KKeyWord Err = new KKeyWord("$ERR", KeywordType.Err);
 		public static readonly KKeyWord Expr = new KKeyWord("$expr", KeywordType.Expr);
