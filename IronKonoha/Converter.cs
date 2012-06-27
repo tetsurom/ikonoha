@@ -179,15 +179,16 @@ namespace IronKonoha
 				   select stmt.map[Symbols.Expr].tk.Text;
 		}
 
-		public Expression MakeExpression(KonohaExpr kexpr, FunctionEnvironment environment)
+		public Expression MakeExpression(ConsExpr kexpr, FunctionEnvironment environment)
 		{
-			if(kexpr is ConsExpr) {
-				return MakeConsExpression((ConsExpr)kexpr, environment);
-			}
-			else if (kexpr is TermExpr)
+			return MakeConsExpression(kexpr, environment);
+		}
+
+		public Expression MakeExpression(TermExpr kexpr, FunctionEnvironment environment)
+		{
+			var text = kexpr.tk.Text;
+			switch (kexpr.tk.TokenType)
 			{
-				var text = kexpr.tk.Text;
-				switch(kexpr.tk.TokenType) {
 				case TokenType.INT:
 					return Expression.Constant(long.Parse(text));
 				case TokenType.FLOAT:
@@ -203,24 +204,23 @@ namespace IronKonoha
 						}
 					}
 					return KNull;
-				}
 			}
-			var lexpr = kexpr as ConstExpr<long>;
-			if(lexpr != null)
+			return KNull;
+		}
+
+		public Expression MakeExpression<T>(ConstExpr<T> kexpr, FunctionEnvironment environment)
+		{
+			return Expression.Constant(kexpr.Data);
+		}
+
+		public Expression MakeExpression(KonohaExpr kexpr, FunctionEnvironment environment)
+		{
+			var expression = MakeExpression((dynamic)kexpr, environment);
+			if (expression == null)
 			{
-				return Expression.Constant(lexpr.Data);
+				throw new ArgumentException("invalid KonohaExpr.", "kexpr");
 			}
-			var dexpr = kexpr as ConstExpr<double>;
-			if (dexpr != null)
-			{
-				return Expression.Constant(dexpr.Data);
-			}
-			var texpr = kexpr as ConstExpr<string>;
-			if (texpr != null)
-			{
-				return Expression.Constant(texpr.Data);
-			}
-			throw new ArgumentException("invalid KonohaExpr.", "kexpr");
+			return expression;
 		}
 
 		public ConditionalExpression MakeIfExpression(Dictionary<dynamic, KonohaExpr> map, FunctionEnvironment environment)
