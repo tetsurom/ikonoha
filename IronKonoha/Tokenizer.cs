@@ -199,6 +199,17 @@ namespace IronKonoha
 		}
 
 		public Symbol nameid { get; set; }
+
+		public bool toBrace(Context ctx, KonohaSpace ks)
+		{
+			if (TokenType == TokenType.CODE)
+			{
+				this.Sub = new Tokenizer(ctx, ks).Tokenize(this.Text);
+				return true;
+			}
+			return false;
+		}
+
 	};
 
 	class Tokenizer

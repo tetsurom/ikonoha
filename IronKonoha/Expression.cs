@@ -7,6 +7,26 @@ using System.Reflection;
 
 namespace IronKonoha
 {
+
+	public enum ExprType
+	{
+		CONST = 0,
+		NEW = 1,
+		NULL = 2,
+		NCONST = 3,
+		LOCAL = 4,
+		BLOCK = 5,
+		FIELD = 6,
+		BOX = 7,
+		UNBOX = 8,
+		CALL = 9,
+		AND = 10,
+		OR = 11,
+		LET = 12,
+		STACKTOP = 13,
+		MAX = 14,
+	}
+
 	public abstract class ExprOrStmt : KObject
 	{
 
@@ -20,6 +40,7 @@ namespace IronKonoha
 		/// </summary>
 		public Token tk { get; set; }
 		public Syntax syn { get; set; }
+		public ExprType build { get; set; }
 
 		public KonohaExpr()
 		{
@@ -33,6 +54,26 @@ namespace IronKonoha
 				return tk.ToString();
 			}
 			return string.Empty;
+		}
+
+		public void typed(ExprType bld, Type ty)
+		{
+			this.build = bld;
+			this.ty = ty;
+		}
+
+
+		internal KonohaExpr tyCheckAt(Context ctx, KStatement stmt, int pos, KGamma gma, Type reqty, TPOL pol)
+		{
+			var consexpr = this as ConsExpr;
+			if (consexpr != null && pos < consexpr.Cons.Count)
+			{
+				KonohaExpr expr = consexpr.Cons[pos] as KonohaExpr;
+				expr = expr.tyCheck(ctx, stmt, gma, reqty, pol);
+				consexpr.Cons[pos] = expr;
+				return expr;
+			}
+			return null;
 		}
 
 		// tycheck.h

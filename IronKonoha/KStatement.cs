@@ -405,6 +405,104 @@ namespace IronKonoha
 				stmt.build = build;
 			}
 		}
-	}
 
+		/// <summary>
+		/// return stmt.map[kw] as BlockExpr
+		/// </summary>
+		/// <param name="ctx"></param>
+		/// <param name="kw"></param>
+		/// <returns></returns>
+		public BlockExpr Block(Context ctx, KeywordType kw)
+		{
+			return Expr(ctx, kw, null) as BlockExpr;
+		}
+		/// <summary>
+		/// return stmt.map[kw]
+		/// </summary>
+		/// <param name="ctx"></param>
+		/// <param name="kw"></param>
+		/// <returns></returns>
+		public KonohaExpr Expr(Context ctx, KeywordType kw){
+			return Expr(ctx, kw, null);
+		}
+		public KonohaExpr Expr(Context ctx, KeywordType kw, KonohaExpr def)
+		{
+			var sym = Symbol.Get(ctx, kw);
+			if(this.map.ContainsKey(sym)){
+				return this.map[sym];
+			}
+			return def;
+		}
+		/// <summary>
+		/// return stmt.map[kw].tk
+		/// </summary>
+		/// <param name="ctx"></param>
+		/// <param name="kw"></param>
+		/// <returns></returns>
+		public Token Token(Context ctx, KeywordType kw){
+			return Token(ctx, kw, null);
+		}
+		public Token Token(Context ctx, KeywordType kw, Token def)
+		{
+			var e = Expr(ctx, kw, null);
+			if(e != null){
+				return e.tk;
+			}
+			return def;
+		}
+
+		//static kStmt* Stmt_lookupIfStmtWithoutElse(CTX, kStmt *stmt)
+		public KStatement LookupIfStmtWithoutElse(Context ctx)
+		{
+			var bkElse = this.Block(ctx, KeywordType.Else);
+			if(bkElse != null) {
+				if(bkElse.blocks.Count() == 1) {
+					var stmtIf = bkElse.blocks[0];
+					if(stmtIf.syn.KeyWord.Type == KeywordType.If) {
+						return stmtIf.LookupIfStmtWithoutElse(ctx);
+					}
+				}
+				return null;
+			}
+			return this;
+		}
+
+		//static kStmt* Stmt_lookupIfStmtNULL(CTX, kStmt *stmt)
+		public KStatement LookupIfStmt(Context ctx)
+		{
+			var bka = this.parent.blocks;
+			KStatement prevIfStmt = null;
+			foreach(var s in bka) {
+				if(s == this) {
+					if(prevIfStmt != null) {
+						return prevIfStmt.LookupIfStmtWithoutElse(ctx);
+					}
+					return null;
+				}
+				if(s.TyCheckDone) continue;  // this is done
+				prevIfStmt = (s.syn.KeyWord.Type == KeywordType.If) ? s : null;
+			}
+			return null;
+		}
+		 
+		//static kBlock* Stmt_block(CTX, kStmt *stmt, keyword_t kw, kBlock *def)
+		public BlockExpr toBlock(Context ctx, KeywordType kw, BlockExpr def)
+		{
+			BlockExpr bk = Expr(ctx, kw) as BlockExpr;
+			if(bk != null) {
+				var tk = bk.tk;
+				if (tk.TokenType == TokenType.CODE) {
+					tk.toBrace(ctx, ks);
+				}
+				if (tk.TokenType == TokenType.AST_BRACE) {
+					var parser = new Parser(ctx, ks);
+					bk = parser.CreateBlock(null, tk.Sub, 0, tk.Sub.Count(), ';');
+					this.map[Symbol.Get(ctx, kw)] = bk;
+				}
+				return bk;
+			}
+			return def;
+		}
+
+	}
 }
