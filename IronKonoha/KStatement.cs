@@ -398,11 +398,11 @@ namespace IronKonoha
 			return false;
 		}
 
-		internal void typed(KStatement stmt, StmtType build)
+		internal void typed(StmtType build)
 		{
-			if (stmt.build != StmtType.ERR)
+			if (this.build != StmtType.ERR)
 			{
-				stmt.build = build;
+				this.build = build;
 			}
 		}
 

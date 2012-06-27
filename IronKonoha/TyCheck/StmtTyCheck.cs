@@ -16,7 +16,7 @@ namespace IronKonoha.TyCheck
 				BlockExpr bkElse = stmt.map[Symbol.Get(gma.ks.ctx, KeywordType.Else)] as BlockExpr;
 				r = bkThen.TyCheckAll(gma.ks.ctx, gma);
 				r = r & bkElse.TyCheckAll(gma.ks.ctx, gma);
-				stmt.typed(stmt, StmtType.IF);
+				stmt.typed(StmtType.IF);
 			}
 			return r;
 		}
@@ -45,7 +45,7 @@ namespace IronKonoha.TyCheck
 		{
 			bool r = true;
 			Type rtype = gma.mtd.ReturnType;
-			stmt.typed(stmt, StmtType.RETURN);
+			stmt.typed(StmtType.RETURN);
 			if (rtype != typeof(void))
 			{
 				r = stmt.tyCheckExpr(gma.ks.ctx, KeywordType.Expr, gma, rtype, 0);

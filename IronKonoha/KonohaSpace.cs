@@ -453,7 +453,7 @@ namespace IronKonoha
 			}
 			if (isnew == true)
 			{
-				Debug.WriteLine("creating new syntax {0} old={1}", keyword.ToString(), syntaxParent);
+				Debug.WriteLine("creating new syntax {0} old={1}", keyword, syntaxParent);
 				if (this.syntaxMap == null)
 				{
 					this.syntaxMap = new Dictionary<string, Syntax>();
@@ -638,10 +638,12 @@ namespace IronKonoha
 					if (syn.Flag == SynFlag.ExprOp)
 					{
 						syn.ParseExpr = KModSugar.ParseExpr_Op;
+						syn.ExprTyCheck = TyCheck.ExprTyCheck.Expr;
 					}
 					if (syn.Flag == SynFlag.ExprPostfixOp2)
 					{
 						syn.ParseExpr = KModSugar.ParseExpr_Op;
+						syn.ExprTyCheck = TyCheck.ExprTyCheck.Expr;
 					}
 					else if (syn.Flag == SynFlag.ExprTerm)
 					{

@@ -88,6 +88,26 @@ namespace IronKonoha
 		{
 			return !(a == b);
 		}
+
+		public override bool Equals(object obj)
+		{
+			KKeyWord kw = obj as KKeyWord;
+			if (kw != null)
+			{
+				return this == kw;
+			}
+			return false;
+		}
+
+		public override int GetHashCode()
+		{
+			return (Name.GetHashCode() + Type.GetHashCode()).GetHashCode();
+		}
+
+		public override string ToString()
+		{
+			return string.Format("{0} {1}", Type, Name);
+		}
 	}
 	public static class KeyWordTable
 	{

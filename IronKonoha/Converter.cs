@@ -205,6 +205,21 @@ namespace IronKonoha
 					return KNull;
 				}
 			}
+			var lexpr = kexpr as ConstExpr<long>;
+			if(lexpr != null)
+			{
+				return Expression.Constant(lexpr.Data);
+			}
+			var dexpr = kexpr as ConstExpr<double>;
+			if (dexpr != null)
+			{
+				return Expression.Constant(dexpr.Data);
+			}
+			var texpr = kexpr as ConstExpr<string>;
+			if (texpr != null)
+			{
+				return Expression.Constant(texpr.Data);
+			}
 			throw new ArgumentException("invalid KonohaExpr.", "kexpr");
 		}
 

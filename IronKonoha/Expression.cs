@@ -41,10 +41,17 @@ namespace IronKonoha
 		public Token tk { get; set; }
 		public Syntax syn { get; set; }
 		public ExprType build { get; set; }
+		public bool IsSymbol
+		{
+			get
+			{
+				return tk.TokenType == TokenType.USYMBOL || tk.TokenType == TokenType.SYMBOL;
+			}
+		}
 
 		public KonohaExpr()
 		{
-
+			this.ty = typeof(Variant);
 		}
 
 		public override string ToString()
@@ -82,6 +89,10 @@ namespace IronKonoha
 		{
 			var texpr = this;
 			if (stmt.isERR) texpr = null;
+			if (this.syn == null)
+			{
+				this.syn = gma.ks.GetSyntax(this.tk.Keyword);
+			}
 			if (this.ty == typeof(Variant))
 			{
 				ExprTyChecker fo = syn.ExprTyCheck;
@@ -113,7 +124,7 @@ namespace IronKonoha
 					//return texpr;
 					return null;
 				}
-				if (reqty == BCID.CLASS_Tvar || texpr.ty == reqty || (pol & TPOL.NOCHECK) != 0)
+				if (reqty == typeof(Variant) || texpr.ty == reqty || (pol & TPOL.NOCHECK) != 0)
 				{
 					return texpr;
 				}
@@ -160,6 +171,7 @@ namespace IronKonoha
 		public ConsExpr(Context ctx, Syntax syn, params object[] param)
 		{
 			Cons = new List<object>(param);
+			this.syn = syn;
 		}
 
 		public void Add(Context ctx, KonohaExpr expr)
@@ -214,6 +226,7 @@ namespace IronKonoha
 		public ConstExpr(T data)
 		{
 			Data = data;
+			ty = typeof(T);
 		}
 		public T Data { get; set; }
 	}

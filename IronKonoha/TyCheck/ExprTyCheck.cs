@@ -10,19 +10,46 @@ namespace IronKonoha.TyCheck
 	{
 		internal static KonohaExpr Int(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
 		{
-			throw new NotImplementedException();
+			return new ConstExpr<long>(long.Parse(expr.tk.Text))
+			{
+				syn = expr.syn,
+				tk = expr.tk,
+				build = expr.build,
+				parent = expr.parent
+			};
 		}
 		internal static KonohaExpr Float(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
 		{
-			throw new NotImplementedException();
+			return new ConstExpr<double>(double.Parse(expr.tk.Text))
+			{
+				syn = expr.syn,
+				tk = expr.tk,
+				build = expr.build,
+				parent = expr.parent
+			};
 		}
 		internal static KonohaExpr Text(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
 		{
-			throw new NotImplementedException();
+			return new ConstExpr<string>(expr.tk.Text)
+			{
+				syn = expr.syn,
+				tk = expr.tk,
+				build = expr.build,
+				parent = expr.parent
+			};
 		}
 
 		internal static KonohaExpr Expr(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
 		{
+			if ((expr.syn.Flag & SynFlag.ExprOp) != 0)
+			{
+				var cexpr = expr as ConsExpr;
+				var ctx = gma.ks.ctx;
+				cexpr.Cons[1] = (cexpr.Cons[1] as KonohaExpr).tyCheck(ctx, stmt, gma, typeof(Variant), 0);
+				cexpr.Cons[2] = (cexpr.Cons[2] as KonohaExpr).tyCheck(ctx, stmt, gma, typeof(Variant), 0);
+				cexpr.ty = (cexpr.Cons[1] as KonohaExpr).ty;
+				return cexpr;
+			}
 			throw new NotImplementedException();
 		}
 
@@ -77,6 +104,12 @@ namespace IronKonoha.TyCheck
 		}
 		internal static KonohaExpr MethodCall(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
 		{
+			var texpr = expr.tyCheckAt(gma.ks.ctx, stmt, 1, gma, typeof(Variant), 0);
+			if (texpr != null)
+			{
+				var this_cid = texpr.ty;
+				//return expr.lookupMethod(gma.ks.ctx, stmt, this_cid, gma, reqty);
+			}
 			throw new NotImplementedException();
 		}
 
@@ -87,16 +120,69 @@ namespace IronKonoha.TyCheck
 
 		internal static KonohaExpr USymbol(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
 		{
+			/*
+			var tk = expr.tk;
+			var ukey = ksymbolA(S_text(tk->text), S_size(tk->text), SYM_NONAME);
+			if (ukey != SYM_NONAME)
+			{
+				kvs_t* kv = KonohaSpace_getConstNULL(_ctx, gma->genv->ks, ukey);
+				if (kv != NULL)
+				{
+					if (SYMKEY_isBOXED(kv->key))
+					{
+						kExpr_setConstValue(expr, kv->ty, kv->oval);
+					}
+					else
+					{
+						kExpr_setNConstValue(expr, kv->ty, kv->uval);
+					}
+					RETURN_(expr);
+				}
+			}
+			kObject* v = KonohaSpace_getSymbolValueNULL(_ctx, gma->genv->ks, S_text(tk->text), S_size(tk->text));
+			kExpr* texpr = (v == NULL) ? kToken_p(stmt, tk, ERR_, "undefined name: %s", kToken_s(tk)) : kExpr_setConstValue(expr, O_cid(v), v);
+			RETURN_(texpr);
+			*/
 			throw new NotImplementedException();
 		}
 
 		internal static KonohaExpr Type(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
 		{
+			//Debug.Assert(expr.tk.isType);
+			//return kExpr_setVariable(expr, NULL, expr.tk.ty, 0, gma);
 			throw new NotImplementedException();
 		}
 
 		internal static KonohaExpr FuncStyleCall(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
 		{
+			//Debug.Assert(IS_Expr(kExpr_at(expr, 0)));
+			//Debug.Assert(expr.cons[1] == null);
+			/*
+			if (Expr_isSymbol(kExpr_at(expr, 0)))
+			{
+				kMethod* mtd = Expr_lookUpFuncOrMethod(_ctx, expr, gma, reqty);
+				if (mtd != NULL)
+				{
+					RETURN_(Expr_tyCheckCallParams(_ctx, stmt, expr, mtd, gma, reqty));
+				}
+				if (!TY_isFunc(kExpr_at(expr, 0)->ty))
+				{
+					kToken* tk = kExpr_at(expr, 0)->tk;
+					RETURN_(kToken_p(stmt, tk, ERR_, "undefined function: %s", kToken_s(tk)));
+				}
+			}
+			else
+			{
+				if (Expr_tyCheckAt(_ctx, stmt, expr, 0, gma, TY_var, 0) != K_NULLEXPR)
+				{
+					if (!TY_isFunc(expr->cons->exprs[0]->ty))
+					{
+						RETURN_(kExpr_p(stmt, expr, ERR_, "function is expected"));
+					}
+				}
+			}
+			RETURN_(Expr_tyCheckFuncParams(_ctx, stmt, expr, CT_(kExpr_at(expr, 0)->ty), gma));
+			*/
 			throw new NotImplementedException();
 		}
 
@@ -128,12 +214,24 @@ namespace IronKonoha.TyCheck
 
 		internal static KonohaExpr True(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
 		{
-			throw new NotImplementedException();
+			return new ConstExpr<bool>(true)
+			{
+				syn = expr.syn,
+				tk = expr.tk,
+				build = expr.build,
+				parent = expr.parent
+			};
 		}
 
 		internal static KonohaExpr False(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
 		{
-			throw new NotImplementedException();
+			return new ConstExpr<bool>(false)
+			{
+				syn = expr.syn,
+				tk = expr.tk,
+				build = expr.build,
+				parent = expr.parent
+			};
 		}
 	}
 }

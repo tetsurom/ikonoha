@@ -34,8 +34,8 @@ namespace IronKonoha.TyCheck
 
 		internal static bool Expr(KStatement stmt, Syntax syn, KGamma gma)
 		{
-			bool r = stmt.tyCheckExpr(gma.ks.ctx, KeywordType.Expr, gma, KType.TVar, TPOL.ALLOWVOID);
-			stmt.typed(stmt, StmtType.EXPR);
+			bool r = stmt.tyCheckExpr(gma.ks.ctx, KeywordType.Expr, gma, typeof(Variant), TPOL.ALLOWVOID);
+			stmt.typed(StmtType.EXPR);
 			return r;
 		}
 
