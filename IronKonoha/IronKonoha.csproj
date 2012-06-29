@@ -46,6 +46,7 @@
     <Compile Include="Expression.cs" />
     <Compile Include="FuncParam.cs" />
     <Compile Include="KKeyWord.cs" />
+    <Compile Include="Runtime\System.cs" />
     <Compile Include="TyCheck\ExprTyCheck.cs" />
     <Compile Include="KClassTable.cs" />
     <Compile Include="KFunc.cs" />
@@ -59,9 +60,9 @@
     <Compile Include="Tokenizer.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Runtime.cs" />
     <Compile Include="TyCheck\TopStmtTyCheck.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

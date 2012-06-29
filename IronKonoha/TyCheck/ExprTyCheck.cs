@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace IronKonoha.TyCheck
 {
@@ -115,7 +116,13 @@ namespace IronKonoha.TyCheck
 
 		internal static KonohaExpr Symbol(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
 		{
-			throw new NotImplementedException();
+			if (expr.tk.Text == "System")
+			{
+				expr.tk.Type = expr.ty = typeof(IronKonoha.Runtime.System);
+				expr.typed(ExprType.CONST, expr.tk.Type);
+				return expr;
+			}
+			throw new TypeAccessException();
 		}
 
 		internal static KonohaExpr USymbol(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
@@ -232,6 +239,34 @@ namespace IronKonoha.TyCheck
 				build = expr.build,
 				parent = expr.parent
 			};
+		}
+
+		internal static KonohaExpr Dot(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		{
+			var cexpr = expr as ConsExpr;
+			KonohaExpr receiver = cexpr.Cons[1] as KonohaExpr;
+			Token message = cexpr.Cons[0] as Token;
+			var ctx = gma.ks.ctx;
+			receiver = receiver.tyCheck(ctx, stmt, gma, typeof(Variant), 0);
+			//message = message.tyCheck(ctx, stmt, gma, typeof(Variant), 0);
+			var meminfo = receiver.ty.GetMember(message.Text);
+			if (meminfo.Length == 0)
+			{
+				throw new MemberAccessException();
+			}
+			/*if (meminfo[0].MemberType == MemberTypes.Method)
+			{
+				return new ConsExpr(ctx, gma.ks.GetSyntax(KeyWordTable.Parenthesis), receiver.ty.GetMethod(message.Text));
+			}*/
+			cexpr.Cons[1] = receiver;
+			cexpr.Cons[0] = new ConstExpr<MemberInfo>(meminfo[0])
+			{
+				syn = expr.syn,
+				tk = expr.tk,
+				build = expr.build,
+				parent = expr.parent,
+			};
+			return cexpr;
 		}
 	}
 }

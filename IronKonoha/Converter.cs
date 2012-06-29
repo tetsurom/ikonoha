@@ -7,6 +7,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using Microsoft.CSharp.RuntimeBinder;
+using System.Reflection;
 
 namespace IronKonoha
 {
@@ -196,11 +197,14 @@ namespace IronKonoha
 				case TokenType.TEXT:
 					return Expression.Constant(text);
 				case TokenType.SYMBOL:
-					for (int i = 0; i < environment.Params.Length; ++i)
+					if (environment != null)
 					{
-						if (environment.Params[i].Name == text)
+						for (int i = 0; i < environment.Params.Length; ++i)
 						{
-							return environment.Params[i];
+							if (environment.Params[i].Name == text)
+							{
+								return environment.Params[i];
+							}
 						}
 					}
 					return KNull;
@@ -239,7 +243,30 @@ namespace IronKonoha
 
 		public Expression MakeConsExpression(ConsExpr expr, FunctionEnvironment environment)
 		{
-			if (expr.Cons[0] is Token)
+			if (expr.syn.KeyWord == KeyWordTable.Symbol)
+			{
+				Type ty = null;
+				if (expr.tk.Text == "System")
+				{
+					ty = typeof(IronKonoha.Runtime.System);
+				}
+				KonohaExpr receiver = (expr.Cons[1] as KonohaExpr);
+				Token message = expr.Cons[0] as Token;
+				var meminfo = ty.GetMember(message.Text);
+				if (meminfo.Length == 0)
+				{
+					throw new MemberAccessException();
+				}
+
+				if (meminfo[0].MemberType == MemberTypes.Method)
+				{
+					if (expr.Cons.Count == 3)
+					{
+					}
+					return Expression.Call(ty.GetMethod(message.Text));
+				}
+			}
+			else if (expr.Cons[0] is Token)
 			{
 				Token tk = expr.Cons[0] as Token;
 				var param = expr.Cons.Skip(1).Select(p => MakeExpression(p as KonohaExpr, environment)).ToArray();
@@ -276,7 +303,7 @@ namespace IronKonoha
 						return Expression.Invoke(Expression.Constant(f), new[] { p });
 					}
 
-					var bind = Binder.Invoke(CSharpBinderFlags.InvokeSimpleName,typeof(Converter),
+					var bind = Microsoft.CSharp.RuntimeBinder.Binder.Invoke(CSharpBinderFlags.InvokeSimpleName,typeof(Converter),
 					new CSharpArgumentInfo[] {
 						CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
 						CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
@@ -293,7 +320,7 @@ namespace IronKonoha
 
 		public dynamic GetBinaryBinder(ExpressionType et)
 		{
-			return Binder.BinaryOperation(
+			return Microsoft.CSharp.RuntimeBinder.Binder.BinaryOperation(
 				CSharpBinderFlags.None, et, typeof(Converter),
 				new CSharpArgumentInfo[] {
 					CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),

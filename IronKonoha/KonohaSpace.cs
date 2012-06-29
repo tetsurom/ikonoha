@@ -172,6 +172,7 @@ namespace IronKonoha
 					priority_op2 = 16,
 					kw = KeywordType.DOT,
 					ParseExpr = ParseExpr_Dot,
+					ExprTyCheck = TyCheck.ExprTyCheck.Dot,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "/",
@@ -733,7 +734,7 @@ namespace IronKonoha
 			if (isFieldName(tls, c, e))
 			{
 				KonohaExpr expr = stmt.newExpr2(ctx, tls, s, c);
-				expr = new ConsExpr(ctx, syn, tls[c + 1], expr);
+				expr = new ConsExpr(ctx, syn, tls[c + 1], expr) { tk = expr.tk };
 				return KModSugar.Expr_rightJoin(ctx, expr, stmt, tls, c + 2, c + 2, e);
 			}
 			if (c + 1 < e) c++;

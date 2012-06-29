@@ -71,7 +71,7 @@ namespace IronKonoha
 		}
 	}
 
-	[System.Diagnostics.DebuggerDisplay("{Text,nq} [{Type}]")]
+	[System.Diagnostics.DebuggerDisplay("{Text,nq} [{TokenType}, {Type}]")]
 	public class Token
 	{
 
