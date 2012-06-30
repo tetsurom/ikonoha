@@ -108,7 +108,7 @@ namespace IronKonoha
 			this.ks = ks;
 			Symbols = new SymbolConst(ctx);
 		}
-		
+
 		public Expression Convert (BlockExpr block)
 		{
 			return Expression.Lambda(Expression.Block(ConvertToExprList(block, null)));
@@ -116,7 +116,6 @@ namespace IronKonoha
 
         private IEnumerable<Expression> ConvertTextBlock(string body, FunctionEnvironment environment)
 		{
-
 			var tokenizer = new Tokenizer(ctx, ks);
 			var parser = new Parser(ctx, ks);
 			var tokens = tokenizer.Tokenize(body);
@@ -151,6 +150,20 @@ namespace IronKonoha
 			if (st.syn != null && st.syn.KeyWord == KeyWordTable.StmtMethodDecl)
 			{
 				return Expression.Empty();//MakeFuncDeclExpression(st.map);
+			}
+			if (st.syn != null && st.syn.KeyWord == KeyWordTable.Type)
+			{
+				string name = ((st.map[Symbol.Get(this.ctx,KeywordType.Expr)] as ConsExpr).Cons[1] as KonohaExpr).tk.Text;
+				ParameterExpression tmp = Expression.Parameter(typeof(long),name);
+				this.Scope.Add(name,(Expression)tmp);
+
+				return Expression.Block(
+					new ParameterExpression[] { tmp },
+					Expression.Assign(
+						tmp,
+						MakeExpression((st.map[Symbol.Get(this.ctx,KeywordType.Expr)] as ConsExpr).Cons[2] as KonohaExpr,
+							environment))
+				);
 			}
 			if (st.syn != null && st.syn.KeyWord == KeyWordTable.Return || st.build == StmtType.RETURN)
 			{

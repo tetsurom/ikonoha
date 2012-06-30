@@ -70,9 +70,51 @@ namespace IronKonoha.TyCheck
 			return r;
 		}
 
+		static bool declType(KStatement stmt, KonohaExpr expr, KGamma gma, TokenType type, KStatement lastStmtRef)
+		{
+			return true;
+			/*
+			if(expr is TermExpr) {
+				TermExpr te = expr as TermExpr;
+				if(te.toVariable(_ctx, stmt, expr, gma, type)) {
+					kExpr vexpr = new_Variable(null, type, 0, gma);
+					expr = new_TypedConsExpr(_ctx, TEXPR_LET, TY_void, 3, K_NULL, expr, vexpr);
+					return appendAssignmentStmt(_ctx, expr, lastStmtRef);
+				}
+			}
+			else if(expr->syn->kw == KW_LET) {
+				kExpr *lexpr = kExpr_at(expr, 1);
+				if(kExpr_tyCheckAt(stmt, expr, 2, gma, TY_var, 0) == K_NULLEXPR) {
+					// this is neccesarry to avoid 'int a = a + 1;';
+					return false;
+				}
+				if(ExprTerm_toVariable(_ctx, stmt, lexpr, gma, ty)) {
+					if(kExpr_tyCheckAt(stmt, expr, 2, gma, ty, 0) != K_NULLEXPR) {
+						return appendAssignmentStmt(_ctx, expr, lastStmtRef);
+					}
+					return false;
+				}
+			} else if(expr->syn->kw == KW_COMMA) {
+				size_t i;
+				for(i = 1; i < kArray_size(expr->cons); i++) {
+					if(!Expr_declType(_ctx, stmt, kExpr_at(expr, i), gma, ty, lastStmtRef)) return false;
+				}
+				return true;
+			}
+			kStmt_p(stmt, ERR_, "variable name is expected");
+			return false;
+			*/
+		}
+
 		internal static bool TypeDecl(KStatement stmt, Syntax syn, KGamma gma)
 		{
-			throw new NotImplementedException();
+			SingleTokenExpr stk = stmt.map[Symbol.Get(gma.ks.ctx, KeywordType.Type)] as SingleTokenExpr;
+			KonohaExpr expr = stmt.map[Symbol.Get(gma.ks.ctx, KeywordType.Expr)];
+			if(stk == null || stk.tk.TokenType != TokenType.TYPE || expr == null) {
+				return false;
+			}
+			stmt.done();
+			return declType(stmt,expr,gma, stk.tk.TokenType,stmt);
 		}
 	}
 }

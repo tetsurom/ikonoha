@@ -130,6 +130,7 @@ namespace IronKonoha
 					rule = "$type $expr",
 					PatternMatch = PatternMatch.Type,
 					StmtTyCheck = TyCheck.StmtTyCheck.TypeDecl,
+					TopStmtTyCheck = TyCheck.StmtTyCheck.TypeDecl,
 					ExprTyCheck = TyCheck.ExprTyCheck.Type,
 					kw = KeywordType.Type,
 					flag = SynFlag.ExprTerm,
@@ -276,8 +277,10 @@ namespace IronKonoha
 				},
 				new KDEFINE_SYNTAX(){
 					name = "=",
+					op2 = "opLET",
+					kw = KeywordType.LET,
 					priority_op2 = 4096,
-					flag = SynFlag.ExprLeftJoinOp2,
+					flag = SynFlag.ExprLeftJoinOp2 | SynFlag.ExprOp,
 				},
 				new KDEFINE_SYNTAX(){
 				    name = ",",
@@ -372,7 +375,7 @@ namespace IronKonoha
 			Debug.WriteLine("### DLR AST Dump ###");
 			Debug.WriteLine(dbv);
 			var f = ast.Compile();
-			
+
 			if (f.Method.ReturnType == typeof(void))
 			{
 				f();
@@ -641,17 +644,17 @@ namespace IronKonoha
 				syn.ExprTyCheck = syndef.ExprTyCheck ?? ctx.kmodsugar.UndefinedExprTyCheck;
 				if (syn.ParseExpr == KModSugar.UndefinedParseExpr)
 				{
-					if (syn.Flag == SynFlag.ExprOp)
+					if ((syn.Flag & SynFlag.ExprOp) != 0)
 					{
 						syn.ParseExpr = KModSugar.ParseExpr_Op;
 						syn.ExprTyCheck = TyCheck.ExprTyCheck.Expr;
 					}
-					if (syn.Flag == SynFlag.ExprPostfixOp2)
+					if ((syn.Flag & SynFlag.ExprPostfixOp2) != 0)
 					{
 						syn.ParseExpr = KModSugar.ParseExpr_Op;
 						syn.ExprTyCheck = TyCheck.ExprTyCheck.Expr;
 					}
-					else if (syn.Flag == SynFlag.ExprTerm)
+					else if ((syn.Flag & SynFlag.ExprTerm) != 0)
 					{
 						syn.ParseExpr = KModSugar.ParseExpr_Term;
 					}
