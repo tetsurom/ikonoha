@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Diagnostics;
 using System.Reflection;
+using System.Dynamic;
 
 namespace IronKonoha.TyCheck
 {
@@ -116,12 +117,25 @@ namespace IronKonoha.TyCheck
 
 		internal static KonohaExpr Symbol(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
 		{
+			var classes = gma.ks.Classes;
+			var name = expr.tk.Text;
+			if(classes.ContainsKey(name)){
+				return new ConstExpr<IDynamicMetaObjectProvider>(classes[name])
+				{
+					syn = expr.syn,
+					tk = expr.tk,
+					build = expr.build,
+					parent = expr.parent
+				};
+			}
+			/*
 			if (expr.tk.Text == "System")
 			{
 				expr.tk.Type = expr.ty = typeof(IronKonoha.Runtime.System);
 				expr.typed(ExprType.CONST, expr.tk.Type);
 				return expr;
 			}
+			 */
 			throw new TypeAccessException();
 		}
 
@@ -249,7 +263,7 @@ namespace IronKonoha.TyCheck
 			var ctx = gma.ks.ctx;
 			receiver = receiver.tyCheck(ctx, stmt, gma, typeof(Variant), 0);
 			//message = message.tyCheck(ctx, stmt, gma, typeof(Variant), 0);
-			var meminfo = receiver.ty.GetMember(message.Text);
+			/*var meminfo = receiver.ty.GetMember(message.Text);
 			if (meminfo.Length == 0)
 			{
 				throw new MemberAccessException();
@@ -258,7 +272,9 @@ namespace IronKonoha.TyCheck
 			{
 				return new ConsExpr(ctx, gma.ks.GetSyntax(KeyWordTable.Parenthesis), receiver.ty.GetMethod(message.Text));
 			}*/
+			//*/
 			cexpr.Cons[1] = receiver;
+			/*
 			cexpr.Cons[0] = new ConstExpr<MemberInfo>(meminfo[0])
 			{
 				syn = expr.syn,
@@ -266,6 +282,7 @@ namespace IronKonoha.TyCheck
 				build = expr.build,
 				parent = expr.parent,
 			};
+			 * */
 			return cexpr;
 		}
 	}

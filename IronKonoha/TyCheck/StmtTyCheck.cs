@@ -10,12 +10,19 @@ namespace IronKonoha.TyCheck
 		internal static bool If(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			bool r = true;
-			if ((r = stmt.tyCheckExpr(gma.ks.ctx, KeywordType.Expr, gma, KType.Boolean, 0)))
+			if ((r = stmt.tyCheckExpr(gma.ks.ctx, KeywordType.Expr, gma, typeof(bool), 0)))
 			{
-				BlockExpr bkThen = stmt.map[Symbol.Get(gma.ks.ctx, KeywordType.Block)] as BlockExpr;
-				BlockExpr bkElse = stmt.map[Symbol.Get(gma.ks.ctx, KeywordType.Else)] as BlockExpr;
+				BlockExpr bkThen = stmt.map[gma.ks.Symbols.Block] as BlockExpr;
+				BlockExpr bkElse = null;
+				if (stmt.map.ContainsKey(gma.ks.Symbols.Else))
+				{
+					bkElse = stmt.map[gma.ks.Symbols.Else] as BlockExpr;
+				}
 				r = bkThen.TyCheckAll(gma.ks.ctx, gma);
-				r = r & bkElse.TyCheckAll(gma.ks.ctx, gma);
+				if (bkElse != null)
+				{
+					r = r & bkElse.TyCheckAll(gma.ks.ctx, gma);
+				}
 				stmt.typed(StmtType.IF);
 			}
 			return r;

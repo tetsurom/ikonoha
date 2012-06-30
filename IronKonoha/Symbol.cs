@@ -50,6 +50,7 @@ namespace IronKonoha
 			{KeywordType.Symbol, "SYMBOL"},
 			{KeywordType.Params, "params"},
 			{KeywordType.Type, "type"},
+			{KeywordType.Else, "else"},
 		};
 		public static Symbol Get(Context ctx, string name)
 		{

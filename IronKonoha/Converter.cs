@@ -243,28 +243,13 @@ namespace IronKonoha
 
 		public Expression MakeConsExpression(ConsExpr expr, FunctionEnvironment environment)
 		{
-			if (expr.syn.KeyWord == KeyWordTable.Symbol)
+			if (expr.syn.KeyWord == KeyWordTable.DOT)
 			{
-				Type ty = null;
-				if (expr.tk.Text == "System")
-				{
-					ty = typeof(IronKonoha.Runtime.System);
-				}
-				KonohaExpr receiver = (expr.Cons[1] as KonohaExpr);
-				Token message = expr.Cons[0] as Token;
-				var meminfo = ty.GetMember(message.Text);
-				if (meminfo.Length == 0)
-				{
-					throw new MemberAccessException();
-				}
-
-				if (meminfo[0].MemberType == MemberTypes.Method)
-				{
-					if (expr.Cons.Count == 3)
-					{
-					}
-					return Expression.Call(ty.GetMethod(message.Text));
-				}
+				Token tk = expr.Cons[0] as Token;
+				return Expression.Dynamic(
+					new Runtime.KonohaGetMemberBinder(tk.Text),
+					typeof(object)
+				);
 			}
 			else if (expr.Cons[0] is Token)
 			{

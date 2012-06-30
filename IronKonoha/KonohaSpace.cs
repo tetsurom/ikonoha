@@ -54,13 +54,18 @@ namespace IronKonoha
 			}
 		}
 		public readonly SymbolConst Symbols;
-		
+
+		public Dictionary<string, IDynamicMetaObjectProvider> Classes { get; private set; }
+
 		public KonohaSpace(Context ctx)
 		{
 			this.ctx = ctx;
 			this.Scope = new ExpandoObject();
 			Symbols = new SymbolConst(ctx);
 			defineDefaultSyntax();
+			Classes = new Dictionary<string, IDynamicMetaObjectProvider>();
+			Classes.Add("System", new TypeWrapper(typeof(IronKonoha.Runtime.System)));
+			Classes.Add("K", new TypeWrapper(typeof(IronKonoha.Runtime.K)));
 		}
 		
 		public KonohaSpace(Context ctx,int child)

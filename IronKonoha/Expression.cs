@@ -221,6 +221,7 @@ namespace IronKonoha
 		}
 	}
 
+	[System.Diagnostics.DebuggerDisplay("{Data} [{ty}]")]
 	public class ConstExpr<T> : KonohaExpr
 	{
 		public ConstExpr(T data)
