@@ -46,15 +46,14 @@ namespace IronKonoha.Runtime
 			}
 			else
 			{
-				throw new NotImplementedException();
-				//return errorSuggestion ??
-				//    Runtime.Utilities.CreateThrow(
-				//        targetMO, null,
-				//        BindingRestrictions.GetTypeRestriction(targetMO.Expression,
-				//                                               targetMO.LimitType),
-				//        typeof(MissingMemberException),
-				//        "cannot bind member, " + this.Name +
-				//            ", on object " + targetMO.Value.ToString());
+				return errorSuggestion ??
+					Runtime.Utilities.CreateThrow(
+						targetMO, null,
+						BindingRestrictions.GetTypeRestriction(targetMO.Expression,
+															   targetMO.LimitType),
+						typeof(MissingMemberException),
+						"cannot bind member, " + this.Name +
+							", on object " + targetMO.Value.ToString());
 			}
 		}
 	}

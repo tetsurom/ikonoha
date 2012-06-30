@@ -115,5 +115,44 @@ namespace IronKonoha.Runtime
 			else
 				return Expression.Convert(expr, typeof(object));
 		}
+
+		public static DynamicMetaObject CreateThrow
+		(DynamicMetaObject target, DynamicMetaObject[] args,
+		 BindingRestrictions moreTests,
+		 Type exception, params object[] exceptionArgs)
+		{
+			Expression[] argExprs = null;
+			Type[] argTypes = Type.EmptyTypes;
+			int i;
+			if (exceptionArgs != null)
+			{
+				i = exceptionArgs.Length;
+				argExprs = new Expression[i];
+				argTypes = new Type[i];
+				i = 0;
+				foreach (object o in exceptionArgs)
+				{
+					Expression e = Expression.Constant(o);
+					argExprs[i] = e;
+					argTypes[i] = e.Type;
+					i += 1;
+				}
+			}
+			ConstructorInfo constructor = exception.GetConstructor(argTypes);
+			if (constructor == null)
+			{
+				throw new ArgumentException(
+					"Type doesn't have constructor with a given signature");
+			}
+			return new DynamicMetaObject(
+				Expression.Throw(
+					Expression.New(constructor, argExprs),
+				// Force expression to be type object so that DLR CallSite
+				// code things only type object flows out of the CallSite.
+					typeof(object)),
+				target.Restrictions.Merge(BindingRestrictions.Combine(args))
+								   .Merge(moreTests));
+		}
+
 	}
 }

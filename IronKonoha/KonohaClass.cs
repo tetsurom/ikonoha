@@ -42,6 +42,20 @@ namespace IronKonoha
 			var members = Type.GetMember(binder.Name, flags);
 			if (members.Length == 1)
 			{
+				if (members[0].MemberType == MemberTypes.Method)
+				{
+					var method = members[0] as MethodInfo;
+					Type ftype = Expression.GetDelegateType(method.GetParameters().Select(p => p.ParameterType).Concat(new[] { method.ReturnType }).ToArray());
+					var delg = Delegate.CreateDelegate(ftype, method);
+					return new DynamicMetaObject(
+						Expression.Constant(delg),
+						this.Restrictions.Merge(
+							BindingRestrictions.GetInstanceRestriction(
+								this.Expression,
+								this.Value)
+						)
+					);
+				}
 				// staticメンバーへのバインドを行うので第1引数はnull
 				return new DynamicMetaObject(
 					Expression.MakeMemberAccess(

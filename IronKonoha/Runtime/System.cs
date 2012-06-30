@@ -16,5 +16,7 @@ namespace IronKonoha.Runtime
 		{
 			Console.WriteLine("hello");
 		}
+
+		public static string test = "test";
 	}
 }

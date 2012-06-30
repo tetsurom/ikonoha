@@ -248,7 +248,8 @@ namespace IronKonoha
 				Token tk = expr.Cons[0] as Token;
 				return Expression.Dynamic(
 					new Runtime.KonohaGetMemberBinder(tk.Text),
-					typeof(object)
+					typeof(object),
+					Expression.Constant((expr.Cons[1] as ConstExpr<IDynamicMetaObjectProvider>).Data)
 				);
 			}
 			else if (expr.Cons[0] is Token)
