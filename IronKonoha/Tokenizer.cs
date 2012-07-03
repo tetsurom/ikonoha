@@ -28,7 +28,7 @@ namespace IronKonoha
 		CODE,          //
 		WHITESPACE,    //
 		METANAME,
-		MN,
+		MethodName,
 		AST_OPTIONAL      // for syntax sugar
 	}
 
@@ -46,10 +46,7 @@ namespace IronKonoha
 		public static readonly Type Void = typeof(void);
 		public static readonly Type Int = typeof(int);
 		public static readonly Type Boolean = typeof(bool);
-		/// <summary>
-		/// not implemented.
-		/// </summary>
-		public static readonly Type System = null;
+		public static readonly Type System = typeof(IronKonoha.Runtime.System);
 		public static readonly Type TVar = typeof(Variant);
 
 		public static KType FromBCID(BCID bcid){
@@ -99,7 +96,7 @@ namespace IronKonoha
 		/// <summary>
 		/// トークンが表す型
 		/// </summary>
-		public Type Type { get; set; }
+		public KonohaType Type { get; set; }
 		public LineInfo ULine { get; set; }
 
 		public Token(TokenType type, string text, int lpos)
@@ -158,7 +155,7 @@ namespace IronKonoha
 				int i;
 				
 				int size = tkP.Sub.Count;
-				var p = new List<Type>(size);
+				var p = new List<KonohaType>(size);
 				for(i = 0; i < size; i++) {
 					Token tkT = (tkP.Sub[i]);
 					if(tkT.IsType) {
@@ -169,9 +166,9 @@ namespace IronKonoha
 					return false;
 				}
 				int psize = p.Count;
-				Type ct = this.Type;
+				KonohaType ct = this.Type;
 				if(psize > 0) {
-					if (ct == typeof(Delegate))
+					if (ct is TypeWrapper && ((TypeWrapper)ct).Type == typeof(Delegate))
 					{
 						ct = KClassTable.Generics(ct, p[0], p.Skip(1).ToList());
 					}
@@ -185,7 +182,7 @@ namespace IronKonoha
 					}
  				}
 				else {
-					ct = KClassTable.Generics(typeof(Array), null, new List<Type>() { this.Type });
+					ct = this.Type.MakeArrayType();
  				}
 				this.Type = ct;
 				return true;

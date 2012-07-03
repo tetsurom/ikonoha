@@ -29,7 +29,11 @@ namespace IronKonoha
 
 	public abstract class ExprOrStmt : KObject
 	{
-
+		public string GetDebugView()
+		{
+			return GetDebugView(0);
+		}
+		public abstract string GetDebugView(int indent);
 	}
 
 	public abstract class KonohaExpr : ExprOrStmt
@@ -51,7 +55,7 @@ namespace IronKonoha
 
 		public KonohaExpr()
 		{
-			this.ty = typeof(Variant);
+			this.ty = KonohaType.Var;
 		}
 
 		public override string ToString()
@@ -63,14 +67,25 @@ namespace IronKonoha
 			return string.Empty;
 		}
 
-		public void typed(ExprType bld, Type ty)
+		public override string GetDebugView(int indent)
+		{
+			var builder = new StringBuilder();
+			for (int i = 1; i < indent; ++i)
+			{
+				builder.Append(' ');
+			}
+			builder.Append(this.ToString());
+			return builder.ToString();
+		}
+
+		public void typed(ExprType bld, KonohaType ty)
 		{
 			this.build = bld;
 			this.ty = ty;
 		}
 
 
-		internal KonohaExpr tyCheckAt(Context ctx, KStatement stmt, int pos, KGamma gma, Type reqty, TPOL pol)
+		internal KonohaExpr tyCheckAt(Context ctx, KStatement stmt, int pos, KGamma gma, KonohaType reqty, TPOL pol)
 		{
 			var consexpr = this as ConsExpr;
 			if (consexpr != null && pos < consexpr.Cons.Count)
@@ -85,7 +100,7 @@ namespace IronKonoha
 
 		// tycheck.h
 		// static kExpr *Expr_tyCheck(CTX, kStmt *stmt, kExpr *expr, kGamma *gma, ktype_t reqty, int pol)
-		internal KonohaExpr tyCheck(Context ctx, KStatement stmt, KGamma gma, Type reqty, TPOL pol)
+		internal KonohaExpr tyCheck(Context ctx, KStatement stmt, KGamma gma, KonohaType reqty, TPOL pol)
 		{
 			var texpr = this;
 			if (stmt.isERR) texpr = null;
@@ -93,7 +108,7 @@ namespace IronKonoha
 			{
 				this.syn = gma.ks.GetSyntax(this.tk.Keyword);
 			}
-			if (this.ty == typeof(Variant))
+			if (this.ty == KonohaType.Var)
 			{
 				ExprTyChecker fo = syn.ExprTyCheck;
 				Debug.Assert(fo != null);
@@ -104,7 +119,7 @@ namespace IronKonoha
 					{
 						texpr = a[i](stmt, this, gma, reqty);
 						if (stmt.isERR) return null;
-						if (texpr.ty != typeof(Variant)) return texpr;
+						if (texpr.ty != KonohaType.Var) return texpr;
 					}
 					fo = a[0];
 				}
@@ -114,7 +129,7 @@ namespace IronKonoha
 			if (texpr != null)
 			{
 				//DBG_P("type=%s, reqty=%s", TY_t(expr->ty), TY_t(reqty));
-				if (texpr.ty == typeof(void))
+				if (texpr.ty == KonohaType.Void)
 				{
 					if ((pol & TPOL.ALLOWVOID) == 0)
 					{
@@ -124,7 +139,7 @@ namespace IronKonoha
 					//return texpr;
 					return null;
 				}
-				if (reqty == typeof(Variant) || texpr.ty == reqty || (pol & TPOL.NOCHECK) != 0)
+				if (reqty == KonohaType.Var || texpr.ty == reqty || (pol & TPOL.NOCHECK) != 0)
 				{
 					return texpr;
 				}
@@ -148,19 +163,25 @@ namespace IronKonoha
 			return texpr;
 		}
 
-		private static KonohaExpr TypedMethodCall(Context ctx, KStatement stmt, Type reqty, MethodInfo mtd, KGamma gma, int p, KonohaExpr texpr)
+		private static KonohaExpr TypedMethodCall(Context ctx, KStatement stmt, KonohaType reqty, MethodInfo mtd, KGamma gma, int p, KonohaExpr texpr)
 		{
 			var expr = new ConsExpr(ctx, stmt.syn);
 			expr.Cons.Add(mtd);
 			throw new NotImplementedException();
 		}
 
-		private static KonohaExpr BoxingExpr(Context ctx, KonohaExpr konohaExpr, Type reqty)
+		private static KonohaExpr BoxingExpr(Context ctx, KonohaExpr konohaExpr, KonohaType reqty)
 		{
 			throw new NotImplementedException();
 		}
 
-		public Type ty { get; set; }
+		public KonohaType ty { get; set; }
+
+		// static kExpr *Expr_lookupMethod(CTX, kStmt *stmt, kExpr *expr, kcid_t this_cid, kGamma *gma, ktype_t reqty)
+		public virtual KonohaExpr lookupMethod(Context ctx, KStatement stmt, Type cid, KGamma gma, KonohaType reqty)
+		{
+			throw new NotSupportedException();
+		}
 	}
 
 	[System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
@@ -196,6 +217,88 @@ namespace IronKonoha
 
 			return builder.ToString();
 		}
+
+		public override string GetDebugView(int indent)
+		{
+			var builder = new StringBuilder();
+			for (int i = 1; i < indent; ++i)
+			{
+				builder.Append(' ');
+			}
+			builder.Append(this.syn == null ? "!null" : this.syn.KeyWord.Name);
+			builder.Append('(');
+			foreach (var con in Cons)
+			{
+				builder.Append(System.Environment.NewLine);
+				if (con == null)
+				{
+					for (int i = 1; i < indent + 4; ++i)
+					{
+						builder.Append(' ');
+					}
+					builder.Append("null");
+				}
+				else if (con is ExprOrStmt)
+				{
+					builder.Append(((ExprOrStmt)con).GetDebugView(indent + 4));
+				}
+				else
+				{
+					for (int i = 1; i < indent + 4; ++i)
+					{
+						builder.Append(' ');
+					}
+					builder.Append(con.ToString());
+				}
+			}
+			builder.Append(System.Environment.NewLine);
+			for (int i = 1; i < indent; ++i)
+			{
+				builder.Append(' ');
+			}
+			builder.Append(')');
+			return builder.ToString();
+		}
+
+		public override KonohaExpr lookupMethod(Context ctx, KStatement stmt, Type cid, KGamma gma, KonohaType reqty)
+		{
+			var ks = gma.ks;
+			var message = this.Cons[0] as Token;
+			Debug.Assert(message != null);
+			if (message.TokenType == TokenType.SYMBOL || message.TokenType == TokenType.USYMBOL)
+			{
+				//kToken_setmn(tkMN, ksymbolA(S_text(tkMN->text), S_size(tkMN->text), SYM_NEWID), MNTYPE_method);
+				message.TokenType = TokenType.MethodName;
+			}
+
+			if (message.TokenType == TokenType.MethodName)
+			{
+				mtd = kKonohaSpace_getMethodNULL(ks, cid, tkMN->mn);
+				if (mtd == NULL)
+				{
+					if (message.Text != string.Empty)
+					{
+						mtd = kKonohaSpace_getMethodNULL(ks, cid, 0);
+						if (mtd != NULL)
+						{
+							return expr.tyCheckDynamicCallParams(ctx, stmt, mtd, gma, tkMN->text, tkMN->mn, reqty);
+						}
+					}
+					if (tkMN->mn == MN_new && kArray_size(expr->cons) == 2 && CT_(kExpr_at(expr, 1)->ty)->bcid == TY_Object)
+					{
+						//DBG_P("bcid=%s", TY_t(CT_(kExpr_at(expr, 1)->ty)->bcid));
+						DBG_ASSERT(kExpr_at(expr, 1)->ty != TY_var);
+						return kExpr_at(expr, 1);  // new Person(); // default constructor
+					}
+					kToken_p(stmt, tkMN, ERR_, "undefined %s: %s.%s", T_mntype(tkMN->mn_type), TY_t(cid), kToken_s(tkMN));
+				}
+			}
+			if (mtd != NULL)
+			{
+				return expr.tyCheckCallParams(_ctx, stmt, mtd, gma, reqty);
+			}
+			return null;
+		}
 	}
 	[System.Diagnostics.DebuggerDisplay("{tk.Text} [{tk.Type}]")]
 	public class TermExpr : KonohaExpr
@@ -227,9 +330,20 @@ namespace IronKonoha
 		public ConstExpr(T data)
 		{
 			Data = data;
-			ty = typeof(T);
+			ty = new TypeWrapper(typeof(T));
 		}
 		public T Data { get; set; }
+
+		public override string GetDebugView(int indent)
+		{
+			var builder = new StringBuilder();
+			for (int i = 1; i < indent; ++i)
+			{
+				builder.Append(' ');
+			}
+			builder.Append(Data.ToString());
+			return builder.ToString();
+		}
 	}
 
 	public class BlockExpr : KonohaExpr
@@ -242,6 +356,28 @@ namespace IronKonoha
 		/// ?
 		/// </summary>
 		public KonohaExpr esp { get; set; }
+
+		public override string GetDebugView(int indent)
+		{
+			var builder = new StringBuilder();
+			for (int i = 1; i < indent; ++i)
+			{
+				builder.Append(' ');
+			}
+			builder.Append('{');
+			foreach (var block in blocks)
+			{
+				builder.Append(System.Environment.NewLine);
+				builder.Append(block.GetDebugView(indent + 4));
+			}
+			builder.Append(System.Environment.NewLine);
+			for (int i = 1; i < indent; ++i)
+			{
+				builder.Append(' ');
+			}
+			builder.Append('}');
+			return builder.ToString();
+		}
 
 		// static void Block_addStmtLine(CTX, kBlock *bk, kArray *tls, int s, int e, kToken *tkERR)
 		public void AddStatementLine(Context ctx, KonohaSpace ks, IList<Token> tokens, int start, int end, out Token tkERR)

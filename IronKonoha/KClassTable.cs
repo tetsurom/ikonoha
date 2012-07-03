@@ -28,18 +28,21 @@ namespace IronKonoha
 		/// 
 		// datatype.h
 		// static kclass_t *CT_Generics(CTX, kclass_t *ct, ktype_t rtype, int psize, kparam_t *p)
-		public static Type Generics(Type ct, Type rtype, IList<Type> p)
+		public static KonohaType Generics(KonohaType ct, KonohaType rtype, IList<KonohaType> p)
 		{
-			if (ct == typeof(Delegate))
+			if (ct is TypeWrapper && ((TypeWrapper)ct).Type == typeof(Delegate))
 			{
 				if (rtype == null)
 				{
-					rtype = typeof(void);
+					rtype = KonohaType.Void;
 				}
 				p.Add(rtype);
-				return Expression.GetDelegateType(p.ToArray());
+				var targ = p.Select(t => t is TypeWrapper ? ((TypeWrapper)t).Type : typeof(object)).ToArray();
+				var dtype = Expression.GetDelegateType(targ);
+				return new TypeWrapper(dtype);
 			}
-			return ct.MakeGenericType(p.ToArray());
+			throw new NotImplementedException();
+			//return ct.MakeGenericType(p.ToArray());
 		}
 
 	}

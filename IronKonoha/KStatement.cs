@@ -41,6 +41,38 @@ namespace IronKonoha
 			map = new Dictionary<object, KonohaExpr>();
 		}
 
+		public override string GetDebugView(int indent)
+		{
+			var builder = new StringBuilder();
+			for (int i = 1; i < indent; ++i)
+			{
+				builder.Append(' ');
+			}
+			builder.Append(this.syn == null ? "!null" : this.syn.KeyWord.Name);
+			builder.Append('{');
+			foreach (var pair in map)
+			{
+				builder.Append(System.Environment.NewLine);
+				for (int i = 1; i < indent + 4; ++i)
+				{
+					builder.Append(' ');
+				}
+				builder.Append('[');
+				builder.Append(pair.Key.ToString());
+				builder.Append(']');
+				builder.Append(System.Environment.NewLine);
+				builder.Append(pair.Value.GetDebugView(indent + 4));
+			}
+			builder.Append(System.Environment.NewLine);
+			for (int i = 1; i < indent; ++i)
+			{
+				builder.Append(' ');
+			}
+			builder.Append('}');
+			return builder.ToString();
+		}
+
+
 		// static kbool_t Stmt_parseSyntaxRule(CTX, kStmt *stmt, kArray *tls, int s, int e)
 		public bool parseSyntaxRule(Context ctx, IList<Token> tls, int s, int e)
 		{
@@ -378,7 +410,7 @@ namespace IronKonoha
 		}
 
 
-		internal bool tyCheckExpr(Context ctx, KeywordType nameid, KGamma gma, Type reqty, TPOL pol)
+		internal bool tyCheckExpr(Context ctx, KeywordType nameid, KGamma gma, KonohaType reqty, TPOL pol)
 		{
 			var k = Symbol.Get(ctx, nameid);
 			if (this.map.ContainsKey(k))

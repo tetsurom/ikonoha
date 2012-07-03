@@ -31,7 +31,7 @@ namespace IronKonoha
 		public string op2 { get; set; }
 		public string op1 { get; set; }
 		public int priority_op2 { get; set; }
-		public Type type { get; set; }
+		public KonohaType type { get; set; }
 		public StmtParser PatternMatch { get; set; }
 		public ExprParser ParseExpr { get; set; }
 		public StmtTyChecker TopStmtTyCheck { get; set; }
@@ -203,8 +203,8 @@ namespace IronKonoha
 		public KGammaFlag flag { get; set; }
 		public KFunc mtd { get; set; }
 		public KonohaSpace ks { get; set; }
-		public Type cid { get; set; }
-		public Type static_cid { get; set; }
+		public KonohaType cid { get; set; }
+		public KonohaType static_cid { get; set; }
 		public Stack<object> lvar{ get; private set; }
 		public Stack<object> fvar{ get; private set; }
 		public IList<object> lvarlst { get; private set; }

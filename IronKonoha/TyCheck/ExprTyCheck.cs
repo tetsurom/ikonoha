@@ -10,7 +10,7 @@ namespace IronKonoha.TyCheck
 {
 	public class ExprTyCheck
 	{
-		internal static KonohaExpr Int(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		internal static KonohaExpr Int(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
 			return new ConstExpr<long>(long.Parse(expr.tk.Text))
 			{
@@ -20,7 +20,7 @@ namespace IronKonoha.TyCheck
 				parent = expr.parent
 			};
 		}
-		internal static KonohaExpr Float(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		internal static KonohaExpr Float(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
 			return new ConstExpr<double>(double.Parse(expr.tk.Text))
 			{
@@ -30,7 +30,7 @@ namespace IronKonoha.TyCheck
 				parent = expr.parent
 			};
 		}
-		internal static KonohaExpr Text(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		internal static KonohaExpr Text(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
 			return new ConstExpr<string>(expr.tk.Text)
 			{
@@ -41,21 +41,21 @@ namespace IronKonoha.TyCheck
 			};
 		}
 
-		internal static KonohaExpr Expr(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		internal static KonohaExpr Expr(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
 			if ((expr.syn.Flag & SynFlag.ExprOp) != 0)
 			{
 				var cexpr = expr as ConsExpr;
 				var ctx = gma.ks.ctx;
-				cexpr.Cons[1] = (cexpr.Cons[1] as KonohaExpr).tyCheck(ctx, stmt, gma, typeof(Variant), 0);
-				cexpr.Cons[2] = (cexpr.Cons[2] as KonohaExpr).tyCheck(ctx, stmt, gma, typeof(Variant), 0);
+				cexpr.Cons[1] = (cexpr.Cons[1] as KonohaExpr).tyCheck(ctx, stmt, gma, KonohaType.Var, 0);
+				cexpr.Cons[2] = (cexpr.Cons[2] as KonohaExpr).tyCheck(ctx, stmt, gma, KonohaType.Var, 0);
 				cexpr.ty = (cexpr.Cons[1] as KonohaExpr).ty;
 				return cexpr;
 			}
 			throw new NotImplementedException();
 		}
 
-		internal static KonohaExpr Block(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		internal static KonohaExpr Block(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
 			KonohaExpr texpr = null;
 			KStatement lastExpr = null;
@@ -79,10 +79,11 @@ namespace IronKonoha.TyCheck
 				}
 				var rexpr = lastExpr.Expr(gma.ks.ctx, KeywordType.Expr);
 				Debug.Assert(rexpr != null);
-				Type ty = rexpr.ty;
-				if(ty != typeof(void)) {
+				KonohaType ty = rexpr.ty;
+				if (ty != KonohaType.Void)
+				{
 					var letexpr = new ConsExpr(gma.ks.ctx, gma.ks.GetSyntax(KeyWordTable.Return), null, gma.lvar, rexpr);
-					letexpr.ty = typeof(void);
+					letexpr.ty = KonohaType.Void;
 					//var letexpr = new_TypedConsExpr(_ctx, TEXPR_LET, TY_void, 3, K_NULL, lvar, rexpr);
 					lastExpr.map[IronKonoha.Symbol.Get(gma.ks.ctx, KeywordType.Expr)] = letexpr;
 					//texpr = kExpr_setVariable(expr, BLOCK_, ty, lvarsize, gma);
@@ -104,18 +105,18 @@ namespace IronKonoha.TyCheck
 			}
 			return texpr;
 		}
-		internal static KonohaExpr MethodCall(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		internal static KonohaExpr MethodCall(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
-			var texpr = expr.tyCheckAt(gma.ks.ctx, stmt, 1, gma, typeof(Variant), 0);
+			var texpr = expr.tyCheckAt(gma.ks.ctx, stmt, 1, gma, KonohaType.Var, 0);
 			if (texpr != null)
 			{
 				var this_cid = texpr.ty;
-				//return expr.lookupMethod(gma.ks.ctx, stmt, this_cid, gma, reqty);
+				return expr.lookupMethod(gma.ks.ctx, stmt, this_cid, gma, reqty);
 			}
 			throw new NotImplementedException();
 		}
 
-		internal static KonohaExpr Symbol(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		internal static KonohaExpr Symbol(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
 			var classes = gma.ks.Classes;
 			var name = expr.tk.Text;
@@ -139,7 +140,7 @@ namespace IronKonoha.TyCheck
 			throw new TypeAccessException();
 		}
 
-		internal static KonohaExpr USymbol(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		internal static KonohaExpr USymbol(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
 			/*
 			var tk = expr.tk;
@@ -167,14 +168,14 @@ namespace IronKonoha.TyCheck
 			throw new NotImplementedException();
 		}
 
-		internal static KonohaExpr Type(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		internal static KonohaExpr Type(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
 			//Debug.Assert(expr.tk.isType);
 			//return kExpr_setVariable(expr, NULL, expr.tk.ty, 0, gma);
 			throw new NotImplementedException();
 		}
 
-		internal static KonohaExpr FuncStyleCall(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		internal static KonohaExpr FuncStyleCall(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
 			//Debug.Assert(IS_Expr(kExpr_at(expr, 0)));
 			//Debug.Assert(expr.cons[1] == null);
@@ -207,33 +208,33 @@ namespace IronKonoha.TyCheck
 			throw new NotImplementedException();
 		}
 
-		internal static KonohaExpr And(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		internal static KonohaExpr And(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
-			if (expr.tyCheckAt(gma.ks.ctx, stmt, 1, gma, typeof(bool), 0) != null)
+			if (expr.tyCheckAt(gma.ks.ctx, stmt, 1, gma, KonohaType.Boolean, 0) != null)
 			{
-				if (expr.tyCheckAt(gma.ks.ctx, stmt, 2, gma, typeof(bool), 0) != null)
+				if (expr.tyCheckAt(gma.ks.ctx, stmt, 2, gma, KonohaType.Boolean, 0) != null)
 				{
-					expr.typed(ExprType.AND, typeof(bool));
+					expr.typed(ExprType.AND, KonohaType.Boolean);
 					return expr;
 				}
 			}
 			return null;
 		}
 
-		internal static KonohaExpr Or(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		internal static KonohaExpr Or(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
-			if (expr.tyCheckAt(gma.ks.ctx, stmt, 1, gma, typeof(bool), 0) != null)
+			if (expr.tyCheckAt(gma.ks.ctx, stmt, 1, gma, KonohaType.Boolean, 0) != null)
 			{
-				if (expr.tyCheckAt(gma.ks.ctx, stmt, 2, gma, typeof(bool), 0) != null)
+				if (expr.tyCheckAt(gma.ks.ctx, stmt, 2, gma, KonohaType.Boolean, 0) != null)
 				{
-					expr.typed(ExprType.OR, typeof(bool));
+					expr.typed(ExprType.OR, KonohaType.Boolean);
 					return expr;
 				}
 			}
 			return null;
 		}
 
-		internal static KonohaExpr True(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		internal static KonohaExpr True(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
 			return new ConstExpr<bool>(true)
 			{
@@ -244,7 +245,7 @@ namespace IronKonoha.TyCheck
 			};
 		}
 
-		internal static KonohaExpr False(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		internal static KonohaExpr False(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
 			return new ConstExpr<bool>(false)
 			{
@@ -255,14 +256,14 @@ namespace IronKonoha.TyCheck
 			};
 		}
 
-		internal static KonohaExpr Dot(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty)
+		internal static KonohaExpr Dot(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
 			var cexpr = expr as ConsExpr;
 			KonohaExpr receiver = cexpr.Cons[1] as KonohaExpr;
 			Token message = cexpr.Cons[0] as Token;
 			var ctx = gma.ks.ctx;
-			receiver = receiver.tyCheck(ctx, stmt, gma, typeof(Variant), 0);
-			//message = message.tyCheck(ctx, stmt, gma, typeof(Variant), 0);
+			receiver = receiver.tyCheck(ctx, stmt, gma, KonohaType.Var, 0);
+			//message = message.tyCheck(ctx, stmt, gma, KonohaType.Var, 0);
 			/*var meminfo = receiver.ty.GetMember(message.Text);
 			if (meminfo.Length == 0)
 			{

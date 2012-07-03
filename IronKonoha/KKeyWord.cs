@@ -124,8 +124,8 @@ namespace IronKonoha
 		public static readonly KKeyWord Brace = new KKeyWord("{}", KeywordType.Brace);
 		public static readonly KKeyWord StmtTypeDecl = new KKeyWord("$type", KeywordType.StmtTypeDecl);
 		public static readonly KKeyWord Block = new KKeyWord("$block", KeywordType.Block);
-		public static readonly KKeyWord Params = new KKeyWord("$param", KeywordType.Params);
-		public static readonly KKeyWord ExprMethodCall = new KKeyWord("", KeywordType.ExprMethodCall);
+		public static readonly KKeyWord Params = new KKeyWord("$params", KeywordType.Params);
+		public static readonly KKeyWord ExprMethodCall = new KKeyWord("$params", KeywordType.ExprMethodCall);
 		public static readonly KKeyWord Toks = new KKeyWord("$toks", KeywordType.Toks);
 		public static readonly KKeyWord DOT = new KKeyWord(".", KeywordType.DOT);
 		public static readonly KKeyWord DIV = new KKeyWord("/", KeywordType.DIV);

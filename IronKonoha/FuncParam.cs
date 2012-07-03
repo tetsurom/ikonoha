@@ -8,8 +8,8 @@ namespace IronKonoha
 	public class FuncParam
 	{
 		public string Name { get; set; }
-		public Type Type { get; set; }
-		public FuncParam(string name, Type type)
+		public KonohaType Type { get; set; }
+		public FuncParam(string name, KonohaType type)
 		{
 			Name = name;
 			Type = type;

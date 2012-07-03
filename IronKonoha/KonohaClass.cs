@@ -8,10 +8,34 @@ using System.Reflection;
 
 namespace IronKonoha
 {
+	public abstract class KonohaType : IDynamicMetaObjectProvider
+	{
+		public static readonly KonohaType Int = new TypeWrapper(typeof(System.Int64));
+		public static readonly KonohaType Float = new TypeWrapper(typeof(System.Double));
+		public static readonly KonohaType Boolean = new TypeWrapper(typeof(bool));
+		public static readonly KonohaType Void = new TypeWrapper(typeof(void));
+		public static readonly KonohaType System = new TypeWrapper(typeof(Runtime.System));
+		public static readonly KonohaType Var = new TypeWrapper(typeof(Variant));
+
+		public bool IsGenericType
+		{
+			get
+			{
+				return this is TypeWrapper ? ((TypeWrapper)this).Type.IsGenericType : false;
+			}
+		}
+
+		public KonohaType MakeArrayType()
+		{
+			return new TypeWrapper((this is TypeWrapper ? ((TypeWrapper)this).Type : typeof(object)).MakeArrayType());
+		}
+	}
+
+
 	/// <summary>
 	/// .Netの静的型のラッパー
 	/// </summary>
-	public class TypeWrapper : IDynamicMetaObjectProvider
+	public class TypeWrapper : KonohaType
 	{
 		public Type Type { get; private set; }
 		public DynamicMetaObject GetMetaObject(Expression parameter)
@@ -135,7 +159,7 @@ namespace IronKonoha
 		}
 	}
 
-	public class KonohaClass : IDynamicMetaObjectProvider
+	public class KonohaClass : KonohaType
 	{
 		public string Name { get; private set; }
 		public Dictionary<string, object> Methods { get; private set; }
@@ -155,9 +179,9 @@ namespace IronKonoha
 		public bool TryFindMember(string key, out object value)
 		{
 			value = null;
-			if (Fields.ContainsKey(key))
+			if (StaticFields.ContainsKey(key))
 			{
-				value = Fields[key];
+				value = StaticFields[key];
 				return true;
 			}
 			if (Methods.ContainsKey(key))

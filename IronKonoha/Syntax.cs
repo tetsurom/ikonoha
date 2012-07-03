@@ -42,7 +42,7 @@ namespace IronKonoha
 		/// 文法の優先度？ 
 		/// </summary>
 		public int priority { get; set; }
-		public Type Type { get; set; }
+		public KonohaType Type { get; set; }
 		public StmtParser PatternMatch { get; set; }
 		public ExprParser ParseExpr { get; set; }
 		public StmtTyChecker TopStmtTyCheck { get; set; }

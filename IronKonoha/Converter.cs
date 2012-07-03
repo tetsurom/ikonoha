@@ -56,7 +56,7 @@ namespace IronKonoha
 
 		public FuncCache(Converter converter, string body, IList<FuncParam> param)
 			:base(converter, body, param){
-			var paramexprs = Params.Select(p => Expression.Parameter(p.Type, p.Name)).ToArray();
+				var paramexprs = Params.Select(p => Expression.Parameter(p.GetType(), p.Name)).ToArray();
 			var bodyexpr = Expression.Block(
 				Expression.Invoke(
 					Expression.MakeMemberAccess(Expression.Constant(this), this.GetType().GetProperty("Lambda")),
@@ -120,7 +120,7 @@ namespace IronKonoha
 			var parser = new Parser(ctx, ks);
 			var tokens = tokenizer.Tokenize(body);
 			var block = parser.CreateBlock(null, tokens, 0, tokens.Count(), ';');
-			block.TyCheckAll(ctx, new KGamma() { ks = this.ks, cid = KType.System, flag = KGammaFlag.TOPLEVEL });
+			block.TyCheckAll(ctx, new KGamma() { ks = this.ks, cid = KonohaType.System, flag = KGammaFlag.TOPLEVEL });
 			return ConvertToExprList(block, environment);
 		}
 
@@ -128,7 +128,7 @@ namespace IronKonoha
 		{
 			var env = new FunctionEnvironment()
 			{
-				Params = param.Select(p=>Expression.Parameter(p.Type, p.Name)).ToArray(),
+				Params = param.Select(p=>Expression.Parameter(p.GetType(), p.Name)).ToArray(),
 				ReturnLabel = Expression.Label(typeof(RT))
 			};
 			var list = ConvertTextBlock(body, env).ToList();

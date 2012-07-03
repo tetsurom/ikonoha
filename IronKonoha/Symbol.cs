@@ -64,6 +64,11 @@ namespace IronKonoha
 		{
 			return Get(ctx, nameTable[kw]);
 		}
+
+		public override string ToString()
+		{
+			return Name ?? "";
+		}
 	}
 
 	public class SymbolConst

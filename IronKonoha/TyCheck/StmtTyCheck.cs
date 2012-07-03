@@ -10,7 +10,7 @@ namespace IronKonoha.TyCheck
 		internal static bool If(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			bool r = true;
-			if ((r = stmt.tyCheckExpr(gma.ks.ctx, KeywordType.Expr, gma, typeof(bool), 0)))
+			if ((r = stmt.tyCheckExpr(gma.ks.ctx, KeywordType.Expr, gma, KonohaType.Boolean, 0)))
 			{
 				BlockExpr bkThen = stmt.map[gma.ks.Symbols.Block] as BlockExpr;
 				BlockExpr bkElse = null;
@@ -51,9 +51,9 @@ namespace IronKonoha.TyCheck
 		internal static bool Return(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			bool r = true;
-			Type rtype = gma.mtd.ReturnType;
+			KonohaType rtype = gma.mtd.ReturnType;
 			stmt.typed(StmtType.RETURN);
-			if (rtype != typeof(void))
+			if (rtype != KonohaType.Void)
 			{
 				r = stmt.tyCheckExpr(gma.ks.ctx, KeywordType.Expr, gma, rtype, 0);
 			}
@@ -63,7 +63,7 @@ namespace IronKonoha.TyCheck
 				if (expr != null)
 				{
 					//kStmt_p(stmt, WARN_, "ignored return value");
-					stmt.tyCheckExpr(gma.ks.ctx, KeywordType.Expr, gma, typeof(Variant), 0);
+					stmt.tyCheckExpr(gma.ks.ctx, KeywordType.Expr, gma, KonohaType.Var, 0);
 					stmt.map.Remove(stmt.map.Keys.ElementAt(1));
 				}
 			}

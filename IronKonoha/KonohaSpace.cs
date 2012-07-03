@@ -11,7 +11,7 @@ namespace IronKonoha
 {
 
 	public delegate bool StmtTyChecker(KStatement stmt, Syntax syn, KGamma gma);
-	public delegate KonohaExpr ExprTyChecker(KStatement stmt, KonohaExpr expr, KGamma gma, Type reqty);
+	public delegate KonohaExpr ExprTyChecker(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty);
 	public delegate int StmtParser(Context ctx, KStatement stmt, Syntax syn, Symbol name, IList<Token> tokens, int start, int end);
 	public delegate KonohaExpr ExprParser(Context ctx, Syntax syn, KStatement stmt, IList<Token> tokens, int start, int current, int end);
 
@@ -64,8 +64,15 @@ namespace IronKonoha
 			Symbols = new SymbolConst(ctx);
 			defineDefaultSyntax();
 			Classes = new Dictionary<string, IDynamicMetaObjectProvider>();
-			Classes.Add("System", new TypeWrapper(typeof(IronKonoha.Runtime.System)));
+
+			Classes.Add("System", KonohaType.System);
 			Classes.Add("K", new TypeWrapper(typeof(IronKonoha.Runtime.K)));
+
+			var testclass = new KonohaClass("Hoge", null);
+			testclass.StaticFields["fuga"] = "foo";
+			Classes.Add(testclass.Name, testclass);
+
+			//testclass.GetMetaObject(
 		}
 		
 		public KonohaSpace(Context ctx,int child)
@@ -296,19 +303,19 @@ namespace IronKonoha
 					PatternMatch = PatternMatch.Type,
 					TopStmtTyCheck = TyCheck.TopStmtTyCheck.MethodDecl,
 					kw = KeywordType.StmtMethodDecl,
-					type = typeof(void),
+					type = KonohaType.Void,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "int",
 					PatternMatch = PatternMatch.Type,
 					kw = KeywordType.Type,
-					type = typeof(long),
+					type = KonohaType.Int,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "boolean",
 					PatternMatch = PatternMatch.Type,
 					kw = KeywordType.Type,
-					type = typeof(bool),
+					type = KonohaType.Float,
 				},
 				//new KDEFINE_SYNTAX(){
 				//    name = "null",
@@ -369,6 +376,8 @@ namespace IronKonoha
 			var parser = new Parser(ctx, this);
 			var converter = new Converter(ctx, this);
 			var block = parser.CreateBlock(null, tokens, 0, tokens.Count(), ';');
+			Debug.WriteLine("### Konoha AST Dump ###");
+			Debug.WriteLine(block.GetDebugView());
 			block.TyCheckAll(ctx, new KGamma() { ks = this, cid = KType.System, flag = KGammaFlag.TOPLEVEL });
 			dynamic ast = converter.Convert(block);
 			string dbv = typeof(Expression).InvokeMember("DebugView", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetProperty, null, ast, null);
@@ -701,6 +710,7 @@ namespace IronKonoha
 			Token tk = tls[c];
 			if(s == c) {
 				KonohaExpr expr = stmt.newExpr2(ctx, tk.Sub, 0, tk.Sub.Count);
+				//Debug.Assert(expr.syn != null);
 				return KModSugar.Expr_rightJoin(ctx, expr, stmt, tls, s + 1, c + 1, e);
 			}
 			else {
@@ -711,16 +721,21 @@ namespace IronKonoha
 				if (lexpr.syn == null)
 				{
 					lexpr.syn = stmt.ks.GetSyntax(lexpr.tk.Keyword);
+					//Debug.Assert(lexpr.syn != null);
 				}
 				if(lexpr.syn.KeyWord == KeyWordTable.DOT) {
 					lexpr.syn = stmt.ks.GetSyntax(KeyWordTable.ExprMethodCall); // CALL
+					Debug.Assert(lexpr.syn != null);
 				}
 				else if (lexpr.syn.KeyWord != KeyWordTable.ExprMethodCall)
 				{
 					//Console.WriteLine("function calls  .. ");
 					syn = stmt.ks.GetSyntax(KeyWordTable.Parenthesis);    // (f null ())
 					lexpr  = new ConsExpr(ctx, syn, lexpr, null);
+					//Debug.Assert(lexpr.syn != null);
 				}
+				//Debug.Assert(lexpr.syn != null);
+				lexpr.syn = lexpr.syn ?? stmt.ks.GetSyntax(KeyWordTable.Err);
 				stmt.addExprParams(ctx, lexpr, tk.Sub, 0, tk.Sub.Count, true/*allowEmpty*/);
 				return KModSugar.Expr_rightJoin(ctx, lexpr, stmt, tls, s + 1, c + 1, e);
 			}
@@ -755,7 +770,7 @@ namespace IronKonoha
 
 
 		// static kMethod* KonohaSpace_getCastMethodNULL(CTX, kKonohaSpace *ks, kcid_t cid, kcid_t tcid)
-		internal MethodInfo getCastMethod(Type cid, Type tcid)
+		internal MethodInfo getCastMethod(KonohaType cid, KonohaType tcid)
 		{
 			if (cid == null)
 			{
