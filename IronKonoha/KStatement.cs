@@ -390,7 +390,7 @@ namespace IronKonoha
 			return result;
 		}
 
-		public Type getcid(Symbol kw, Type defcid)
+		public KonohaType getcid(Symbol kw, KonohaType defcid)
 		{
 			if (!this.map.ContainsKey(kw))
 			{
@@ -417,7 +417,7 @@ namespace IronKonoha
 			{
 				var expr = this.map[k];
 				var texpr = expr.tyCheck(ctx, this, gma, reqty, pol);
-				Debug.WriteLine("reqty={0}, texpr.ty={1} isnull={2}", reqty, texpr.ty, texpr == null);
+				Debug.WriteLine("reqty={0}, texpr.ty={1} isnull={2}", reqty, texpr == null ? null : texpr.ty, texpr == null);
 				if (texpr != null)
 				{
 					if (texpr != expr)

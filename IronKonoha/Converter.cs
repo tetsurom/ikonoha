@@ -262,8 +262,18 @@ namespace IronKonoha
 				return Expression.Dynamic(
 					new Runtime.KonohaGetMemberBinder(tk.Text),
 					typeof(object),
-					Expression.Constant((expr.Cons[1] as ConstExpr<IDynamicMetaObjectProvider>).Data)
+					Expression.Constant((expr.Cons[1] as ConstExpr<KonohaType>).Data)
 				);
+			}
+			else if (expr.syn.KeyWord == KeyWordTable.Params)
+			{
+				Token tk = expr.Cons[0] as Token;
+				return Expression.Dynamic(
+					new Runtime.KonohaInvokeMemberBinder(tk.Text, new CallInfo(1)),
+					typeof(object),
+					Expression.Constant((expr.Cons[1] as ConstExpr<KonohaType>).Data),
+					MakeExpression((KonohaExpr)expr.Cons[2], environment));
+
 			}
 			else if (expr.Cons[0] is Token)
 			{
@@ -302,12 +312,12 @@ namespace IronKonoha
 						return Expression.Invoke(Expression.Constant(f), new[] { p });
 					}
 
-					var bind = Microsoft.CSharp.RuntimeBinder.Binder.Invoke(CSharpBinderFlags.InvokeSimpleName,typeof(Converter),
+					var bind = Microsoft.CSharp.RuntimeBinder.Binder.Invoke(CSharpBinderFlags.InvokeSimpleName, typeof(Converter),
 					new CSharpArgumentInfo[] {
 						CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
 						CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
 					});
-					return Expression.Dynamic(bind,typeof(object),Expression.Constant(f),p);
+					return Expression.Dynamic(bind, typeof(object), Expression.Constant(f), p);
 				}
 				else
 				{

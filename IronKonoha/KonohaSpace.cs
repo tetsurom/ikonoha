@@ -55,7 +55,7 @@ namespace IronKonoha
 		}
 		public readonly SymbolConst Symbols;
 
-		public Dictionary<string, IDynamicMetaObjectProvider> Classes { get; private set; }
+		public Dictionary<string, KonohaType> Classes { get; private set; }
 
 		public KonohaSpace(Context ctx)
 		{
@@ -63,7 +63,7 @@ namespace IronKonoha
 			this.Scope = new ExpandoObject();
 			Symbols = new SymbolConst(ctx);
 			defineDefaultSyntax();
-			Classes = new Dictionary<string, IDynamicMetaObjectProvider>();
+			Classes = new Dictionary<string, KonohaType>();
 
 			Classes.Add("System", KonohaType.System);
 			Classes.Add("K", new TypeWrapper(typeof(IronKonoha.Runtime.K)));
@@ -378,7 +378,7 @@ namespace IronKonoha
 			var block = parser.CreateBlock(null, tokens, 0, tokens.Count(), ';');
 			Debug.WriteLine("### Konoha AST Dump ###");
 			Debug.WriteLine(block.GetDebugView());
-			block.TyCheckAll(ctx, new KGamma() { ks = this, cid = KType.System, flag = KGammaFlag.TOPLEVEL });
+			block.TyCheckAll(ctx, new KGamma() { ks = this, cid = KonohaType.System, flag = KGammaFlag.TOPLEVEL });
 			dynamic ast = converter.Convert(block);
 			string dbv = typeof(Expression).InvokeMember("DebugView", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetProperty, null, ast, null);
 			Debug.WriteLine("### DLR AST Dump ###");
@@ -678,7 +678,7 @@ namespace IronKonoha
 			if(mtd.packid == 0) {
 				mtd.packid = this.packid;
 			}
-			Type ct = mtd.ReturnType;
+			KonohaType ct = mtd.ReturnType;
 			//if(ct != null && ct.packdom == this.packdom && mtd.isPublic) {
 				//ct.addMethod(ctx, mtd);
 			//}
@@ -691,10 +691,10 @@ namespace IronKonoha
 		private void AddMethod(KFunc mtd)
 		{
 			var argtypes = mtd.paramTypes.ToList();
-			var retType = mtd.ReturnType ?? typeof(void);
+			var retType = mtd.ReturnType ?? KonohaType.Void;
 			argtypes.Add(retType);
-			Type ftype = Expression.GetDelegateType(argtypes.ToArray());
-			Type fctype = typeof(FuncCache<,>).MakeGenericType(ftype, retType);
+			Type ftype = Expression.GetDelegateType(argtypes.Select(t => t.Type).ToArray());
+			Type fctype = typeof(FuncCache<,>).MakeGenericType(ftype, retType.Type);
 
 			dynamic cache = Activator.CreateInstance(fctype, new Converter(ctx, this), mtd.Body, mtd.Parameters.ToList());
 
@@ -780,7 +780,8 @@ namespace IronKonoha
 			{
 				throw new ArgumentNullException("tcid");
 			}
-
+			throw new NotImplementedException();
+			/*
 			var mtd = cid.GetMethod("to" + tcid);
 			//KFunc mtd = KonohaSpace_getMethod(cid, "to"+tcid);
 			if (mtd == null)
@@ -788,6 +789,14 @@ namespace IronKonoha
 				mtd = cid.GetMethod("as" + tcid);
 			}
 			return mtd;
+			 * */
+		}
+
+		public KFunc getMethod(KonohaType klass, string name)
+		{
+			var mt = klass.GetMethod(name);
+			var param = mt.GetParameters().Select(p => new FuncParam(p.Name, new TypeWrapper(p.ParameterType))).ToList();
+			return new KFunc(this, KFuncFlag.Public, klass, name, param, null);
 		}
 	}
 }

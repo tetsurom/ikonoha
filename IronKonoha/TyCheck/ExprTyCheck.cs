@@ -107,10 +107,10 @@ namespace IronKonoha.TyCheck
 		}
 		internal static KonohaExpr MethodCall(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
-			var texpr = expr.tyCheckAt(gma.ks.ctx, stmt, 1, gma, KonohaType.Var, 0);
+			var texpr = expr.tyCheckAt(gma.ks.ctx, stmt, 1, gma, KonohaType.Var, 0) as ConstExpr<KonohaType>;
 			if (texpr != null)
 			{
-				var this_cid = texpr.ty;
+				var this_cid = texpr.Data;
 				return expr.lookupMethod(gma.ks.ctx, stmt, this_cid, gma, reqty);
 			}
 			throw new NotImplementedException();
@@ -121,7 +121,7 @@ namespace IronKonoha.TyCheck
 			var classes = gma.ks.Classes;
 			var name = expr.tk.Text;
 			if(classes.ContainsKey(name)){
-				return new ConstExpr<IDynamicMetaObjectProvider>(classes[name])
+				return new ConstExpr<KonohaType>(classes[name])
 				{
 					syn = expr.syn,
 					tk = expr.tk,

@@ -17,6 +17,9 @@ namespace IronKonoha
 		public static readonly KonohaType System = new TypeWrapper(typeof(Runtime.System));
 		public static readonly KonohaType Var = new TypeWrapper(typeof(Variant));
 
+		public Type Type { get; protected set; }
+		public string Name { get; protected set; }
+
 		public bool IsGenericType
 		{
 			get
@@ -29,22 +32,33 @@ namespace IronKonoha
 		{
 			return new TypeWrapper((this is TypeWrapper ? ((TypeWrapper)this).Type : typeof(object)).MakeArrayType());
 		}
+
+		public abstract DynamicMetaObject GetMetaObject(Expression parameter);
+
+		public abstract MethodInfo GetMethod(string name);
 	}
 
 
 	/// <summary>
 	/// .Netの静的型のラッパー
 	/// </summary>
+	[System.Diagnostics.DebuggerDisplay("TypeWrapper: {Type}")]
 	public class TypeWrapper : KonohaType
 	{
-		public Type Type { get; private set; }
-		public DynamicMetaObject GetMetaObject(Expression parameter)
+		public override DynamicMetaObject GetMetaObject(Expression parameter)
 		{
 			return new TypeWrapperMetaObject(parameter, this);
 		}
 		public TypeWrapper(Type type)
 		{
 			this.Type = type;
+			this.Name = type.Name;
+		}
+		public override MethodInfo GetMethod(string name)
+		{
+			var flags = BindingFlags.IgnoreCase | BindingFlags.Static |
+						BindingFlags.Public;
+			return Type.GetMethod(name, flags);
 		}
 	}
 
@@ -159,9 +173,9 @@ namespace IronKonoha
 		}
 	}
 
+	[System.Diagnostics.DebuggerDisplay("KonohaClass: {Name}")]
 	public class KonohaClass : KonohaType
 	{
-		public string Name { get; private set; }
 		public Dictionary<string, object> Methods { get; private set; }
 		public Dictionary<string, object> StaticFields { get; private set; }
 		public Dictionary<string, object> Fields { get; private set; }
@@ -205,10 +219,16 @@ namespace IronKonoha
 			Fields = new Dictionary<string, object>();
 		}
 
-		public DynamicMetaObject GetMetaObject(Expression parameter)
+		public override DynamicMetaObject GetMetaObject(Expression parameter)
 		{
 			return new KonohaClassMetaObject(parameter, this);
 		}
+
+		public override MethodInfo GetMethod(string name)
+		{
+			return ((Delegate)Methods[Name]).Method;
+		}
+
 	}
 
 	public class KonohaClassMetaObject : DynamicMetaObject

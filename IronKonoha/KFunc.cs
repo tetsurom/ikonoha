@@ -31,35 +31,44 @@ namespace IronKonoha
 		public string Name { get; private set; }
 		public string Body { get; private set; }
 		public KonohaType ReturnType { get; set; }
-		public IList<KStatement> param { get; set; }
+		private IEnumerable<FuncParam> param { get; set; }
 		public KFuncFlag flag { get; set; }
 		public IEnumerable<string> paramNames
 		{
 			get
 			{
-				return param.Select(stmt => stmt.map[ks.Symbols.Expr].tk.Text);
+				return param.Select(p => p.Name);
 			}
 		}
 		public IEnumerable<KonohaType> paramTypes
 		{
 			get
 			{
-				return param.Select(stmt => stmt.map[ks.Symbols.Type].tk.Type ?? KonohaType.Var);
+				return param.Select(p => p.Type);
 			}
 		}
 		public IEnumerable<FuncParam> Parameters
 		{
 			get
 			{
-				return from stmt in param
- 					   let name = stmt.map[ks.Symbols.Expr].tk.Text
-					   let type = stmt.map[ks.Symbols.Type].tk.Type ?? KonohaType.Var
-					   select new FuncParam(name, type);
+				return this.param;
 			}
 		}
 		public bool isPublic { get { return true; } }
 
 		public KFunc(KonohaSpace ks, KFuncFlag flag, KonohaType cid, string name, IList<KStatement> param, string body)
+		{
+			this.ks = ks;
+			this.Name = name;
+			this.flag = flag;
+			this.ReturnType = cid;
+			this.param = from stmt in param
+						 let n = stmt.map[ks.Symbols.Expr].tk.Text
+						 let t = stmt.map[ks.Symbols.Type].tk.Type ?? KonohaType.Var
+						 select new FuncParam(n, t);
+			this.Body = body;
+		}
+		public KFunc(KonohaSpace ks, KFuncFlag flag, KonohaType cid, string name, IList<FuncParam> param, string body)
 		{
 			this.ks = ks;
 			this.Name = name;

@@ -178,7 +178,7 @@ namespace IronKonoha
 		public KonohaType ty { get; set; }
 
 		// static kExpr *Expr_lookupMethod(CTX, kStmt *stmt, kExpr *expr, kcid_t this_cid, kGamma *gma, ktype_t reqty)
-		public virtual KonohaExpr lookupMethod(Context ctx, KStatement stmt, Type cid, KGamma gma, KonohaType reqty)
+		public virtual KonohaExpr lookupMethod(Context ctx, KStatement stmt, KonohaType cid, KGamma gma, KonohaType reqty)
 		{
 			throw new NotSupportedException();
 		}
@@ -260,7 +260,7 @@ namespace IronKonoha
 			return builder.ToString();
 		}
 
-		public override KonohaExpr lookupMethod(Context ctx, KStatement stmt, Type cid, KGamma gma, KonohaType reqty)
+		public override KonohaExpr lookupMethod(Context ctx, KStatement stmt, KonohaType cid, KGamma gma, KonohaType reqty)
 		{
 			var ks = gma.ks;
 			var message = this.Cons[0] as Token;
@@ -270,18 +270,20 @@ namespace IronKonoha
 				//kToken_setmn(tkMN, ksymbolA(S_text(tkMN->text), S_size(tkMN->text), SYM_NEWID), MNTYPE_method);
 				message.TokenType = TokenType.MethodName;
 			}
-
+			KFunc mtd = null;
 			if (message.TokenType == TokenType.MethodName)
 			{
-				mtd = kKonohaSpace_getMethodNULL(ks, cid, tkMN->mn);
-				if (mtd == NULL)
+				mtd = gma.ks.getMethod(cid, message.Text);
+				if (mtd == null)
 				{
+					throw new NotImplementedException();
+					/*
 					if (message.Text != string.Empty)
 					{
 						mtd = kKonohaSpace_getMethodNULL(ks, cid, 0);
-						if (mtd != NULL)
+						if (mtd != null)
 						{
-							return expr.tyCheckDynamicCallParams(ctx, stmt, mtd, gma, tkMN->text, tkMN->mn, reqty);
+							return tyCheckDynamicCallParams(ctx, stmt, mtd, gma, message.Text, reqty);
 						}
 					}
 					if (tkMN->mn == MN_new && kArray_size(expr->cons) == 2 && CT_(kExpr_at(expr, 1)->ty)->bcid == TY_Object)
@@ -290,16 +292,71 @@ namespace IronKonoha
 						DBG_ASSERT(kExpr_at(expr, 1)->ty != TY_var);
 						return kExpr_at(expr, 1);  // new Person(); // default constructor
 					}
-					kToken_p(stmt, tkMN, ERR_, "undefined %s: %s.%s", T_mntype(tkMN->mn_type), TY_t(cid), kToken_s(tkMN));
+					 * */
+					//kToken_p(stmt, tkMN, ERR_, "undefined %s: %s.%s", T_mntype(tkMN->mn_type), TY_t(cid), kToken_s(tkMN));
 				}
 			}
-			if (mtd != NULL)
+			if (mtd != null)
 			{
-				return expr.tyCheckCallParams(_ctx, stmt, mtd, gma, reqty);
+				return tyCheckCallParams(ctx, stmt, mtd, gma, reqty);
 			}
 			return null;
 		}
+
+		private KonohaExpr tyCheckCallParams(Context ctx, KStatement stmt, KFunc mtd, KGamma gma, KonohaType reqty)
+		{
+			var cons = this.Cons;
+			var expr1 = Cons[1] as KonohaExpr;
+			var this_ct = expr1.ty;
+			//DBG_ASSERT(IS_Method(mtd));
+			Debug.Assert(this_ct != KonohaClass.Var);
+			/*if (!TY_isUnbox(mtd.cid) && CT_isUnbox(this_ct))
+			{
+				expr1 = new_BoxingExpr(_ctx, cons->exprs[1], this_ct->cid);
+				KSETv(cons->exprs[1], expr1);
+			}
+			 * */
+			bool isConst = false;// (Expr_isCONST(expr1)) ? 1 : 0;
+			//	if(rtype == TY_var && gma->genv->mtd == mtd) {
+			//		return ERROR_Unsupported(_ctx, "type inference of recursive calls", TY_unknown, NULL);
+			//	}
+			for (int i = 2; i < Cons.Count; i++)
+			{
+				var texpr = tyCheckAt(ctx, stmt, i, gma, KonohaClass.Var, 0);
+				if (texpr == null)
+				{
+					return texpr;
+				}
+			}
+			//	mtd = kExpr_lookUpOverloadMethod(_ctx, expr, mtd, gma, this_ct);
+			var pa = mtd.Parameters;
+			/*if (pa.Count() + 2 != Cons.Count)
+			{
+				return kExpr_p(stmt, expr, ERR_, "%s.%s%s takes %d parameter(s), but given %d parameter(s)", CT_t(this_ct), T_mn(mtd->mn), (int)pa->psize, (int)size - 2);
+			}
+			for (i = 0; i < pa->psize; i++)
+			{
+				size_t n = i + 2;
+				ktype_t ptype = ktype_var(_ctx, pa->p[i].ty, this_ct);
+				int pol = param_policy(pa->p[i].fn);
+				kExpr* texpr = kExpr_tyCheckAt(stmt, expr, n, gma, ptype, pol);
+				if (texpr == K_NULLEXPR)
+				{
+					return kExpr_p(stmt, expr, ERR_, "%s.%s%s accepts %s at the parameter %d", CT_t(this_ct), T_mn(mtd->mn), TY_t(ptype), (int)i + 1);
+				}
+				if (!Expr_isCONST(expr)) isConst = 0;
+			}
+			var expr = Expr_typedWithMethod(_ctx, expr, mtd, reqty);
+			if (isConst && kMethod_isConst(mtd))
+			{
+				ktype_t rtype = ktype_var(_ctx, pa->rtype, this_ct);
+				return ExprCall_toConstValue(_ctx, expr, cons, rtype);
+			}*/
+			//return expr;
+			return this;
+		}
 	}
+
 	[System.Diagnostics.DebuggerDisplay("{tk.Text} [{tk.Type}]")]
 	public class TermExpr : KonohaExpr
 	{
