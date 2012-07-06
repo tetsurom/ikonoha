@@ -355,6 +355,13 @@ namespace IronKonoha
 					flag = SynFlag.StmtBreakExec,
 					StmtTyCheck = TyCheck.StmtTyCheck.Return,
 				},
+				new KDEFINE_SYNTAX(){
+					name = "import",
+					kw = KeywordType.Import,
+					rule = "\"import\" [$expr]",
+					StmtTyCheck = TyCheck.StmtTyCheck.Import,
+					TopStmtTyCheck = TyCheck.StmtTyCheck.Import,
+				},
 			};
 			defineSyntax(syntaxes);
 			//this.GetSyntax(KeywordType.Void).Type = KType.Void;

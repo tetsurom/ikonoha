@@ -9,6 +9,7 @@ namespace IronKonoha.Runtime
 	{
 		public static bool import(string name)
 		{
+			Console.WriteLine("importing {0} ...", name);
 			return false;
 		}
 	}

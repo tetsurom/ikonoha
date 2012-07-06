@@ -17,6 +17,7 @@ namespace IronKonoha
 		IF,
 		LOOP,
 		JUMP,
+		Import,
 	}
 
 	[System.Diagnostics.DebuggerDisplay("{map}")]

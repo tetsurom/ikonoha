@@ -34,6 +34,14 @@ namespace IronKonoha
 			return GetDebugView(0);
 		}
 		public abstract string GetDebugView(int indent);
+		public virtual string GetSourceView()
+		{
+			return GetSourceView(0);
+		}
+		public virtual string GetSourceView(int indent)
+		{
+			return GetDebugView(indent);
+		}
 	}
 
 	public abstract class KonohaExpr : ExprOrStmt
@@ -68,6 +76,16 @@ namespace IronKonoha
 		}
 
 		public override string GetDebugView(int indent)
+		{
+			var builder = new StringBuilder();
+			for (int i = 1; i < indent; ++i)
+			{
+				builder.Append(' ');
+			}
+			builder.Append(this.ToString());
+			return builder.ToString();
+		}
+		public override string GetSourceView(int indent)
 		{
 			var builder = new StringBuilder();
 			for (int i = 1; i < indent; ++i)
@@ -259,6 +277,43 @@ namespace IronKonoha
 			builder.Append(')');
 			return builder.ToString();
 		}
+		public override string GetSourceView(int indent)
+		{
+			var builder = new StringBuilder();
+			if (this.syn.KeyWord == KeyWordTable.DOT)
+			{
+				builder.Append(((KonohaExpr)Cons[1]).GetSourceView());
+				builder.Append('.');
+				builder.Append(((Token)Cons[0]).Text);
+				return builder.ToString();
+			}
+			for (int i = 1; i < indent; ++i)
+			{
+				builder.Append(' ');
+			}
+			foreach (var con in Cons)
+			{
+				builder.Append(System.Environment.NewLine);
+				if (con == null)
+				{
+				}
+				else if (con is ExprOrStmt)
+				{
+					builder.Append(((ExprOrStmt)con).GetSourceView());
+				}
+				else
+				{
+					builder.Append(con.ToString());
+				}
+			}
+			builder.Append(System.Environment.NewLine);
+			for (int i = 1; i < indent; ++i)
+			{
+				builder.Append(' ');
+			}
+			builder.Append(')');
+			return builder.ToString();
+		}
 
 		public override KonohaExpr lookupMethod(Context ctx, KStatement stmt, KonohaType cid, KGamma gma, KonohaType reqty)
 		{
@@ -360,7 +415,9 @@ namespace IronKonoha
 	[System.Diagnostics.DebuggerDisplay("{tk.Text} [{tk.Type}]")]
 	public class TermExpr : KonohaExpr
 	{
-
+		public TermExpr()
+		{
+		}
 	}
 
 	[System.Diagnostics.DebuggerDisplay("{tk.Text} [{tk.Type}]")]
@@ -392,6 +449,16 @@ namespace IronKonoha
 		public T Data { get; set; }
 
 		public override string GetDebugView(int indent)
+		{
+			var builder = new StringBuilder();
+			for (int i = 1; i < indent; ++i)
+			{
+				builder.Append(' ');
+			}
+			builder.Append(Data.ToString());
+			return builder.ToString();
+		}
+		public override string GetSourceView(int indent)
 		{
 			var builder = new StringBuilder();
 			for (int i = 1; i < indent; ++i)

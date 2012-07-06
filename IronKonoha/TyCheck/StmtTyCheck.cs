@@ -70,6 +70,27 @@ namespace IronKonoha.TyCheck
 			return r;
 		}
 
+		internal static bool Import(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			bool r = true;
+			var cons = stmt.map.Values.First() as ConsExpr;
+			string packageName = cons.GetSourceView();
+			stmt.typed(StmtType.EXPR);
+			stmt.syn = gma.ks.GetSyntax(KeyWordTable.Expr);
+			stmt.map.Clear();
+			stmt.map[gma.ks.Symbols.Expr] = new ConsExpr(
+				gma.ks.ctx,
+				gma.ks.GetSyntax(KeyWordTable.DOT),
+				new Token(TokenType.SYMBOL, "import", 0),
+				new ConstExpr<KonohaType>(new TypeWrapper(typeof(IronKonoha.Runtime.K))) { tk = new Token(TokenType.SYMBOL, "K", 0), build = ExprType.CONST },
+				new ConstExpr<string>(packageName)) {
+					tk = new Token(TokenType.TEXT, packageName, 0),
+					build = ExprType.CONST,
+					syn = gma.ks.GetSyntax(KeyWordTable.Params)
+			};
+			return r;
+		}
+
 		static bool declType(KStatement stmt, KonohaExpr expr, KGamma gma, TokenType type, KStatement lastStmtRef)
 		{
 			return true;
