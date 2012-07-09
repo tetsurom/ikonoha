@@ -26,7 +26,7 @@ namespace IronKonoha
 
 	public class KFunc
 	{
-		public KonohaSpace ks { get; private set; }
+		public KNameSpace ks { get; private set; }
 		public static readonly KFunc NoName = new KFunc();
 		public string Name { get; private set; }
 		public string Body { get; private set; }
@@ -56,7 +56,7 @@ namespace IronKonoha
 		}
 		public bool isPublic { get { return true; } }
 
-		public KFunc(KonohaSpace ks, KFuncFlag flag, KonohaType cid, string name, IList<KStatement> param, string body)
+		public KFunc(KNameSpace ks, KFuncFlag flag, KonohaType cid, string name, IList<KStatement> param, string body)
 		{
 			this.ks = ks;
 			this.Name = name;
@@ -68,7 +68,7 @@ namespace IronKonoha
 						 select new FuncParam(n, t);
 			this.Body = body;
 		}
-		public KFunc(KonohaSpace ks, KFuncFlag flag, KonohaType cid, string name, IList<FuncParam> param, string body)
+		public KFunc(KNameSpace ks, KFuncFlag flag, KonohaType cid, string name, IList<FuncParam> param, string body)
 		{
 			this.ks = ks;
 			this.Name = name;

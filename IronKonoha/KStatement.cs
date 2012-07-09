@@ -25,7 +25,7 @@ namespace IronKonoha
 	{
 		public Syntax syn { get; set; }
 		public LineInfo ULine { get; set; }
-		public KonohaSpace ks { get; set; }
+		public KNameSpace ks { get; set; }
 		public BlockExpr parent { get; set; }
 		public StmtType build { get; set; }
 		public Dictionary<KeywordType, bool> annotation { get; private set; }
@@ -34,7 +34,7 @@ namespace IronKonoha
 		public KFunc MethodFunc { get; set; }
 		public bool TyCheckDone { get; set; }
 
-		public KStatement(LineInfo line, KonohaSpace ks)
+		public KStatement(LineInfo line, KNameSpace ks)
 		{
 			this.ULine = line;
 			this.ks = ks;

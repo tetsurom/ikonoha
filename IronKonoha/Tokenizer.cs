@@ -75,9 +75,11 @@ namespace IronKonoha
 		/// <summary>
 		/// トークンの種類
 		/// </summary>
+		[Obsolete]
 		public TokenType TokenType { get; set; }
 		public string Text { get; private set; }
 		public IList<Token> Sub { get; set; }
+		[Obsolete]
 		public char TopChar { get { return Text.Length == 0 ? '\0' : this.Text[0]; } }
 
 		private KKeyWord _keyword;
@@ -122,7 +124,7 @@ namespace IronKonoha
 
 
 		// static kbool_t Token_resolved(CTX, kKonohaSpace *ks, struct _kToken *tk)
-		public bool Resolve(Context ctx, KonohaSpace ks)
+		public bool Resolve(Context ctx, KNameSpace ks)
 		{
 			KKeyWord kw = ctx.kmodsugar.keyword_(this.Text);
 			if (kw != null && kw.Name != null && kw.Name != string.Empty)
@@ -197,7 +199,7 @@ namespace IronKonoha
 
 		public Symbol nameid { get; set; }
 
-		public bool toBrace(Context ctx, KonohaSpace ks)
+		public bool toBrace(Context ctx, KNameSpace ks)
 		{
 			if (TokenType == TokenType.CODE)
 			{
@@ -691,9 +693,9 @@ namespace IronKonoha
 		#endregion
 
 		private Context ctx;
-		private KonohaSpace ks;
+		private KNameSpace ks;
 
-		public Tokenizer(Context ctx, KonohaSpace ks)
+		public Tokenizer(Context ctx, KNameSpace ks)
 		{
 			this.ctx = ctx;
 			this.ks = ks;

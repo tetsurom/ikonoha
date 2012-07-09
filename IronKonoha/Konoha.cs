@@ -25,30 +25,14 @@ namespace IronKonoha
 	{
 
 		public Context ctx { get; private set; }
-		public KonohaSpace space { get; private set; }
+		public KNameSpace space { get; private set; }
 
 		public static readonly int FN_NONAME = -1;
 
 		public Konoha()
 		{
 			ctx = new Context();
-			space = new KonohaSpace(ctx);
-		}
-
-		/// <summary>
-		/// １つの文を実行する。
-		/// </summary>
-		/// <param name="exprStr">実行する文</param>
-		/// <param name="module">グローバル変数等を管理するオブジェクト</param>
-		/// <returns>実行結果</returns>
-		public object ExecuteExpr(string exprStr, ExpandoObject module)
-		{
-			return Eval(exprStr);
-		}
-
-		public static ExpandoObject CreateScope()
-		{
-			return new ExpandoObject();
+			space = new KNameSpace(ctx);
 		}
 
 		public dynamic Eval(string code)

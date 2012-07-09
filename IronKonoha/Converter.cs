@@ -16,14 +16,13 @@ namespace IronKonoha
 	public abstract class Cache
 	{
 		protected string BlockBody;
-		protected IList<FuncParam> Params;
+		protected IEnumerable<ParameterExpression> Params;
 		protected Converter converter;
 
-		public Cache(Converter converter, string body, IList<FuncParam> param)
+		public Cache(Converter converter, string body)
 		{
 			this.converter = converter;
 			this.BlockBody = body;
-			this.Params = param;
 		}
 	}
 
@@ -44,7 +43,7 @@ namespace IronKonoha
 				{
                     _lambda = converter.ConvertFunc<T, RT>(BlockBody, Params).Compile();
                     this.Invoke = _lambda;
-                    Scope[key] = _lambda;
+                    //Scope[key] = _lambda;
                     Scope = null;
                     key = null;
 				}
@@ -54,14 +53,20 @@ namespace IronKonoha
 
 		public T Invoke { get; private set; }
 
-		public FuncCache(Converter converter, string body, IList<FuncParam> param)
-			:base(converter, body, param){
-				var paramexprs = Params.Select(p => Expression.Parameter(p.GetType(), p.Name)).ToArray();
+		public FuncCache(Converter converter, string body, IEnumerable<FuncParam> param)
+			:base(converter, body){
+
+			var paramexprs = param.Select(p => Expression.Parameter(p.Type.Type, p.Name));
+			//var thisparam = new[] { Expression.Parameter(typeof(object), "this") };
+			Params = paramexprs.ToArray();// thisparam.Concat(paramexprs);
 			var bodyexpr = Expression.Block(
+				Params,
 				Expression.Invoke(
-					Expression.MakeMemberAccess(Expression.Constant(this), this.GetType().GetProperty("Lambda")),
-					paramexprs));
-			var lmd = Expression.Lambda<T>(bodyexpr, paramexprs);
+					Expression.MakeMemberAccess(
+						Expression.Constant(this),
+						this.GetType().GetProperty("Lambda")),
+					Params));
+			var lmd = Expression.Lambda<T>(bodyexpr, Params);
 			Invoke = lmd.Compile();
 		}
 
@@ -75,7 +80,7 @@ namespace IronKonoha
 	public class Converter
 	{
 		private Context ctx;
-		private KonohaSpace ks;
+		private KNameSpace ks;
 		internal static readonly Expression KNull = Expression.Constant(null);
 		internal static readonly Expression KTrue = Expression.Constant(true);
 		internal static readonly Expression KFalse = Expression.Constant(false);
@@ -102,7 +107,7 @@ namespace IronKonoha
 
 		private IDictionary<string, object> Scope { get { return ks.Scope as IDictionary<string, object>; } }
 
-		public Converter(Context ctx, KonohaSpace ks)
+		public Converter(Context ctx, KNameSpace ks)
 		{
 			this.ctx = ctx;
 			this.ks = ks;
@@ -124,11 +129,11 @@ namespace IronKonoha
 			return ConvertToExprList(block, environment);
 		}
 
-		public Expression<T> ConvertFunc<T, RT>(string body, IList<FuncParam> param)
+		public Expression<T> ConvertFunc<T, RT>(string body, IEnumerable<ParameterExpression> param)
 		{
 			var env = new FunctionEnvironment()
 			{
-				Params = param.Select(p=>Expression.Parameter(p.GetType(), p.Name)).ToArray(),
+				Params = param.ToArray(),
 				ReturnLabel = Expression.Label(typeof(RT))
 			};
 			var list = ConvertTextBlock(body, env).ToList();
@@ -265,19 +270,18 @@ namespace IronKonoha
 					Expression.Constant((expr.Cons[1] as ConstExpr<KonohaType>).Data)
 				);
 			}
-			else if (expr.syn.KeyWord == KeyWordTable.Params)
+			else if (expr.syn.KeyWord == KeyWordTable.Params || expr.syn.KeyWord == KeyWordTable.Parenthesis)
 			{
-				Token tk = expr.Cons[0] as Token;
+				Token tk = expr.Cons[0] as Token ?? ((KonohaExpr)expr.Cons[0]).tk;
 				return Expression.Dynamic(
 					new Runtime.KonohaInvokeMemberBinder(tk.Text, new CallInfo(1)),
 					typeof(object),
-					Expression.Constant((expr.Cons[1] as ConstExpr<KonohaType>).Data),
-					MakeExpression((KonohaExpr)expr.Cons[2], environment));
-
+					new[] { Expression.Constant((expr.Cons[1] as ConstExpr<KonohaType>).Data) }.Concat(
+						expr.Cons.Skip(2).Select(c => MakeExpression((KonohaExpr)c, environment))));
 			}
 			else if (expr.Cons[0] is Token)
 			{
-				Token tk = expr.Cons[0] as Token;
+				Token tk = (Token)expr.Cons[0];
 				var param = expr.Cons.Skip(1).Select(p => MakeExpression(p as KonohaExpr, environment)).ToArray();
 				switch (tk.TokenType)
 				{
@@ -295,33 +299,6 @@ namespace IronKonoha
 							param[0],
 							param[1]
 						);
-				}
-			}
-			else
-			{
-				Token tk = ((KonohaExpr)expr.Cons[0]).tk;
-				var f = Scope[tk.Text];
-
-				if (expr.Cons.Count > 2)
-				{
-					dynamic df = f;
-					var t = df.GetType().GetGenericArguments()[0];
-					Expression p = MakeExpression((KonohaExpr)expr.Cons[2], environment);
-					if (p.Type == t)
-					{
-						return Expression.Invoke(Expression.Constant(f), new[] { p });
-					}
-
-					var bind = Microsoft.CSharp.RuntimeBinder.Binder.Invoke(CSharpBinderFlags.InvokeSimpleName, typeof(Converter),
-					new CSharpArgumentInfo[] {
-						CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
-						CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
-					});
-					return Expression.Dynamic(bind, typeof(object), Expression.Constant(f), p);
-				}
-				else
-				{
-					return Expression.Invoke(Expression.Constant(f));
 				}
 			}
 			return null;

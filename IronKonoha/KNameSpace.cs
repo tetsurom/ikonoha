@@ -39,12 +39,12 @@ namespace IronKonoha
 	    karray_t      cl;
     };
     */
-	public class KonohaSpace : KObject
+	public class KNameSpace : KObject
 	{
 		public Context ctx { get; private set; }
 
 		public Dictionary<string, Syntax> syntaxMap { get; set; }
-		public KonohaSpace parent { get; set; }
+		public KNameSpace parent { get; set; }
 		public ExpandoObject Scope { get; private set; }
 		public IDictionary<string, object> ScopeDictionary
 		{
@@ -57,7 +57,7 @@ namespace IronKonoha
 
 		public Dictionary<string, KonohaType> Classes { get; private set; }
 
-		public KonohaSpace(Context ctx)
+		public KNameSpace(Context ctx)
 		{
 			this.ctx = ctx;
 			this.Scope = new ExpandoObject();
@@ -65,17 +65,18 @@ namespace IronKonoha
 			defineDefaultSyntax();
 			Classes = new Dictionary<string, KonohaType>();
 
-			Classes.Add("System", KonohaType.System);
+			//Classes.Add("System", KonohaType.System);
 			Classes.Add("K", new TypeWrapper(typeof(IronKonoha.Runtime.K)));
 
-			var testclass = new KonohaClass("Hoge", null);
-			testclass.StaticFields["fuga"] = "foo";
-			Classes.Add(testclass.Name, testclass);
+			var system = new KonohaClass("System", null);
+			system.StaticFields["fuga"] = "foo";
+			system.Methods["p"] = (Action<object, object>)((object @this, object obj) => { Console.WriteLine(obj); });
+			Classes.Add(system.Name, system);
 
 			//testclass.GetMetaObject(
 		}
 		
-		public KonohaSpace(Context ctx,int child)
+		public KNameSpace(Context ctx,int child)
 		{
 			Symbols = new SymbolConst(ctx);
 			this.ctx = ctx;
@@ -354,6 +355,7 @@ namespace IronKonoha
 					rule = "\"return\" [$expr]",
 					flag = SynFlag.StmtBreakExec,
 					StmtTyCheck = TyCheck.StmtTyCheck.Return,
+					TopStmtTyCheck = TyCheck.StmtTyCheck.Return,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "import",
@@ -440,22 +442,19 @@ namespace IronKonoha
 		}
 
 
-		public void SYN_setTopStmtTyCheck(KKeyWord ks, StmtTyChecker checker)
+		internal void SYN_setTopStmtTyCheck(KKeyWord ks, StmtTyChecker checker)
 		{
-			var syn = GetSyntax(ks, true);
-			syn.TopStmtTyCheck = checker;
+			GetSyntax(ks, true).TopStmtTyCheck = checker;
 		}
 
-		public void SYN_setStmtTyCheck(KKeyWord ks, StmtTyChecker checker)
+		internal void SYN_setStmtTyCheck(KKeyWord ks, StmtTyChecker checker)
 		{
-			var syn = GetSyntax(ks, true);
-			syn.StmtTyCheck = checker;
+			GetSyntax(ks, true).StmtTyCheck = checker;
 		}
 
-		public void SYN_setExprTyCheck(KKeyWord ks, ExprTyChecker checker)
+		internal void SYN_setExprTyCheck(KKeyWord ks, ExprTyChecker checker)
 		{
-			var syn = GetSyntax(ks, true);
-			syn.ExprTyCheck = checker;
+			GetSyntax(ks, true).ExprTyCheck = checker;
 		}
 
 		internal Syntax GetSyntax(KKeyWord keyword)
@@ -468,7 +467,7 @@ namespace IronKonoha
 		{
 			Debug.Assert(keyword != null);
 			Syntax syntaxParent = null;
-			for (KonohaSpace ks = this; ks != null; ks = ks.parent)
+			for (KNameSpace ks = this; ks != null; ks = ks.parent)
 			{
 				if (ks.syntaxMap != null && ks.syntaxMap.ContainsKey(keyword.Name))
 				{
@@ -518,7 +517,7 @@ namespace IronKonoha
 			for (i = s; i < e; i++)
 			{
 				Token tk = tls[i];
-				if (tk.TokenType == tt && tk.TopChar == closech) return i;
+				if (tk.TokenType == tt && tk.Text[0] == closech) return i;
 			}
 			Debug.Assert(i != e);  // Must not happen
 			return e;
@@ -589,7 +588,7 @@ namespace IronKonoha
 						adst.Add(tk);
 						continue;
 					}
-					if (i + 1 < e && tls[i + 1].TopChar == ':')
+					if (i + 1 < e && tls[i + 1].Text[0] == ':')
 					{
 						Token tk2 = tls[i];
 						nameid = Symbol.Get(ctx, tk2.Text);
@@ -604,7 +603,7 @@ namespace IronKonoha
 						adst.Add(tk);
 						continue;
 					}
-					if (tls[i].TopChar == '$') continue;
+					if (tls[i].Text[0] == '$') continue;
 				}
 				ctx.SUGAR_P(ReportLevel.ERR, tk.ULine, 0, "illegal sugar syntax: {0}", tk.Text);
 				return false;
@@ -700,15 +699,20 @@ namespace IronKonoha
 			var argtypes = mtd.paramTypes.ToList();
 			var retType = mtd.ReturnType ?? KonohaType.Void;
 			argtypes.Add(retType);
+			argtypes.Insert(0, KonohaType.Object);
 			Type ftype = Expression.GetDelegateType(argtypes.Select(t => t.Type).ToArray());
 			Type fctype = typeof(FuncCache<,>).MakeGenericType(ftype, retType.Type);
 
-			dynamic cache = Activator.CreateInstance(fctype, new Converter(ctx, this), mtd.Body, mtd.Parameters.ToList());
+			var args = mtd.Parameters.ToList();
+			args.Insert(0, new FuncParam("this", KonohaType.Object));
 
-			ScopeDictionary[mtd.Name] = cache.Invoke;
+			object cache = Activator.CreateInstance(fctype, new Converter(ctx, this), mtd.Body, args);
+			Type type = cache.GetType();
+			((KonohaClass)Classes["System"]).Methods[mtd.Name] = type.GetProperty("Invoke").GetValue(cache, null);
 
-			cache.Scope = this.Scope;
-			cache.key = mtd.Name;
+			//type.GetProperty("Scope").SetValue()
+			//cache.Scope = this.Scope;
+			//cache.key = mtd.Name;
 		}
 
 		// static KMETHOD ParseExpr_Parenthesis(CTX, ksfp_t *sfp _RIX)
@@ -801,6 +805,7 @@ namespace IronKonoha
 
 		public KFunc getMethod(KonohaType klass, string name)
 		{
+			klass = klass ?? Classes["System"];
 			var mt = klass.GetMethod(name);
 			var param = mt.GetParameters().Select(p => new FuncParam(p.Name, new TypeWrapper(p.ParameterType))).ToList();
 			return new KFunc(this, KFuncFlag.Public, klass, name, param, null);

@@ -105,6 +105,20 @@ namespace IronKonoha.Runtime
 			return callArgs;
 		}
 
+		public static Expression[] ConvertArguments(
+								 Expression[] args, ParameterInfo[] ps)
+		{
+			Debug.Assert(args.Length == ps.Length);
+			for (int i = 0; i < args.Length; i++)
+			{
+				if (args[i].Type != ps[i].ParameterType)
+				{
+					args[i] = Expression.Convert(args[i], ps[i].ParameterType);
+				}
+			}
+			return args;
+		}
+
 		public static Expression EnsureObjectResult(Expression expr)
 		{
 			if (!expr.Type.IsValueType)

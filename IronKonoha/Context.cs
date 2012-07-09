@@ -69,7 +69,7 @@ namespace IronKonoha
 		//public ExprParser ParseExpr_Term { get; set; }
 		//public ExprParser ParseExrp_Op { get; set; }
 		public Func<Context, string, uint, Symbol, KKeyWord> keyword { get; set; }
-		private Action<Context, KonohaSpace, int, Tokenizer.FTokenizer, KFunc> KonohaSpace_setTokenizer { get; set; }
+		private Action<Context, KNameSpace, int, Tokenizer.FTokenizer, KFunc> KonohaSpace_setTokenizer { get; set; }
 		public Func<Context, KonohaExpr, KType, KObject, KonohaExpr> Expr_setConstValue { get; set; }
 		public Func<Context, KonohaExpr, KType, uint, KonohaExpr> Expr_setNConstValue { get; set; }
 		public Func<Context, KonohaExpr, KonohaExpr, KType, int, KGamma, KonohaExpr> Expr_setVariable { get; set; }
@@ -85,10 +85,10 @@ namespace IronKonoha
 		public Action<Context, KStatement, KFunc, int, object[]> Stmt_toExprCall { get; set; }
 		public Func<Context, int, LineInfo, int, string, object[], uint> p { get; set; }
 		public Func<Context, KonohaExpr, int, LineInfo> Expr_uline { get; set; }
-		public Func<Context, KonohaSpace, Symbol, int, Syntax> KonohaSpace_syntax { get; set; }
-		public Action<Context, KonohaSpace, Symbol, KDEFINE_SYNTAX> KonohaSpace_defineSyntax { get; set; }
+		public Func<Context, KNameSpace, Symbol, int, Syntax> KonohaSpace_syntax { get; set; }
+		public Action<Context, KNameSpace, Symbol, KDEFINE_SYNTAX> KonohaSpace_defineSyntax { get; set; }
 		public Func<Context, IList<Token>, int, int, IList<object>, bool> makeSyntaxRule { get; set; }
-		public Func<Context, KonohaSpace, KStatement, IList<Token>, int, int, int, BlockExpr> new_block { get; set; }
+		public Func<Context, KNameSpace, KStatement, IList<Token>, int, int, int, BlockExpr> new_block { get; set; }
 		public Action<Context, BlockExpr, KStatement, KStatement> Block_insertAfter { get; set; }
 		//public Func<Context, KStatement, IList<Token>, int, int, KonohaExpr> Stmt_newExpr2 { get; set; }
 		public Func<Context, Syntax, int, object[], KonohaExpr> new_ConsExpr { get; set; }
@@ -202,12 +202,24 @@ namespace IronKonoha
 	{
 		public KGammaFlag flag { get; set; }
 		public KFunc mtd { get; set; }
-		public KonohaSpace ks { get; set; }
+		public KNameSpace ks { get; set; }
 		public KonohaType cid { get; set; }
 		public KonohaType static_cid { get; set; }
+		/// <summary>
+		/// ???
+		/// </summary>
 		public Stack<object> lvar{ get; private set; }
+		/// <summary>
+		/// ???
+		/// </summary>
 		public Stack<object> fvar{ get; private set; }
+		/// <summary>
+		/// ???
+		/// </summary>
 		public IList<object> lvarlst { get; private set; }
+		/// <summary>
+		/// ???
+		/// </summary>
 		public int lvarlst_top { get { return lvarlst.Count - 1; } }
 		public bool isERROR { get { return (flag & KGammaFlag.ERROR) != 0; } }
 		public bool isTopLevel { get { return (flag & KGammaFlag.TOPLEVEL) != 0; } }

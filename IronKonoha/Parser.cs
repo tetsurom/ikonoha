@@ -14,9 +14,9 @@ namespace IronKonoha
 	{
 
 		private Context ctx;
-		private KonohaSpace ks;
+		private KNameSpace ks;
 
-		public Parser(Context ctx, KonohaSpace ks)
+		public Parser(Context ctx, KNameSpace ks)
 		{
 			this.ctx = ctx;
 			this.ks = ks;

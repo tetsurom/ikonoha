@@ -47,9 +47,6 @@ namespace IronKonoha
 	public abstract class KonohaExpr : ExprOrStmt
 	{
 		public ExprOrStmt parent { get; set; }
-		/// <summary>
-		/// 目的不明
-		/// </summary>
 		public Token tk { get; set; }
 		public Syntax syn { get; set; }
 		public ExprType build { get; set; }
@@ -103,17 +100,9 @@ namespace IronKonoha
 		}
 
 
-		internal KonohaExpr tyCheckAt(Context ctx, KStatement stmt, int pos, KGamma gma, KonohaType reqty, TPOL pol)
+		internal virtual KonohaExpr tyCheckAt(Context ctx, KStatement stmt, int pos, KGamma gma, KonohaType reqty, TPOL pol)
 		{
-			var consexpr = this as ConsExpr;
-			if (consexpr != null && pos < consexpr.Cons.Count)
-			{
-				KonohaExpr expr = consexpr.Cons[pos] as KonohaExpr;
-				expr = expr.tyCheck(ctx, stmt, gma, reqty, pol);
-				consexpr.Cons[pos] = expr;
-				return expr;
-			}
-			return null;
+			throw new NotSupportedException("tyCheckAt is supported only on ConsExpr");
 		}
 
 		// tycheck.h
@@ -196,9 +185,46 @@ namespace IronKonoha
 		public KonohaType ty { get; set; }
 
 		// static kExpr *Expr_lookupMethod(CTX, kStmt *stmt, kExpr *expr, kcid_t this_cid, kGamma *gma, ktype_t reqty)
-		public virtual KonohaExpr lookupMethod(Context ctx, KStatement stmt, KonohaType cid, KGamma gma, KonohaType reqty)
+		internal virtual KonohaExpr lookupMethod(Context ctx, KStatement stmt, KonohaType cid, KGamma gma, KonohaType reqty)
 		{
-			throw new NotSupportedException();
+			throw new NotSupportedException("lookupMethod is supported only on ConsExpr");
+		}
+
+		internal virtual KFunc lookUpFuncOrMethod(Context ctx, KGamma gma, KonohaType reqty)
+		{
+			throw new NotSupportedException("lookUpFuncOrMethod is supported only on ConsExpr");
+		}
+
+		internal virtual KonohaExpr tyCheckCallParams(Context context, KStatement stmt, KFunc mtd, KGamma gma, KonohaType reqty)
+		{
+			throw new NotSupportedException("tyCheckCallParams is supported only on ConsExpr");
+		}
+
+		internal KonohaExpr tyCheckFuncParams(Context ctx, KStatement stmt, KonohaType ct, KGamma gma)
+		{
+			throw new NotImplementedException();
+			/*
+			ktype_t rtype = ct->p0;
+			kParam* pa = CT_cparam(ct);
+			size_t i, size = kArray_size(expr->cons);
+			if (pa->psize + 2 != size)
+			{
+				return kExpr_p(stmt, expr, ERR_, "function %s takes %d parameter(s), but given %d parameter(s)", CT_t(ct), (int)pa->psize, (int)size - 2);
+			}
+			for (i = 0; i < pa->psize; i++)
+			{
+				size_t n = i + 2;
+				kExpr* texpr = kExpr_tyCheckAt(stmt, expr, n, gma, pa->p[i].ty, 0);
+				if (texpr == K_NULLEXPR)
+				{
+					return texpr;
+				}
+			}
+			var mtd = gma.ks.getMethod(KonohaType.Func, "invoke");
+			Debug.Assert(mtd != null);
+			KSETv(expr->cons->exprs[1], expr->cons->exprs[0]);
+			return expr.typedWithMethod(ctx, mtd, rtype);
+			 * */
 		}
 	}
 
@@ -315,7 +341,7 @@ namespace IronKonoha
 			return builder.ToString();
 		}
 
-		public override KonohaExpr lookupMethod(Context ctx, KStatement stmt, KonohaType cid, KGamma gma, KonohaType reqty)
+		internal override KonohaExpr lookupMethod(Context ctx, KStatement stmt, KonohaType cid, KGamma gma, KonohaType reqty)
 		{
 			var ks = gma.ks;
 			var message = this.Cons[0] as Token;
@@ -358,7 +384,7 @@ namespace IronKonoha
 			return null;
 		}
 
-		private KonohaExpr tyCheckCallParams(Context ctx, KStatement stmt, KFunc mtd, KGamma gma, KonohaType reqty)
+		internal override KonohaExpr tyCheckCallParams(Context ctx, KStatement stmt, KFunc mtd, KGamma gma, KonohaType reqty)
 		{
 			var cons = this.Cons;
 			var expr1 = Cons[1] as KonohaExpr;
@@ -409,6 +435,105 @@ namespace IronKonoha
 			}*/
 			//return expr;
 			return this;
+		}
+
+		internal override KonohaExpr tyCheckAt(Context ctx, KStatement stmt, int pos, KGamma gma, KonohaType reqty, TPOL pol)
+		{
+			var consexpr = this as ConsExpr;
+			if (pos < Cons.Count)
+			{
+				KonohaExpr expr = Cons[pos] as KonohaExpr;
+				expr = expr.tyCheck(ctx, stmt, gma, reqty, pol);
+				Cons[pos] = expr;
+				return expr;
+			}
+			return null;
+		}
+
+		internal override KFunc lookUpFuncOrMethod(Context ctx, KGamma gma, KonohaType reqty)
+		{
+			var expr = (KonohaExpr)Cons[0];
+			var tk = expr.tk;
+			var funcName = tk.Text;//ksymbolA(tk.Text, tk.Text.Length, gma.ks.Symbols.Noname);
+			/*
+			for (int i = gma.lvar.Count - 1; i >= 0; i--)
+			{
+				if (gma.lvarlst[i].fn == funcName && gma.lvar[i].ty == KonohaType.Func)
+				{
+					expr.setVariable(LOCAL_, gma.lvar[i].ty, i, gma);
+					return null;
+				}
+			}
+			for (int i = genv->f.varsize - 1; i >= 0; i--)
+			{
+				if (gma.fvar[i].fn == funcName && gma.lvar[i].ty == KonohaType.Func)
+				{
+					expr.setVariable(LOCAL, gma.lvar[i].ty, i, gma);
+					return null;
+				}
+			}
+			if (gma.fvar[0].ty != KonohaType.Void)
+			{
+				Debug.Assert(gma.this_cid == gma.fvar[0].ty);
+				var mtd = gma.ks.getMethod(gma.this_cid, funcName);
+				if (mtd != null)
+				{
+					Cons[1] = new_Variable(LOCAL, gma.this_cid, 0, gma);
+					return mtd;
+				}
+				KonohaType ct = gma.this_cid;
+				for (i = ct->fsize; i >= 0; i--)
+				{
+					if (ct.fields[i].fn == funcName && ct->fields[i].ty == KonohaType.Func)
+					{
+						expr.setVariable(FIELD, ct.fields[i].ty, i, gma);
+						return null;
+					}
+				}
+				mtd = gma.ks.getGetterMethod(ctx, gma.this_cid, funcName);
+				if (mtd != null && mtd.ReturnType == KonohaType.Func)
+				{
+					Cons[0] = new_GetterExpr(ctx, tk, mtd, new_Variable(LOCAL, genv->this_cid, 0, gma));
+					return null;
+				}
+			}
+			 * */
+			{
+				/*
+				var cid = gma.ks.scrobj.cid;
+				KFunc mtd = gma.ks.getMethodN(cid, funcName);
+				if (mtd != null)
+				{
+					Cons[1] = new_ConstValue(cid, gma.ks.scrobj);
+					return mtd;
+				}
+				mtd = gma.ks.getGetterMethod(ctx, cid, funcName);
+				if (mtd != null && mtd.ReturnType == KonohaType.Func)
+				{
+					Cons[0] = new_GetterExpr(ctx, tk, mtd, new_ConstValue(cid, gma.ks.scrobj));
+					return null;
+				}
+				*/
+				// if System class has searching method, call it.
+				var sys = gma.ks.Classes["System"];
+				var mtd = gma.ks.getMethod(sys, funcName);
+				if (mtd != null)
+				{
+					//Cons[1] = new_Variable(null, KonohaType.System, 0, gma);
+					Cons[1] = new ConstExpr<KonohaType>(sys);
+				}
+				return mtd;
+			}
+		}
+
+		internal KonohaExpr tyCheckCallParams(Context context, KStatement stmt, KonohaExpr expr, object mtd, KGamma gma, KonohaType reqty)
+		{
+			throw new NotImplementedException();
+		}
+
+		internal KonohaExpr tyCheckFuncParams(Context context, KStatement stmt, Type type, KGamma gma)
+		{
+			throw new NotImplementedException();
 		}
 	}
 
@@ -504,7 +629,7 @@ namespace IronKonoha
 		}
 
 		// static void Block_addStmtLine(CTX, kBlock *bk, kArray *tls, int s, int e, kToken *tkERR)
-		public void AddStatementLine(Context ctx, KonohaSpace ks, IList<Token> tokens, int start, int end, out Token tkERR)
+		public void AddStatementLine(Context ctx, KNameSpace ks, IList<Token> tokens, int start, int end, out Token tkERR)
 		{
 			tkERR = null;
 			KStatement stmt = new KStatement(tokens[start].ULine, ks);//new_W(Stmt, tls->toks[s]->uline);

@@ -51,6 +51,10 @@ namespace IronKonoha.TyCheck
 		internal static bool Return(KStatement stmt, Syntax syn, KGamma gma)
 		{
 			bool r = true;
+			if (gma.mtd == null)
+			{
+				return true;
+			}
 			KonohaType rtype = gma.mtd.ReturnType;
 			stmt.typed(StmtType.RETURN);
 			if (rtype != KonohaType.Void)

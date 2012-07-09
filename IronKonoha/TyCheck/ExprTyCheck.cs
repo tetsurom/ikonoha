@@ -129,6 +129,28 @@ namespace IronKonoha.TyCheck
 					parent = expr.parent
 				};
 			}
+			var globals = ((KonohaClass)classes["System"]).StaticFields;
+			if (globals.ContainsKey(name))
+			{
+				return new ConstExpr<object>(globals[name])
+				{
+					syn = expr.syn,
+					tk = expr.tk,
+					build = expr.build,
+					parent = expr.parent
+				};
+			}
+			var funcs = ((KonohaClass)classes["System"]).Methods;
+			if (funcs.ContainsKey(name))
+			{
+				return new ConstExpr<object>(funcs[name])
+				{
+					syn = expr.syn,
+					tk = expr.tk,
+					build = expr.build,
+					parent = expr.parent
+				};
+			}
 			/*
 			if (expr.tk.Text == "System")
 			{
@@ -177,35 +199,36 @@ namespace IronKonoha.TyCheck
 
 		internal static KonohaExpr FuncStyleCall(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
-			//Debug.Assert(IS_Expr(kExpr_at(expr, 0)));
-			//Debug.Assert(expr.cons[1] == null);
-			/*
-			if (Expr_isSymbol(kExpr_at(expr, 0)))
+			Debug.Assert(expr is ConsExpr);
+			var cons = ((ConsExpr)expr).Cons;
+			//if (Expr_isSymbol(kExpr_at(expr, 0)))
+			if (cons[0] is KonohaExpr)
 			{
-				kMethod* mtd = Expr_lookUpFuncOrMethod(_ctx, expr, gma, reqty);
-				if (mtd != NULL)
+				var expr0 = cons[0] as KonohaExpr;
+				var mtd = expr.lookUpFuncOrMethod(gma.ks.ctx, gma, reqty);
+				if (mtd != null)
 				{
-					RETURN_(Expr_tyCheckCallParams(_ctx, stmt, expr, mtd, gma, reqty));
+					return expr.tyCheckCallParams(gma.ks.ctx, stmt, mtd, gma, reqty);
 				}
-				if (!TY_isFunc(kExpr_at(expr, 0)->ty))
-				{
-					kToken* tk = kExpr_at(expr, 0)->tk;
-					RETURN_(kToken_p(stmt, tk, ERR_, "undefined function: %s", kToken_s(tk)));
-				}
+				throw new NotImplementedException();
+				//if (expr0.ty != KonohaType.Func)
+				//{
+				//    var tk = expr.tk;
+				//    return kToken_p(stmt, tk, ERR_, "undefined function: %s", kToken_s(tk)));
+				//}
 			}
 			else
 			{
-				if (Expr_tyCheckAt(_ctx, stmt, expr, 0, gma, TY_var, 0) != K_NULLEXPR)
+				if (expr.tyCheckAt(gma.ks.ctx, stmt, 0, gma, KonohaType.Var, 0) != null)
 				{
-					if (!TY_isFunc(expr->cons->exprs[0]->ty))
-					{
-						RETURN_(kExpr_p(stmt, expr, ERR_, "function is expected"));
-					}
+					throw new NotImplementedException();
+					//if (!((KonohaType)((ConsExpr)expr).Cons).Type == KonohaType.Func)
+					//{
+					//    return kExpr_p(stmt, expr, ERR_, "function is expected");
+					//}
 				}
 			}
-			RETURN_(Expr_tyCheckFuncParams(_ctx, stmt, expr, CT_(kExpr_at(expr, 0)->ty), gma));
-			*/
-			throw new NotImplementedException();
+			return expr.tyCheckFuncParams(gma.ks.ctx, stmt, (KonohaType)((ConsExpr)expr).Cons, gma);
 		}
 
 		internal static KonohaExpr And(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)

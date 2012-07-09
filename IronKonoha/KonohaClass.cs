@@ -16,6 +16,8 @@ namespace IronKonoha
 		public static readonly KonohaType Void = new TypeWrapper(typeof(void));
 		public static readonly KonohaType System = new TypeWrapper(typeof(Runtime.System));
 		public static readonly KonohaType Var = new TypeWrapper(typeof(Variant));
+		public static readonly KonohaType Func = new TypeWrapper(typeof(Delegate));
+		public static readonly KonohaType Object = new TypeWrapper(typeof(object));
 
 		public Type Type { get; protected set; }
 		public string Name { get; protected set; }
@@ -226,7 +228,7 @@ namespace IronKonoha
 
 		public override MethodInfo GetMethod(string name)
 		{
-			return ((Delegate)Methods[Name]).Method;
+			return ((Delegate)Methods[name]).Method;
 		}
 
 	}
@@ -261,8 +263,12 @@ namespace IronKonoha
 		{
 			if (Class.Methods.ContainsKey(binder.Name))
 			{
+				var prm = ((Delegate)Class.Methods[binder.Name]).Method.GetParameters().Skip(1).ToArray();
 				return new DynamicMetaObject(
-					Expression.Invoke(Expression.Constant(Class.Methods[binder.Name]), new[] { Expression.Constant(Class) }.Concat(args.Select(a => a.Expression))),
+					Runtime.Utilities.EnsureObjectResult(
+						Expression.Invoke(
+							Expression.Constant(Class.Methods[binder.Name]),
+							Runtime.Utilities.ConvertArguments(new[] { Expression.Constant(Class) }.Concat(args.Select(a => a.Expression)).ToArray(), prm))),
 					this.Restrictions.Merge(
 						BindingRestrictions.GetInstanceRestriction(
 							this.Expression,
@@ -359,7 +365,10 @@ namespace IronKonoha
 			if (Class.Methods.ContainsKey(binder.Name))
 			{
 				return new DynamicMetaObject(
-					Expression.Invoke(Expression.Constant(Class.Methods[binder.Name]), new[] { Expression.Constant(Instance) }.Concat(args.Select(a => a.Expression))),
+					Runtime.Utilities.EnsureObjectResult(
+						Expression.Invoke(
+							Expression.Constant(Class.Methods[binder.Name]),
+							new[] { Expression.Constant(Instance) }.Concat(args.Select(a => a.Expression)))),
 					this.Restrictions.Merge(
 						BindingRestrictions.GetInstanceRestriction(
 							this.Expression,
