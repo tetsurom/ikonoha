@@ -58,6 +58,7 @@ namespace IronKonoha
 			for (int i = start; i < end; )
 			{
 				Token error;
+				token = token.Take(atop).ToList(); //Fix me
 				Debug.Assert(atop == token.Count);
 				i = SelectStatementLine(ref indent, token, i, end, delim, token, out error);
 				int asize = token.Count;
