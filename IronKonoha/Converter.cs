@@ -8,6 +8,7 @@ using System.Linq.Expressions;
 using System.Text;
 using Microsoft.CSharp.RuntimeBinder;
 using System.Reflection;
+using System.Diagnostics;
 
 namespace IronKonoha
 {
@@ -123,7 +124,11 @@ namespace IronKonoha
 			var parser = new Parser(ctx, ks);
 			var tokens = tokenizer.Tokenize(body);
 			var block = parser.CreateBlock(null, tokens, 0, tokens.Count(), ';');
+			Debug.WriteLine("### Konoha AST Dump ###");
+			Debug.WriteLine(block.GetDebugView());
 			block.TyCheckAll(ctx, new KGamma() { ks = this.ks, cid = KonohaType.System, mtd = environment.Method });
+			Debug.WriteLine("### Konoha AST Dump (tychecked) ###");
+			Debug.WriteLine(block.GetDebugView());
 			return ConvertToExprList(block, environment);
 		}
 
@@ -138,6 +143,9 @@ namespace IronKonoha
 			var list = ConvertTextBlock(body, env).ToList();
 			list.Add(Expression.Label(env.ReturnLabel, Expression.Constant(default(RT), typeof(RT))));
 			var block = Expression.Block(typeof(RT), list);
+			string dbv = (string)typeof(Expression).InvokeMember("DebugView", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetProperty, null, block, null);
+			Debug.WriteLine("### DLR AST Dump ###");
+			Debug.WriteLine(dbv);
 			return Expression.Lambda<T>(block, env.Params);
 		}
 
@@ -232,6 +240,12 @@ namespace IronKonoha
 		public Expression MakeExpression<T>(ConstExpr<T> kexpr, FunctionEnvironment environment)
 		{
 			return Expression.Constant(kexpr.Data);
+		}
+
+		public Expression MakeExpression(ParamExpr kexpr, FunctionEnvironment environment)
+		{
+			// add 1 because params[0] is 'this' object.
+			return environment.Params[kexpr.Order + 1];
 		}
 
 		public Expression MakeExpression(KonohaExpr kexpr, FunctionEnvironment environment)

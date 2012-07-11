@@ -150,7 +150,7 @@ namespace IronKonoha
 				{
 					return texpr;
 				}
-				if (texpr.ty == reqty)
+				if (texpr.ty == reqty || texpr.ty.Name == reqty.Name)
 				{
 					//if (ctx.CT_(texpr.ty).isUnbox && !ctx.CT_(reqty).isUnbox)
 					//{
@@ -455,6 +455,7 @@ namespace IronKonoha
 			var expr = (KonohaExpr)Cons[0];
 			var tk = expr.tk;
 			var funcName = tk.Text;//ksymbolA(tk.Text, tk.Text.Length, gma.ks.Symbols.Noname);
+			// I can't find what these codes doing...
 			/*
 			for (int i = gma.lvar.Count - 1; i >= 0; i--)
 			{
@@ -592,6 +593,25 @@ namespace IronKonoha
 			}
 			builder.Append(Data.ToString());
 			return builder.ToString();
+		}
+	}
+
+	public class ParamExpr : KonohaExpr
+	{
+		public int Order { get; private set; }
+		public string Name { get; private set; }
+		public KonohaType Type { get; private set; }
+		public ParamExpr(int order, KonohaType type, string name)
+		{
+			Order = order;
+			Type = type;
+			Name = name;
+		}
+		public ParamExpr(int order, FuncParam param)
+		{
+			Order = order;
+			Type = param.Type;
+			Name = param.Name;
 		}
 	}
 

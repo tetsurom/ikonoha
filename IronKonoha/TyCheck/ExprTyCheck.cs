@@ -118,8 +118,36 @@ namespace IronKonoha.TyCheck
 
 		internal static KonohaExpr Symbol(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
-			var classes = gma.ks.Classes;
+			/*
+			 * add local variable search here.
+			 */
+			Debug.Assert(gma != null);
+
 			var name = expr.tk.Text;
+
+			// search function parameter
+			Debug.Assert(gma != null);
+			if (gma.mtd != null)
+			{
+				Debug.Assert(gma.mtd.Parameters != null);
+				var parameters = gma.mtd.Parameters;
+				int i = 0;
+				foreach(var p in parameters){
+					if(p.Name == name){
+						return new ParamExpr(i, p)
+						{
+							syn = expr.syn,
+							tk = expr.tk,
+							build = expr.build,
+							parent = expr.parent
+						};
+					}
+					++i;
+				}
+			}
+
+
+			var classes = gma.ks.Classes;
 			if(classes.ContainsKey(name)){
 				return new ConstExpr<KonohaType>(classes[name])
 				{

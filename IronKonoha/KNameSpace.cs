@@ -97,6 +97,7 @@ namespace IronKonoha
 					rule = "$expr",
 					PatternMatch = PatternMatch.Expr,
 					TopStmtTyCheck = TyCheck.TopStmtTyCheck.Expr,
+					StmtTyCheck = TyCheck.TopStmtTyCheck.Expr,
 					ExprTyCheck = TyCheck.ExprTyCheck.Expr,
 					kw = KeywordType.Expr,
 				},
@@ -388,6 +389,8 @@ namespace IronKonoha
 			Debug.WriteLine("### Konoha AST Dump ###");
 			Debug.WriteLine(block.GetDebugView());
 			block.TyCheckAll(ctx, new KGamma() { ks = this, cid = KonohaType.System, flag = KGammaFlag.TOPLEVEL });
+			Debug.WriteLine("### Konoha AST Dump (tychecked) ###");
+			Debug.WriteLine(block.GetDebugView());
 			dynamic ast = converter.Convert(block);
 			string dbv = typeof(Expression).InvokeMember("DebugView", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetProperty, null, ast, null);
 			Debug.WriteLine("### DLR AST Dump ###");

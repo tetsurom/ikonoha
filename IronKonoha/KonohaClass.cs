@@ -62,6 +62,40 @@ namespace IronKonoha
 						BindingFlags.Public;
 			return Type.GetMethod(name, flags);
 		}
+
+		public override int GetHashCode()
+		{
+			return Type.GetHashCode();
+		}
+
+		public override bool Equals(object obj)
+		{
+			var tw = obj as TypeWrapper;
+			if (obj != null)
+			{
+				return this.Type == ((TypeWrapper)obj).Type;
+			}
+			return base.Equals(obj);
+		}
+		public static bool operator ==(TypeWrapper a, TypeWrapper b)
+		{
+			if (object.ReferenceEquals(a, b))
+			{
+				return true;
+			}
+			if (((object)a == null) || ((object)b == null))
+			{
+				return false;
+			}
+			return a.Type == b.Type;
+		}
+
+
+		public static bool operator !=(TypeWrapper a, TypeWrapper b)
+		{
+			return !(a == b);
+		}
+
 	}
 
 	public class TypeWrapperMetaObject : DynamicMetaObject
@@ -373,11 +407,21 @@ namespace IronKonoha
 		{
 			if (Class.Methods.ContainsKey(binder.Name))
 			{
+				var paramInfos = ((Delegate)Class.Methods[binder.Name]).Method.GetParameters();
+				if (paramInfos[0].ParameterType == typeof(System.Runtime.CompilerServices.Closure))
+				{
+					paramInfos = paramInfos.Skip(1).ToArray();
+				}
+
+				var @this = Expression.Constant(this);
+				var param = args.Select(a => a.Expression).ToList();
+				param.Insert(0, @this);
+
 				return new DynamicMetaObject(
 					Runtime.Utilities.EnsureObjectResult(
 						Expression.Invoke(
 							Expression.Constant(Class.Methods[binder.Name]),
-							new[] { Expression.Constant(Instance) }.Concat(args.Select(a => a.Expression)))),
+							Runtime.Utilities.ConvertArguments(param.ToArray(), paramInfos))),
 					this.Restrictions.Merge(
 						BindingRestrictions.GetInstanceRestriction(
 							this.Expression,

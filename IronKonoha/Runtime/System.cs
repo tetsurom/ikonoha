@@ -5,6 +5,7 @@ using System.Text;
 
 namespace IronKonoha.Runtime
 {
+	[Obsolete("now System is not .net class, but KonohaClass.")]
 	public class System
 	{
 		public static void p(object obj)
