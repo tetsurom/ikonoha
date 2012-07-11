@@ -70,7 +70,8 @@ namespace IronKonoha
 
 			var system = new KonohaClass("System", null);
 			system.StaticFields["fuga"] = "foo";
-			system.Methods["p"] = (Action<object, object>)((object @this, object obj) => { Console.WriteLine(obj); });
+			system.Methods["p"] = (Action<object, object>)((object @this, object obj) => { Runtime.System.p(obj); });
+			system.Methods["assert"] = (Action<object, bool>)((object @this, bool obj) => { Runtime.System.assert(obj); });
 			Classes.Add(system.Name, system);
 
 			//testclass.GetMetaObject(

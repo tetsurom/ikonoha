@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 
 namespace IronKonoha.Runtime
 {
@@ -10,6 +11,17 @@ namespace IronKonoha.Runtime
 		public static void p(object obj)
 		{
 			Console.WriteLine(obj);
+		}
+		private class AssertFailedException : Exception
+		{
+			public AssertFailedException() { }
+			public AssertFailedException(string message) : base(message) { }
+			public AssertFailedException(string message, Exception inner) : base(message) { }
+		}
+		public static void assert(bool cond)
+		{
+			if(!cond)
+				throw new AssertFailedException();
 		}
 
 		public static void hello()
