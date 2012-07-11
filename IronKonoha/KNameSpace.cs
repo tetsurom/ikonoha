@@ -706,7 +706,7 @@ namespace IronKonoha
 			var args = mtd.Parameters.ToList();
 			args.Insert(0, new FuncParam("this", KonohaType.Object));
 
-			object cache = Activator.CreateInstance(fctype, new Converter(ctx, this), mtd.Body, args);
+			object cache = Activator.CreateInstance(fctype, new Converter(ctx, this), mtd.Body, args, mtd);
 			Type type = cache.GetType();
 			((KonohaClass)Classes["System"]).Methods[mtd.Name] = type.GetProperty("Invoke").GetValue(cache, null);
 

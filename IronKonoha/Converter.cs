@@ -11,29 +11,20 @@ using System.Reflection;
 
 namespace IronKonoha
 {
-	//public delegate object FuncLambda(params object[] args);
-
-	public abstract class Cache
-	{
-		protected string BlockBody;
-		protected IEnumerable<ParameterExpression> Params;
-		protected Converter converter;
-
-		public Cache(Converter converter, string body)
-		{
-			this.converter = converter;
-			this.BlockBody = body;
-		}
-	}
 
 	public class FunctionEnvironment
 	{
 		public ParameterExpression[] Params { get; set; }
 		public LabelTarget ReturnLabel { get; set; }
+		public KFunc Method { get; set; }
 	}
 
-	public class FuncCache<T, RT> : Cache
+	public class FuncCache<T, RT>
 	{
+		protected string BlockBody;
+		protected IEnumerable<ParameterExpression> Params;
+		protected Converter Converter;
+
 		private T _lambda;
 		public T Lambda
 		{
@@ -41,7 +32,7 @@ namespace IronKonoha
 			{
 				if (_lambda == null)
 				{
-                    _lambda = converter.ConvertFunc<T, RT>(BlockBody, Params).Compile();
+                    _lambda = Converter.ConvertFunc<T, RT>(BlockBody, Params, Method).Compile();
                     this.Invoke = _lambda;
                     //Scope[key] = _lambda;
                     Scope = null;
@@ -53,12 +44,15 @@ namespace IronKonoha
 
 		public T Invoke { get; private set; }
 
-		public FuncCache(Converter converter, string body, IEnumerable<FuncParam> param)
-			:base(converter, body){
+		public KFunc Method;
 
+		public FuncCache(Converter converter, string body, IEnumerable<FuncParam> param, KFunc mtd){
+
+			this.Converter = converter;
+			this.BlockBody = body;
+			this.Method = mtd;
 			var paramexprs = param.Select(p => Expression.Parameter(p.Type.Type, p.Name));
-			//var thisparam = new[] { Expression.Parameter(typeof(object), "this") };
-			Params = paramexprs.ToArray();// thisparam.Concat(paramexprs);
+			Params = paramexprs.ToArray();
 			var bodyexpr = Expression.Block(
 				Params,
 				Expression.Invoke(
@@ -125,16 +119,17 @@ namespace IronKonoha
 			var parser = new Parser(ctx, ks);
 			var tokens = tokenizer.Tokenize(body);
 			var block = parser.CreateBlock(null, tokens, 0, tokens.Count(), ';');
-			block.TyCheckAll(ctx, new KGamma() { ks = this.ks, cid = KonohaType.System, flag = KGammaFlag.TOPLEVEL });
+			block.TyCheckAll(ctx, new KGamma() { ks = this.ks, cid = KonohaType.System, mtd = environment.Method });
 			return ConvertToExprList(block, environment);
 		}
 
-		public Expression<T> ConvertFunc<T, RT>(string body, IEnumerable<ParameterExpression> param)
+		public Expression<T> ConvertFunc<T, RT>(string body, IEnumerable<ParameterExpression> param, KFunc mtd)
 		{
 			var env = new FunctionEnvironment()
 			{
 				Params = param.ToArray(),
-				ReturnLabel = Expression.Label(typeof(RT))
+				ReturnLabel = Expression.Label(typeof(RT)),
+				Method = mtd
 			};
 			var list = ConvertTextBlock(body, env).ToList();
 			list.Add(Expression.Label(env.ReturnLabel, Expression.Constant(default(RT), typeof(RT))));

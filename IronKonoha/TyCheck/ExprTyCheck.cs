@@ -151,15 +151,7 @@ namespace IronKonoha.TyCheck
 					parent = expr.parent
 				};
 			}
-			/*
-			if (expr.tk.Text == "System")
-			{
-				expr.tk.Type = expr.ty = typeof(IronKonoha.Runtime.System);
-				expr.typed(ExprType.CONST, expr.tk.Type);
-				return expr;
-			}
-			 */
-			throw new TypeAccessException();
+			throw new InvalidOperationException(string.Format("undefined name: {0}", name));
 		}
 
 		internal static KonohaExpr USymbol(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)

@@ -263,12 +263,21 @@ namespace IronKonoha
 		{
 			if (Class.Methods.ContainsKey(binder.Name))
 			{
-				var prm = ((Delegate)Class.Methods[binder.Name]).Method.GetParameters().Skip(1).ToArray();
+				var paramInfos = ((Delegate)Class.Methods[binder.Name]).Method.GetParameters();
+				if (paramInfos[0].ParameterType == typeof(System.Runtime.CompilerServices.Closure))
+				{
+					paramInfos = paramInfos.Skip(1).ToArray();
+				}
+
+				var @this = Expression.Constant(null);
+				var param = args.Select(a => a.Expression).ToList();
+				param.Insert(0, @this);
+
 				return new DynamicMetaObject(
 					Runtime.Utilities.EnsureObjectResult(
 						Expression.Invoke(
 							Expression.Constant(Class.Methods[binder.Name]),
-							Runtime.Utilities.ConvertArguments(new[] { Expression.Constant(Class) }.Concat(args.Select(a => a.Expression)).ToArray(), prm))),
+							Runtime.Utilities.ConvertArguments(param.ToArray(), paramInfos))),
 					this.Restrictions.Merge(
 						BindingRestrictions.GetInstanceRestriction(
 							this.Expression,
