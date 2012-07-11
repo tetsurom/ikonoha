@@ -550,7 +550,7 @@ namespace IronKonoha
 		{
 			string ts = tenv.Source;
 			int pos = tokStart;
-			while (ts[pos] != '\n' || ts[pos] != '\r')
+			while (ts[pos] != '\n' && ts[pos] != '\r')
 				++pos;
 			token = null;
 			return pos;
