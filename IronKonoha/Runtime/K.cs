@@ -12,5 +12,11 @@ namespace IronKonoha.Runtime
 			Console.WriteLine("importing {0} ...", name);
 			return false;
 		}
+
+		public static void multi(long a, long b, long c)
+		{
+			Console.WriteLine("{0}, {1}, {2}", a, b, c);
+		}
+
 	}
 }

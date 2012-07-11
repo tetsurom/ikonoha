@@ -295,10 +295,12 @@ namespace IronKonoha
 				new KDEFINE_SYNTAX(){
 				    name = ",",
 					op2 = "*",
+					kw = KeywordType.COMMA,
 				    priority_op2 = 8192,
 				},
 				new KDEFINE_SYNTAX(){
 				    name = "$",
+					kw = KeywordType.DOLLAR,
 				},
 				new KDEFINE_SYNTAX(){
 					name = "void",

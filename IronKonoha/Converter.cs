@@ -146,7 +146,11 @@ namespace IronKonoha
 			string dbv = (string)typeof(Expression).InvokeMember("DebugView", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetProperty, null, block, null);
 			Debug.WriteLine("### DLR AST Dump ###");
 			Debug.WriteLine(dbv);
-			return Expression.Lambda<T>(block, env.Params);
+
+			var lmd = Expression.Lambda<T>(block, env.Params);
+			var d = lmd.Compile();
+
+			return lmd;
 		}
 
 		public Expression KStatementToExpr(KStatement st, FunctionEnvironment environment)

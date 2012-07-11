@@ -64,6 +64,7 @@ namespace IronKonoha
 		public KKeyWord(string name, KeywordType kw)
 		{
 			Debug.Assert(name != null);
+			Debug.WriteLine("Create KKeyword {0}, {1}", name, kw);
 			Name = name;
 			Type = kw;
 		}
