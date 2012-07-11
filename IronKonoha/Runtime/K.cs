@@ -13,9 +13,9 @@ namespace IronKonoha.Runtime
 			return false;
 		}
 
-		public static void multi(long a, long b, long c)
+		public static void multi(long a, long b, long c, long d, long e, long f)
 		{
-			Console.WriteLine("{0}, {1}, {2}", a, b, c);
+			Console.WriteLine("{0}, {1}, {2}, {3}, {4}, {4}", a, b, c, d, e, f);
 		}
 
 	}

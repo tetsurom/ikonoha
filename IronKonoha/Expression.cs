@@ -600,17 +600,16 @@ namespace IronKonoha
 	{
 		public int Order { get; private set; }
 		public string Name { get; private set; }
-		public KonohaType Type { get; private set; }
 		public ParamExpr(int order, KonohaType type, string name)
 		{
 			Order = order;
-			Type = type;
+			ty = type;
 			Name = name;
 		}
 		public ParamExpr(int order, FuncParam param)
 		{
 			Order = order;
-			Type = param.Type;
+			ty = param.Type;
 			Name = param.Name;
 		}
 	}

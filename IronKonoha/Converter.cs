@@ -55,7 +55,6 @@ namespace IronKonoha
 			var paramexprs = param.Select(p => Expression.Parameter(p.Type.Type, p.Name));
 			Params = paramexprs.ToArray();
 			var bodyexpr = Expression.Block(
-				Params,
 				Expression.Invoke(
 					Expression.MakeMemberAccess(
 						Expression.Constant(this),
@@ -290,8 +289,12 @@ namespace IronKonoha
 			else if (expr.syn.KeyWord == KeyWordTable.Params || expr.syn.KeyWord == KeyWordTable.Parenthesis)
 			{
 				Token tk = expr.Cons[0] as Token ?? ((KonohaExpr)expr.Cons[0]).tk;
+				var pname = new []{"$this", "$1", "$2", "$3", "$4", "$5", "$6", "$7"};
+				var argsize = expr.Cons.Count - 2;
 				return Expression.Dynamic(
-					new Runtime.KonohaInvokeMemberBinder(tk.Text, new CallInfo(1)),
+					new Runtime.KonohaInvokeMemberBinder(
+						tk.Text,
+						new CallInfo(argsize + 1, pname.Take(argsize + 1))),
 					typeof(object),
 					new[] { Expression.Constant((expr.Cons[1] as ConstExpr<KonohaType>).Data) }.Concat(
 						expr.Cons.Skip(2).Select(c => MakeExpression((KonohaExpr)c, environment))));
