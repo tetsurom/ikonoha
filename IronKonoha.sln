@@ -15,9 +15,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KFibo", "KFibo\KFibo.csproj", "{DDD9BFC4-311E-46A3-8CD4-2CDCEF07BA9A}"
 EndProject
 Global
-	GlobalSection(TestCaseManagementSettings) = postSolution
-		CategoryFile = IronKonoha.vsmdi
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -57,6 +54,14 @@ Global
 		{DDD9BFC4-311E-46A3-8CD4-2CDCEF07BA9A}.Release|Mixed Platforms.Build.0 = Release|x86
 		{DDD9BFC4-311E-46A3-8CD4-2CDCEF07BA9A}.Release|x86.ActiveCfg = Release|x86
 		{DDD9BFC4-311E-46A3-8CD4-2CDCEF07BA9A}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = IronKonoha\IronKonoha.csproj
+	EndGlobalSection
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = IronKonoha.vsmdi
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
