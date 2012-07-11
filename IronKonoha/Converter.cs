@@ -110,7 +110,11 @@ namespace IronKonoha
 
 		public Expression Convert (BlockExpr block)
 		{
-			return Expression.Lambda(Expression.Block(ConvertToExprList(block, null)));
+			IEnumerable<Expression> list = ConvertToExprList(block,null);
+			if(list.Count() == 0){
+				return Expression.Lambda(Expression.Block(Expression.Constant(null)));
+			}
+			return Expression.Lambda(Expression.Block(list));
 		}
 
         private IEnumerable<Expression> ConvertTextBlock(string body, FunctionEnvironment environment)

@@ -40,5 +40,10 @@ namespace IronKonoha
 			return space.Eval(code);
 		}
 
+		public void EvalScript(string code)
+		{
+			space.Eval(code);
+		}
+
 	}
 }
