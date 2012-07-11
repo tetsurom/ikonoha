@@ -36,7 +36,7 @@ namespace KConsole
 			if (scriptName != null)
 			{
 				var sr = new StreamReader(scriptName);
-				Console.WriteLine(konoha.Eval(sr.ReadToEnd()));
+				konoha.EvalScript(sr.ReadToEnd());
 				return;
 			}
 			
