@@ -77,7 +77,7 @@ namespace IronKonoha.TyCheck
 				if(!bk.TyCheckAll(gma.ks.ctx, gma)) {
 					return texpr;
 				}
-				var rexpr = lastExpr.Expr(gma.ks.ctx, KeywordType.Expr);
+				var rexpr = lastExpr.Expr(gma.ks.ctx, gma.ks.Symbols.Expr);
 				Debug.Assert(rexpr != null);
 				KonohaType ty = rexpr.ty;
 				if (ty != KonohaType.Void)

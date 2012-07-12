@@ -53,7 +53,13 @@ namespace IronKonoha
 				return Scope as IDictionary<string, object>;
 			}
 		}
-		public readonly SymbolConst Symbols;
+		public SymbolConst Symbols
+		{
+			get
+			{
+				return ctx.Symbols;
+			}
+		}
 
 		public Dictionary<string, KonohaType> Classes { get; private set; }
 
@@ -61,7 +67,6 @@ namespace IronKonoha
 		{
 			this.ctx = ctx;
 			this.Scope = new ExpandoObject();
-			Symbols = new SymbolConst(ctx);
 			defineDefaultSyntax();
 			Classes = new Dictionary<string, KonohaType>();
 
@@ -80,7 +85,6 @@ namespace IronKonoha
 		
 		public KNameSpace(Context ctx,int child)
 		{
-			Symbols = new SymbolConst(ctx);
 			this.ctx = ctx;
 		}
 

@@ -52,6 +52,7 @@ namespace IronKonoha
 	// kmodsugar_t;
 	public class KModSugar : KModShare
 	{
+		/*
 		public KClass cToken { get; set; }
 		public KClass cExpr { get; set; }
 		public KClass cStmt { get; set; }
@@ -59,6 +60,7 @@ namespace IronKonoha
 		public KClass cKonohaSpace { get; set; }
 		public KClass cGamma { get; set; }
 		public KClass cTokenArray { get; set; }
+		 * */
 		public ICollection<string> keywordList { get{ return keywordMap.Keys; } }
 		private IDictionary<string, KKeyWord> keywordMap;
 		public IList<string> packageList { get; set; }
@@ -68,6 +70,7 @@ namespace IronKonoha
 		public ExprTyChecker UndefinedExprTyCheck { get; set; }
 		//public ExprParser ParseExpr_Term { get; set; }
 		//public ExprParser ParseExrp_Op { get; set; }
+		/*
 		public Func<Context, string, uint, Symbol, KKeyWord> keyword { get; set; }
 		private Action<Context, KNameSpace, int, Tokenizer.FTokenizer, KFunc> KonohaSpace_setTokenizer { get; set; }
 		public Func<Context, KonohaExpr, KType, KObject, KonohaExpr> Expr_setConstValue { get; set; }
@@ -94,7 +97,7 @@ namespace IronKonoha
 		public Func<Context, Syntax, int, object[], KonohaExpr> new_ConsExpr { get; set; }
 		public Func<Context, KStatement, KonohaExpr, IList<Token>, int, int, int, KonohaExpr> Stmt_addExprParams { get; set; }
 		//public Func<Context, KonohaExpr, KStatement, IList<Token>, int, int, int, KonohaExpr> Expr_rightJoin { get; set; }
-
+		*/
 		public KModSugar()
 		{
 			keywordMap = new Dictionary<string, KKeyWord>();
@@ -335,7 +338,7 @@ namespace IronKonoha
 		public KClass kclass { get; private set; }
 		public KArray kvproto { get; set; }
 	}
-
+	/*
 	public class KNumber : KObject
 	{
 		protected object value;
@@ -410,7 +413,8 @@ namespace IronKonoha
 			return value == null ? "" : value.ToString();
 		}
 	}
-
+	*/
+	/*
 	public class KBoolean : KNumber
 	{
 		public KBoolean(bool val)
@@ -418,7 +422,7 @@ namespace IronKonoha
 		{
 		}
 	}
-
+	*/
 	public enum ModID
 	{
 		Logger = 0,
@@ -447,6 +451,8 @@ namespace IronKonoha
 		public CTXSugar ctxsugar { get { return modlocal[(int)ModID.Sugar] as CTXSugar; } }
 		public KModSugar kmodsugar { get { return modshare[(int)ModID.Sugar] as KModSugar; } }
 
+		public readonly SymbolConst Symbols;
+
 		public Context()
 		{
 			// とりあえず4つまでうめておく
@@ -463,6 +469,7 @@ namespace IronKonoha
 			modlocal.Add(new CTXSugar());
 
 			share = new KShare();
+			Symbols = new SymbolConst(this);
 		}
 
 		public string GetErrorTypeString(ReportLevel pe)

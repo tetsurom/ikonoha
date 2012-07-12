@@ -199,7 +199,11 @@ namespace IronKonoha
 
 		public Expression MakeBlockExpression(KonohaExpr expr, FunctionEnvironment environment)
 		{
-			return Expression.Block(ConvertTextBlock(expr.tk.Text, environment));
+			if (expr is CodeExpr)
+			{
+				return Expression.Block(ConvertTextBlock(expr.tk.Text, environment));
+			}
+			return Expression.Block(ConvertToExprList(expr as BlockExpr, environment));
 		}
 
 		public IEnumerable<string> GetParamList(BlockExpr args)

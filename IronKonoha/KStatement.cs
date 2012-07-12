@@ -445,7 +445,7 @@ namespace IronKonoha
 		/// <param name="ctx"></param>
 		/// <param name="kw"></param>
 		/// <returns></returns>
-		public BlockExpr Block(Context ctx, KeywordType kw)
+		public BlockExpr Block(Context ctx, Symbol kw)
 		{
 			return Expr(ctx, kw, null) as BlockExpr;
 		}
@@ -455,14 +455,15 @@ namespace IronKonoha
 		/// <param name="ctx"></param>
 		/// <param name="kw"></param>
 		/// <returns></returns>
-		public KonohaExpr Expr(Context ctx, KeywordType kw){
+		public KonohaExpr Expr(Context ctx, Symbol kw)
+		{
 			return Expr(ctx, kw, null);
 		}
-		public KonohaExpr Expr(Context ctx, KeywordType kw, KonohaExpr def)
+		public KonohaExpr Expr(Context ctx, Symbol kw, KonohaExpr def)
 		{
-			var sym = Symbol.Get(ctx, kw);
-			if(this.map.ContainsKey(sym)){
-				return this.map[sym];
+			if (this.map.ContainsKey(kw))
+			{
+				return this.map[kw];
 			}
 			return def;
 		}
@@ -472,10 +473,11 @@ namespace IronKonoha
 		/// <param name="ctx"></param>
 		/// <param name="kw"></param>
 		/// <returns></returns>
-		public Token Token(Context ctx, KeywordType kw){
+		public Token Token(Context ctx, Symbol kw)
+		{
 			return Token(ctx, kw, null);
 		}
-		public Token Token(Context ctx, KeywordType kw, Token def)
+		public Token Token(Context ctx, Symbol kw, Token def)
 		{
 			var e = Expr(ctx, kw, null);
 			if(e != null){
@@ -487,7 +489,7 @@ namespace IronKonoha
 		//static kStmt* Stmt_lookupIfStmtWithoutElse(CTX, kStmt *stmt)
 		public KStatement LookupIfStmtWithoutElse(Context ctx)
 		{
-			var bkElse = this.Block(ctx, KeywordType.Else);
+			var bkElse = this.Block(ctx, ctx.Symbols.Else);
 			if(bkElse != null) {
 				if(bkElse.blocks.Count() == 1) {
 					var stmtIf = bkElse.blocks[0];
@@ -519,9 +521,9 @@ namespace IronKonoha
 		}
 		 
 		//static kBlock* Stmt_block(CTX, kStmt *stmt, keyword_t kw, kBlock *def)
-		public BlockExpr toBlock(Context ctx, KeywordType kw, BlockExpr def)
+		public BlockExpr toBlock(Context ctx, Symbol kw, BlockExpr def)
 		{
-			BlockExpr bk = Expr(ctx, kw) as BlockExpr;
+			KonohaExpr bk = Expr(ctx, kw);
 			if(bk != null) {
 				var tk = bk.tk;
 				if (tk.TokenType == TokenType.CODE) {
@@ -530,9 +532,9 @@ namespace IronKonoha
 				if (tk.TokenType == TokenType.AST_BRACE) {
 					var parser = new Parser(ctx, ks);
 					bk = parser.CreateBlock(null, tk.Sub, 0, tk.Sub.Count(), ';');
-					this.map[Symbol.Get(ctx, kw)] = bk;
+					this.map[kw] = bk;
 				}
-				return bk;
+				return bk as BlockExpr;
 			}
 			return def;
 		}

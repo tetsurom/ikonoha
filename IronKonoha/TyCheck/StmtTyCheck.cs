@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 
 namespace IronKonoha.TyCheck
 {
@@ -9,19 +10,21 @@ namespace IronKonoha.TyCheck
 	{
 		internal static bool If(KStatement stmt, Syntax syn, KGamma gma)
 		{
+			Context ctx = gma.ks.ctx;
 			bool r = true;
 			if ((r = stmt.tyCheckExpr(gma.ks.ctx, KeywordType.Expr, gma, KonohaType.Boolean, 0)))
 			{
-				BlockExpr bkThen = stmt.map[gma.ks.Symbols.Block] as BlockExpr;
+				BlockExpr bkThen = stmt.toBlock(ctx, ctx.Symbols.Block, null);
+				Debug.Assert(bkThen != null);
 				BlockExpr bkElse = null;
-				if (stmt.map.ContainsKey(gma.ks.Symbols.Else))
+				if (stmt.map.ContainsKey(ctx.Symbols.Else))
 				{
-					bkElse = stmt.map[gma.ks.Symbols.Else] as BlockExpr;
+					bkElse = stmt.toBlock(ctx, ctx.Symbols.Else, null);
 				}
 				r = bkThen.TyCheckAll(gma.ks.ctx, gma);
 				if (bkElse != null)
 				{
-					r = r & bkElse.TyCheckAll(gma.ks.ctx, gma);
+					r = r & bkElse.TyCheckAll(ctx, gma);
 				}
 				stmt.typed(StmtType.IF);
 			}
@@ -30,12 +33,13 @@ namespace IronKonoha.TyCheck
 
 		internal static bool Else(KStatement stmt, Syntax syn, KGamma gma)
 		{
+			Context ctx = gma.ks.ctx;
 			bool r = true;
 			var stmtIf = stmt.LookupIfStmt(gma.ks.ctx);
 			if (stmtIf != null)
 			{
-				BlockExpr bkElse = stmt.map[gma.ks.Symbols.Else] as BlockExpr;
-				stmtIf.map[Symbol.Get(gma.ks.ctx, KeywordType.Else)] = bkElse;
+				BlockExpr bkElse = stmt.toBlock(ctx, ctx.Symbols.Else, null);
+				stmtIf.map[ctx.Symbols.Else] = bkElse;
 
 				stmt.done();
 				r = bkElse.TyCheckAll(gma.ks.ctx, gma);

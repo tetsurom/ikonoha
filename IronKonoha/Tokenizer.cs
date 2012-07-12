@@ -204,6 +204,7 @@ namespace IronKonoha
 			if (TokenType == TokenType.CODE)
 			{
 				this.Sub = new Tokenizer(ctx, ks).Tokenize(this.Text);
+				this.TokenType = TokenType.AST_BRACE;
 				return true;
 			}
 			return false;
