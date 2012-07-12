@@ -259,6 +259,7 @@ namespace IronKonoha.TyCheck
 				var mtd = expr.lookUpFuncOrMethod(gma.ks.ctx, gma, reqty);
 				if (mtd != null)
 				{
+					expr.ty = mtd.ReturnType;
 					return expr.tyCheckCallParams(gma.ks.ctx, stmt, mtd, gma, reqty);
 				}
 				throw new NotImplementedException();

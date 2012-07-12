@@ -158,14 +158,16 @@ namespace IronKonoha
 					//}
 					return texpr;
 				}
-				var mtd = gma.ks.getCastMethod(texpr.ty, reqty);
-				Debug.WriteLine("finding cast {0} => {1}: {2}", texpr.ty, reqty, mtd);
-				if (mtd != null /*&& (mtd.isCoercion || (pol & TPOL.COERCION) != 0)*/)
-				{
-					return KonohaExpr.TypedMethodCall(ctx, stmt, reqty, mtd, gma, 1, texpr);
-				}
-				//return kExpr_p(stmt, expr, ERR_, "%s is requested, but %s is given", TY_t(reqty), TY_t(texpr->ty));
-				return null;
+				// FIXME
+				//var mtd = gma.ks.getCastMethod(texpr.ty, reqty);
+				//Debug.WriteLine("finding cast {0} => {1}: {2}", texpr.ty, reqty, mtd);
+				//if (mtd != null /*&& (mtd.isCoercion || (pol & TPOL.COERCION) != 0)*/)
+				//{
+				//    return KonohaExpr.TypedMethodCall(ctx, stmt, reqty, mtd, gma, 1, texpr);
+				//}
+				////return kExpr_p(stmt, expr, ERR_, "%s is requested, but %s is given", TY_t(reqty), TY_t(texpr->ty));
+				//return null;
+				return texpr;
 			}
 			return texpr;
 		}

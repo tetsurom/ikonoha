@@ -524,7 +524,7 @@ namespace IronKonoha
 		public BlockExpr toBlock(Context ctx, Symbol kw, BlockExpr def)
 		{
 			KonohaExpr bk = Expr(ctx, kw);
-			if(bk != null) {
+			if(bk != null && bk.tk != null) {
 				var tk = bk.tk;
 				if (tk.TokenType == TokenType.CODE) {
 					tk.toBrace(ctx, ks);
