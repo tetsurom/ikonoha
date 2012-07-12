@@ -43,14 +43,45 @@ namespace IronKonoha.TyCheck
 
 		internal static KonohaExpr Expr(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
-			if ((expr.syn.Flag & SynFlag.ExprOp) != 0)
+			if (expr is ConsExpr && (expr.syn.Flag & SynFlag.ExprOp) != 0)
 			{
-				var cexpr = expr as ConsExpr;
+				var cons = ((ConsExpr)expr).Cons;
 				var ctx = gma.ks.ctx;
-				cexpr.Cons[1] = (cexpr.Cons[1] as KonohaExpr).tyCheck(ctx, stmt, gma, KonohaType.Var, 0);
-				cexpr.Cons[2] = (cexpr.Cons[2] as KonohaExpr).tyCheck(ctx, stmt, gma, KonohaType.Var, 0);
-				cexpr.ty = (cexpr.Cons[1] as KonohaExpr).ty;
-				return cexpr;
+				cons[1] = ((KonohaExpr)cons[1]).tyCheck(ctx, stmt, gma, KonohaType.Var, 0);
+				cons[2] = ((KonohaExpr)cons[2]).tyCheck(ctx, stmt, gma, KonohaType.Var, 0);
+				if (cons[0] != null && cons[0] is Token)
+				{
+					switch (((Token)cons[0]).Keyword.Type)
+					{
+						case KeywordType.GT:
+						case KeywordType.GTE:
+						case KeywordType.LT:
+						case KeywordType.LTE:
+						case KeywordType.EQ:
+						case KeywordType.NEQ:
+							expr.ty = KonohaType.Boolean;
+							break;
+						case KeywordType.ADD:
+						case KeywordType.SUB:
+						case KeywordType.MUL:
+						case KeywordType.DIV:
+							var t1 = ((KonohaExpr)cons[1]).ty;
+							var t2 = ((KonohaExpr)cons[2]).ty;
+							if (t1 == t2)
+							{
+								expr.ty = t1;
+							}
+							else if (t1 == KonohaType.Float || t2 == KonohaType.Float)
+							{
+								expr.ty = KonohaType.Float;
+							}
+							break;
+						case KeywordType.MOD:
+							expr.ty = KonohaType.Int;
+							break;
+					}
+				}
+				return expr;
 			}
 			throw new NotImplementedException();
 		}
