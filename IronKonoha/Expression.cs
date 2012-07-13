@@ -202,6 +202,16 @@ namespace IronKonoha
 			throw new NotSupportedException("tyCheckCallParams is supported only on ConsExpr");
 		}
 
+		internal virtual object GetConsAt(int index)
+		{
+			throw new NotSupportedException("GetConsAt is supported only on ConsExpr");
+		}
+
+		internal virtual T GetConsAt<T>(int index) where T : class
+		{
+			throw new NotSupportedException("GetConsAt is supported only on ConsExpr");
+		}
+
 		internal KonohaExpr tyCheckFuncParams(Context ctx, KStatement stmt, KonohaType ct, KGamma gma)
 		{
 			throw new NotImplementedException();
@@ -227,6 +237,12 @@ namespace IronKonoha
 			KSETv(expr->cons->exprs[1], expr->cons->exprs[0]);
 			return expr.typedWithMethod(ctx, mtd, rtype);
 			 * */
+		}
+
+		// static kbool_t ExprTerm_toVariable(CTX, kStmt *stmt, kExpr *expr, kGamma *gma, ktype_t ty)
+		internal virtual bool toVariable(Context ctx, KStatement stmt, KGamma gma, KonohaType ty)
+		{
+			throw new NotSupportedException("toVariable is supported only on TermExpr");
 		}
 	}
 
@@ -381,6 +397,7 @@ namespace IronKonoha
 			}
 			if (mtd != null)
 			{
+				this.ty = mtd.ReturnType;
 				return tyCheckCallParams(ctx, stmt, mtd, gma, reqty);
 			}
 			return null;
@@ -538,6 +555,16 @@ namespace IronKonoha
 		{
 			throw new NotImplementedException();
 		}
+
+		internal override object GetConsAt(int index)
+		{
+			return Cons[index];
+		}
+
+		internal override T GetConsAt<T>(int index)
+		{
+			return Cons[index] as T;
+		}
 	}
 
 	[System.Diagnostics.DebuggerDisplay("{tk.Text} [{tk.Type}]")]
@@ -545,6 +572,25 @@ namespace IronKonoha
 	{
 		public TermExpr()
 		{
+		}
+
+		internal override bool toVariable(Context ctx, KStatement stmt, KGamma gma, KonohaType ty)
+		{
+			if (this.tk.TokenType == TokenType.SYMBOL)
+			{
+				Token tk = this.tk;
+				if (tk.Keyword.Type != KeywordType.Symbol)
+				{
+					tk.Print(ctx, ReportLevel.ERR, "{0} is keyword", tk.Text);
+					return false;
+				}
+				//ksymbol_t fn = ksymbolA(S_text(tk->text), S_size(tk->text), SYM_NEWID);
+				//int index = addGammaStack(_ctx, &gma->genv->l, ty, fn);
+				//kExpr_setVariable(expr, LOCAL_, ty, index, gma);
+				gma.vars.Add(new FuncParam(tk.Text, ty));
+				return true;
+			}
+			return false;
 		}
 	}
 
@@ -614,6 +660,12 @@ namespace IronKonoha
 			ty = param.Type;
 			Name = param.Name;
 		}
+		public ParamExpr(FuncParam param)
+		{
+			Order = -1;
+			ty = param.Type;
+			Name = param.Name;
+		}
 	}
 
 	public class BlockExpr : KonohaExpr
@@ -671,7 +723,7 @@ namespace IronKonoha
 		public bool TyCheckAll(Context ctx, KGamma gma)
 		{
 			bool result = true;
-			int lvarsize = gma.lvar.Count;
+			int lvarsize = gma.vars.Count;
 			for (int i = 0; i < blocks.Count; i++)
 			{
 				var stmt = blocks[i];
@@ -687,10 +739,10 @@ namespace IronKonoha
 				}
 			}
 			//kExpr_setVariable(this.esp, LOCAL_, KType.Void, gma.lvar.Count, gma);
-			while (lvarsize < gma.lvar.Count)
-			{
-				gma.lvar.Pop();
-			}
+			//while (lvarsize < gma.lvar.Count)
+			//{
+			//    gma.lvar.Pop();
+			//}
 			return result;
 		}
 	}

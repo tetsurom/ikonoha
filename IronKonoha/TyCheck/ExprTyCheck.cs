@@ -149,12 +149,24 @@ namespace IronKonoha.TyCheck
 
 		internal static KonohaExpr Symbol(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
-			/*
-			 * add local variable search here.
-			 */
 			Debug.Assert(gma != null);
 
 			var name = expr.tk.Text;
+
+			// search local variables
+			foreach (var p in gma.vars.Reverse<FuncParam>())
+			{
+				if (p.Name == name)
+				{
+					return new ParamExpr(p)
+					{
+						syn = expr.syn,
+						tk = expr.tk,
+						build = expr.build,
+						parent = expr.parent
+					};
+				}
+			}
 
 			// search function parameter
 			Debug.Assert(gma != null);

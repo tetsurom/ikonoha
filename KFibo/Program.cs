@@ -8,39 +8,73 @@ namespace KFibo
 {
 	class Program
 	{
+
+		static IronKonoha.Konoha konoha;
+
 		static long csfibo(long n)
 		{
 			if (n < 3) { return 1; } else { return csfibo(n - 1) + csfibo(n - 2); }
 		}
 
+		static void Assert(bool val)
+		{
+			if (val)
+			{
+				Console.WriteLine("PASSED");
+			}
+			else
+			{
+				Console.WriteLine("FAILED");
+			}
+		}
+
+		static void Assert<T>(string program, T request)
+		{
+			var ret = konoha.Eval(program);
+			if (ret == request)
+			{
+				Console.WriteLine("PASSED {0}", program);
+			}
+			else
+			{
+				Console.WriteLine("FAILED {0} Request: {1}, Return: {2}", program, request, ret);
+			}
+		}
+
 		static void Main(string[] args)
 		{
-			var konoha = new IronKonoha.Konoha();
+			konoha = new IronKonoha.Konoha();
 			//dynamic global = konoha.space.Scope;
 			//global.csfibo = new Func<long, long>(csfibo);
-			Debug.Assert(1     == konoha.Eval(@"1"));
-			Debug.Assert (2 == konoha.Eval (@"2"));
-			Debug.Assert (10 == konoha.Eval (@"6+4"));
-			Debug.Assert (2 == konoha.Eval (@"6-4"));
-			Debug.Assert (24 == konoha.Eval (@"6*4"));
-			Debug.Assert (1 == konoha.Eval (@"6/4"));
-			Debug.Assert (2 == konoha.Eval (@"6%4"));
-			Debug.Assert (true == konoha.Eval (@"5==5"));
-			Debug.Assert (false == konoha.Eval (@"2==7"));
-			Debug.Assert (false == konoha.Eval (@"5!=5"));
-			Debug.Assert (true == konoha.Eval (@"2!=7"));
-			Debug.Assert (false == konoha.Eval (@"15 <   5"));
-			Debug.Assert (false == konoha.Eval (@"11 <  11"));
-			Debug.Assert (true == konoha.Eval (@"10 <  13"));
-			Debug.Assert (false == konoha.Eval (@"15 <=  5"));
-			Debug.Assert (true == konoha.Eval (@"11 <= 11"));
-			Debug.Assert (true == konoha.Eval (@"10 <= 13"));
-			Debug.Assert (false == konoha.Eval (@"15 >   5"));
-			Debug.Assert (false == konoha.Eval (@"11 >  11"));
-			Debug.Assert (true == konoha.Eval (@"10 >  13"));
-			Debug.Assert (false == konoha.Eval (@"15 >=  5"));
-			Debug.Assert (true == konoha.Eval (@"11 >= 11"));
-			Debug.Assert (true == konoha.Eval (@"10 >= 13"));
+			/*
+			Assert(@"1", 1);
+			Assert(@"1234567890", 1234567890);
+			Assert(@"6+4", 10);
+			Assert(@"6-4", 2);
+			Assert(@"6*4", 24);
+			Assert(@"6/4", 1);
+			Assert(@"6%4", 2);
+			 */
+			Assert(@"int f(){ int a = 1; return a; }; f();", 1);
+			/*
+			Assert (true == konoha.Eval (@"5==5"));
+			Assert (false == konoha.Eval (@"2==7"));
+			Assert (false == konoha.Eval (@"5!=5"));
+			Assert (true == konoha.Eval (@"2!=7"));
+			Assert (false == konoha.Eval (@"15 <   5"));
+			Assert (false == konoha.Eval (@"11 <  11"));
+			Assert (true == konoha.Eval (@"10 <  13"));
+			Assert (false == konoha.Eval (@"15 <=  5"));
+			Assert (true == konoha.Eval (@"11 <= 11"));
+			Assert (true == konoha.Eval (@"10 <= 13"));
+			Assert (false == konoha.Eval (@"15 >   5"));
+			Assert (false == konoha.Eval (@"11 >  11"));
+			Assert (true == konoha.Eval (@"10 >  13"));
+			Assert (false == konoha.Eval (@"15 >=  5"));
+			Assert (true == konoha.Eval (@"11 >= 11"));
+			Assert (true == konoha.Eval (@"10 >= 13"));
+			 * */
+
 			/*
 			konoha.Eval(@"
                 int fibo(int n){

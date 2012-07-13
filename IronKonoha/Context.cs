@@ -211,27 +211,29 @@ namespace IronKonoha
 		/// <summary>
 		/// ???
 		/// </summary>
-		public Stack<object> lvar{ get; private set; }
+		public List<object> lvar { get; private set; }
 		/// <summary>
 		/// ???
 		/// </summary>
-		public Stack<object> fvar{ get; private set; }
+		public List<object> fvar { get; private set; }
 		/// <summary>
 		/// ???
 		/// </summary>
 		public IList<object> lvarlst { get; private set; }
 		/// <summary>
-		/// ???
+		/// Variables
 		/// </summary>
+		public List<FuncParam> vars { get; set; }
 		public int lvarlst_top { get { return lvarlst.Count - 1; } }
 		public bool isERROR { get { return (flag & KGammaFlag.ERROR) != 0; } }
 		public bool isTopLevel { get { return (flag & KGammaFlag.TOPLEVEL) != 0; } }
 
 		public KGamma()
 		{
-			lvar = new Stack<object>();
-			fvar = new Stack<object>();
+			lvar = new List<object>();
+			fvar = new List<object>();
 			lvarlst = new List<object>();
+			vars = new List<FuncParam>();
 		}
 
 		public void setERROR(bool f){

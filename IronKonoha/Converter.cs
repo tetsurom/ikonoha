@@ -16,8 +16,10 @@ namespace IronKonoha
 	public class FunctionEnvironment
 	{
 		public ParameterExpression[] Params { get; set; }
+		public List<ParameterExpression> Locals { get; set; }
 		public LabelTarget ReturnLabel { get; set; }
 		public KFunc Method { get; set; }
+		public KGamma Gamma { get; set; }
 	}
 
 	public class FuncCache<T, RT>
@@ -125,28 +127,62 @@ namespace IronKonoha
 			var block = parser.CreateBlock(null, tokens, 0, tokens.Count(), ';');
 			Debug.WriteLine("### Konoha AST Dump ###");
 			Debug.WriteLine(block.GetDebugView());
-			block.TyCheckAll(ctx, new KGamma() { ks = this.ks, cid = KonohaType.System, mtd = environment.Method });
+
+			block.TyCheckAll(ctx, environment.Gamma);
 			Debug.WriteLine("### Konoha AST Dump (tychecked) ###");
 			Debug.WriteLine(block.GetDebugView());
-			return ConvertToExprList(block, environment);
+
+			var exprs = ConvertToExprList(block, environment);
+
+			return exprs;
 		}
 
 		public Expression<T> ConvertFunc<T, RT>(string body, IEnumerable<ParameterExpression> param, KFunc mtd)
 		{
-			var env = new FunctionEnvironment()
+			var environment = new FunctionEnvironment()
 			{
 				Params = param.ToArray(),
 				ReturnLabel = Expression.Label(typeof(RT)),
 				Method = mtd
 			};
-			var list = ConvertTextBlock(body, env).ToList();
-			list.Add(Expression.Label(env.ReturnLabel, Expression.Constant(default(RT), typeof(RT))));
-			var block = Expression.Block(typeof(RT), list);
+			environment.Gamma = new KGamma() { ks = this.ks, cid = KonohaType.System, mtd = mtd };
+
+			int outerVariableSize = 0;// environment.Gamma.vars.Count;
+
+			var tokenizer = new Tokenizer(ctx, ks);
+			var parser = new Parser(ctx, ks);
+			var tokens = tokenizer.Tokenize(body);
+			var kblock = parser.CreateBlock(null, tokens, 0, tokens.Count(), ';');
+
+			Debug.WriteLine("### Konoha AST Dump ###");
+			Debug.WriteLine(kblock.GetDebugView());
+
+			kblock.TyCheckAll(ctx, environment.Gamma);
+			Debug.WriteLine("### Konoha AST Dump (tychecked) ###");
+			Debug.WriteLine(kblock.GetDebugView());
+
+			var localVarExprs = environment.Gamma.vars
+				.Skip(outerVariableSize)
+				.Select(v => Expression.Parameter(v.Type.Type, v.Name));
+			if (environment.Locals == null)
+			{
+				environment.Locals = localVarExprs.ToList();
+			}
+			else
+			{
+				environment.Locals.AddRange(localVarExprs);
+			}
+
+			var list = ConvertToExprList(kblock, environment).ToList();
+			list.Add(Expression.Label(environment.ReturnLabel, Expression.Constant(default(RT), typeof(RT))));
+
+			var block = Expression.Block(typeof(RT), environment.Locals, list);
+
 			string dbv = (string)typeof(Expression).InvokeMember("DebugView", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetProperty, null, block, null);
 			Debug.WriteLine("### DLR AST Dump ###");
 			Debug.WriteLine(dbv);
 
-			var lmd = Expression.Lambda<T>(block, env.Params);
+			var lmd = Expression.Lambda<T>(block, environment.Params);
 			var d = lmd.Compile();
 
 			return lmd;
@@ -168,17 +204,11 @@ namespace IronKonoha
 			}
 			if (st.syn != null && st.syn.KeyWord == KeyWordTable.Type)
 			{
-				string name = ((st.map[Symbol.Get(this.ctx,KeywordType.Expr)] as ConsExpr).Cons[1] as KonohaExpr).tk.Text;
-				ParameterExpression tmp = Expression.Parameter(typeof(long),name);
-				this.Scope.Add(name,(Expression)tmp);
-
-				return Expression.Block(
-					new ParameterExpression[] { tmp },
-					Expression.Assign(
-						tmp,
-						MakeExpression((st.map[Symbol.Get(this.ctx,KeywordType.Expr)] as ConsExpr).Cons[2] as KonohaExpr,
-							environment))
-				);
+				var cons = st.Expr(ctx, ctx.Symbols.Expr);
+				var variable = MakeExpression(cons.GetConsAt<KonohaExpr>(1), environment);
+				var value = MakeExpression(cons.GetConsAt<KonohaExpr>(2), environment);
+				Debug.Assert(variable is ParameterExpression);
+				return Expression.Assign(variable, value);
 			}
 			if (st.syn != null && st.syn.KeyWord == KeyWordTable.Return || st.build == StmtType.RETURN)
 			{
@@ -199,11 +229,37 @@ namespace IronKonoha
 
 		public Expression MakeBlockExpression(KonohaExpr expr, FunctionEnvironment environment)
 		{
+			/*
+			int outerVariableSize = environment.Gamma.vars.Count;
+
+			var localVarExprs = environment.Gamma.vars
+				.Skip(outerVariableSize)
+				.Select(v => Expression.Parameter(v.Type.Type, v.Name));
+			if (environment.Locals == null)
+			{
+				environment.Locals = localVarExprs.ToList();
+			}
+			else
+			{
+				environment.Locals.AddRange(localVarExprs);
+			}
+			*/
+			IEnumerable<Expression> blockbody;
+
 			if (expr is CodeExpr)
 			{
-				return Expression.Block(ConvertTextBlock(expr.tk.Text, environment));
+				blockbody = ConvertTextBlock(expr.tk.Text, environment);
 			}
-			return Expression.Block(ConvertToExprList(expr as BlockExpr, environment));
+			else
+			{
+				blockbody = ConvertToExprList(expr as BlockExpr, environment);
+			}
+			var block = Expression.Block(blockbody);
+			/*
+			environment.Gamma.vars = environment.Gamma.vars.Take(outerVariableSize).ToList();
+			environment.Locals = environment.Locals.Take(outerVariableSize).ToList();
+			*/
+			return block;
 		}
 
 		public IEnumerable<string> GetParamList(BlockExpr args)
@@ -251,7 +307,21 @@ namespace IronKonoha
 
 		public Expression MakeExpression(ParamExpr kexpr, FunctionEnvironment environment)
 		{
+			if (environment.Locals != null)
+			{
+				foreach (var p in environment.Locals.Reverse<ParameterExpression>())
+				{
+					if (p.Name == kexpr.Name)
+					{
+						return p;
+					}
+				}
+			}
 			// add 1 because params[0] is 'this' object.
+			if (kexpr.Order < 0)
+			{
+				throw new InvalidOperationException(string.Format("undefined local variable or parameter: {0}",  kexpr.Name));
+			}
 			return environment.Params[kexpr.Order + 1];
 		}
 
@@ -293,15 +363,17 @@ namespace IronKonoha
 			else if (expr.syn.KeyWord == KeyWordTable.Params || expr.syn.KeyWord == KeyWordTable.Parenthesis)
 			{
 				Token tk = expr.Cons[0] as Token ?? ((KonohaExpr)expr.Cons[0]).tk;
-				var pname = new []{"$this", "$1", "$2", "$3", "$4", "$5", "$6", "$7"};
 				var argsize = expr.Cons.Count - 2;
+
+				var paramThis = new[] { Expression.Constant((expr.Cons[1] as ConstExpr<KonohaType>).Data) };
+				var param = expr.Cons.Skip(2).Select(c => MakeExpression((KonohaExpr)c, environment));
+
 				return Expression.Dynamic(
 					new Runtime.KonohaInvokeMemberBinder(
 						tk.Text,
-						new CallInfo(argsize + 1, pname.Take(argsize + 1))),
+						new CallInfo(argsize + 1)),
 					typeof(object),
-					new[] { Expression.Constant((expr.Cons[1] as ConstExpr<KonohaType>).Data) }.Concat(
-						expr.Cons.Skip(2).Select(c => MakeExpression((KonohaExpr)c, environment))));
+					paramThis.Concat(param));
 			}
 			else if (expr.Cons[0] is Token)
 			{

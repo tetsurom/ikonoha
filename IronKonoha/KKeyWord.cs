@@ -64,7 +64,7 @@ namespace IronKonoha
 		public KKeyWord(string name, KeywordType kw)
 		{
 			Debug.Assert(name != null);
-			Debug.WriteLine("Create KKeyword {0}, {1}", name, kw);
+			//Debug.WriteLine("Create KKeyword {0}, {1}", name, kw);
 			Name = name;
 			Type = kw;
 		}
@@ -145,7 +145,7 @@ namespace IronKonoha
 		public static readonly KKeyWord OR = new KKeyWord("||", KeywordType.OR);
 		public static readonly KKeyWord NOT = new KKeyWord("!", KeywordType.NOT);
 		public static readonly KKeyWord COLON = new KKeyWord(":", KeywordType.COLON);
-		public static readonly KKeyWord LET = new KKeyWord("", KeywordType.LET);
+		public static readonly KKeyWord LET = new KKeyWord("=", KeywordType.LET);
 		public static readonly KKeyWord COMMA = new KKeyWord(",", KeywordType.COMMA);
 		public static readonly KKeyWord DOLLAR = new KKeyWord("", KeywordType.DOLLAR);
 		public static readonly KKeyWord Void = new KKeyWord("", KeywordType.Void);

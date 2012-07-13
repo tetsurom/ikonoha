@@ -99,40 +99,49 @@ namespace IronKonoha.TyCheck
 			return r;
 		}
 
-		static bool declType(KStatement stmt, KonohaExpr expr, KGamma gma, TokenType type, KStatement lastStmtRef)
+		static bool declType(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType ty, KStatement lastStmtRef)
 		{
-			return true;
-			/*
+			Debug.Assert(expr is ConsExpr);
+			var ctx = gma.ks.ctx;
 			if(expr is TermExpr) {
 				TermExpr te = expr as TermExpr;
-				if(te.toVariable(_ctx, stmt, expr, gma, type)) {
-					kExpr vexpr = new_Variable(null, type, 0, gma);
-					expr = new_TypedConsExpr(_ctx, TEXPR_LET, TY_void, 3, K_NULL, expr, vexpr);
-					return appendAssignmentStmt(_ctx, expr, lastStmtRef);
+				if (te.toVariable(ctx, stmt, gma, ty))
+				{
+					expr = new ParamExpr(gma.vars.Last());
+					//var vexpr = new VariableExp(null, ty, 0, gma);
+					var vexpr = new ParamExpr(gma.vars.Last());
+					expr = new ConsExpr(ctx, gma.ks.GetSyntax(KeyWordTable.LET), 3, null, expr, vexpr);
+					return appendAssignmentStmt(ctx, expr, lastStmtRef);
 				}
 			}
-			else if(expr->syn->kw == KW_LET) {
-				kExpr *lexpr = kExpr_at(expr, 1);
-				if(kExpr_tyCheckAt(stmt, expr, 2, gma, TY_var, 0) == K_NULLEXPR) {
+			else if(expr.syn.KeyWord == KeyWordTable.LET) {
+				var lexpr = expr.GetConsAt<KonohaExpr>(1);
+				if(expr.tyCheckAt(gma.ks.ctx, stmt, 2, gma, KonohaType.Var, 0) == null) {
 					// this is neccesarry to avoid 'int a = a + 1;';
 					return false;
 				}
-				if(ExprTerm_toVariable(_ctx, stmt, lexpr, gma, ty)) {
-					if(kExpr_tyCheckAt(stmt, expr, 2, gma, ty, 0) != K_NULLEXPR) {
-						return appendAssignmentStmt(_ctx, expr, lastStmtRef);
+				if (lexpr.toVariable(ctx, stmt, gma, ty))
+				{
+					((ConsExpr)expr).Cons[1] = new ParamExpr(gma.vars.Last());
+					if (expr.tyCheckAt(ctx, stmt, 2, gma, ty, 0) != null)
+					{
+						return appendAssignmentStmt(ctx, expr, lastStmtRef);
 					}
 					return false;
 				}
-			} else if(expr->syn->kw == KW_COMMA) {
-				size_t i;
-				for(i = 1; i < kArray_size(expr->cons); i++) {
-					if(!Expr_declType(_ctx, stmt, kExpr_at(expr, i), gma, ty, lastStmtRef)) return false;
+			} else if(expr.syn.KeyWord == KeyWordTable.COMMA) {
+				for(int i = 1; i < ((ConsExpr)expr).Cons.Count; ++i) {
+					if(!declType(stmt, expr.GetConsAt<KonohaExpr>(i), gma, ty, lastStmtRef)) return false;
 				}
 				return true;
 			}
-			kStmt_p(stmt, ERR_, "variable name is expected");
+			//kStmt_p(stmt, ERR_, "variable name is expected");
 			return false;
-			*/
+		}
+
+		private static bool appendAssignmentStmt(Context ctx, KonohaExpr expr, KStatement lastStmtRef)
+		{
+			return true;
 		}
 
 		internal static bool TypeDecl(KStatement stmt, Syntax syn, KGamma gma)
@@ -143,7 +152,7 @@ namespace IronKonoha.TyCheck
 				return false;
 			}
 			stmt.done();
-			return declType(stmt,expr,gma, stk.tk.TokenType,stmt);
+			return declType(stmt, expr, gma, stk.tk.Type, stmt);
 		}
 	}
 }
