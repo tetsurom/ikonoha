@@ -139,7 +139,7 @@ namespace IronKonoha
 				}
 				if (tk.TokenType == TokenType.INDENT)
 				{
-					if (tk.Text.Length <= indent)
+					if (tk.Indent <= indent)
 					{
 						Debug.WriteLine(string.Format("tk.Lpos={0}, indent={1}", tk.Text.Length, indent));
 						errorToken = null;

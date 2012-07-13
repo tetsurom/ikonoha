@@ -81,6 +81,7 @@ namespace IronKonoha
 		public IList<Token> Sub { get; set; }
 		[Obsolete]
 		public char TopChar { get { return Text.Length == 0 ? '\0' : this.Text[0]; } }
+		public int Indent {get; set;}
 
 		private KKeyWord _keyword;
 		public KKeyWord Keyword
@@ -398,7 +399,7 @@ namespace IronKonoha
 			return IsAlphaOrNum(c) || c == '_';
 		}
 
-		static int TokenizeIndent(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunc thunk)
+		static int TokenizeIndent(Context ctx, ref Token token, TokenizerEnvironment tenv, int tokStart, KFunc thunk)
 		{
 			int pos = tokStart;
 			string ts = tenv.Source;
@@ -420,8 +421,10 @@ namespace IronKonoha
 					--pos;
 				}
 			}
-			token = null;
-
+			//token = null;
+			if(token != null) {
+				token.Indent = 0;
+			}
 			return pos;
 		}
 
@@ -444,7 +447,8 @@ namespace IronKonoha
 
 			tenv.Line.LineNumber += 1;
 			tenv.Bol = pos;
-			return TokenizeIndent(ctx, out token, tenv, pos, thunk);
+			token = new Token(TokenType.INDENT,"",0);
+			return TokenizeIndent(ctx, ref token, tenv, pos, thunk);
 		}
 
 		static int TokenizeNumber(Context ctx, out Token token, TokenizerEnvironment tenv, int tokStart, KFunc thunk)
@@ -713,9 +717,9 @@ namespace IronKonoha
 
 			FTokenizer[] fmat = env.TokenizerMatrix;
 			var tokens = new List<Token>();
-			Token token;
+			Token token = null;
 
-			for (int pos = TokenizeIndent(this.ctx, out token, env, 0, null); pos < env.Source.Length; )
+			for (int pos = TokenizeIndent(this.ctx, ref token, env, 0, null); pos < env.Source.Length; )
 			{
 				CharType ct = charTypeMatrix[env.Source[pos]];
 				int pos2 = fmat[(int)ct](this.ctx, out token, env, pos, null);
