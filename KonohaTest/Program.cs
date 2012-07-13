@@ -4,16 +4,18 @@ using System.Linq;
 using System.Text;
 using System.Diagnostics;
 
-namespace KFibo
-{
-	class Program
-	{
-
+namespace KFibo {
+	class Program {
 		static IronKonoha.Konoha konoha;
-
 		static long csfibo(long n)
 		{
-			if (n < 3) { return 1; } else { return csfibo(n - 1) + csfibo(n - 2); }
+			if (n < 3) {
+				return 1;
+			}
+			else
+			{
+				return csfibo(n - 1) + csfibo(n - 2);
+			}
 		}
 
 		static void Assert(bool val)
