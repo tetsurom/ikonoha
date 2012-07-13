@@ -104,6 +104,8 @@ namespace IronKonoha.TyCheck
 			Debug.Assert(expr is ConsExpr);
 			var ctx = gma.ks.ctx;
 			if(expr is TermExpr) {
+				throw new NotImplementedException();
+				/*
 				TermExpr te = expr as TermExpr;
 				if (te.toVariable(ctx, stmt, gma, ty))
 				{
@@ -113,6 +115,7 @@ namespace IronKonoha.TyCheck
 					expr = new ConsExpr(ctx, gma.ks.GetSyntax(KeyWordTable.LET), 3, null, expr, vexpr);
 					return appendAssignmentStmt(ctx, expr, lastStmtRef);
 				}
+				 * */
 			}
 			else if(expr.syn.KeyWord == KeyWordTable.LET) {
 				var lexpr = expr.GetConsAt<KonohaExpr>(1);
