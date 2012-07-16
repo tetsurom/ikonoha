@@ -10,6 +10,7 @@ namespace IronKonoha.Runtime
 		public static bool import(string name)
 		{
 			Console.WriteLine("importing {0} ...", name);
+			//FIXME return Package.load(ns, name);
 			return false;
 		}
 
