@@ -325,7 +325,8 @@ namespace IronKonoha
 		public override DynamicMetaObject BindCreateInstance(
 					CreateInstanceBinder binder, DynamicMetaObject[] args)
 		{
-			if (Class.Methods.ContainsKey(Class.Name))
+
+			if (true/*Class.Methods.ContainsKey(Class.Name)*/)
 			{
 				return new DynamicMetaObject(
 					Expression.Call(Expression.Constant(Class), typeof(KonohaClass).GetMethod("Instanciate")),

@@ -103,7 +103,7 @@ namespace IronKonoha.TyCheck
 			if(lastExpr != null) {
 				int lvarsize = gma.lvar.Count;
 				int i;
-				int atop = gma.lvarlst.Count;
+				int atop = gma.lvar.Count;
 				//KonohaExpr lvar = new_Variable(LOCAL_, TY_var, addGammaStack(_ctx, &gma->genv->l, TY_var, 0/*FN_*/), gma);
 				if(!bk.TyCheckAll(gma.ks.ctx, gma)) {
 					return texpr;
@@ -119,8 +119,9 @@ namespace IronKonoha.TyCheck
 					lastExpr.map[IronKonoha.Symbol.Get(gma.ks.ctx, KeywordType.Expr)] = letexpr;
 					//texpr = kExpr_setVariable(expr, BLOCK_, ty, lvarsize, gma);
 				}
-				for(i = atop; i < gma.lvarlst.Count; i++) {
-					var v = gma.lvarlst[i];
+				for (i = atop; i < gma.lvar.Count; i++)
+				{
+					var v = gma.lvar[i];
 					//if(v->build == TEXPR_LOCAL_ && v->index >= lvarsize) {
 					//	v->build = TEXPR_STACKTOP; v->index = v->index - lvarsize;
 						//DBG_P("v->index=%d", v->index);
@@ -154,7 +155,7 @@ namespace IronKonoha.TyCheck
 			var name = expr.tk.Text;
 
 			// search local variables
-			foreach (var p in gma.vars.Reverse<FuncParam>())
+			foreach (var p in gma.lvar.Reverse<FuncParam>())
 			{
 				if (p.Name == name)
 				{
@@ -268,6 +269,11 @@ namespace IronKonoha.TyCheck
 			if (cons[0] is KonohaExpr)
 			{
 				var expr0 = cons[0] as KonohaExpr;
+				// FIXME: I can't find it is right way to make createinstance tree. But it's looked works.
+				if (expr0 is CreateInstanceExpr)
+				{
+					return expr0;
+				}
 				var mtd = expr.lookUpFuncOrMethod(gma.ks.ctx, gma, reqty);
 				if (mtd != null)
 				{

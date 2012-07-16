@@ -53,7 +53,8 @@ namespace IronKonoha
 		If,
 		Else,
 		Return,
-		Import
+		Import,
+		New,
 	}
 
 	[System.Diagnostics.DebuggerDisplay("{Type} {Name}")]

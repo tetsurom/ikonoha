@@ -142,10 +142,23 @@ namespace IronKonoha
 					else
 					{
 						Debug.Assert(kw != null);
+						if (ks.Classes.ContainsKey(this.Text))
+						{
+							//throw new InvalidOperationException(string.Format("undefined Type: {0}", this.Text));
+							this.Type = ks.Classes[this.Text];
+						}
 						this.Keyword = kw;
 					}
 					return true;
 				}
+			}
+			// FIXME: CKonohaにはないif文
+			if (ks.Classes.ContainsKey(this.Text))
+			{
+				//throw new InvalidOperationException(string.Format("undefined Type: {0}", this.Text));
+				this.Type = ks.Classes[this.Text];
+				this.Keyword = KeyWordTable.Type;
+				return true;
 			}
 			return false;
 		}

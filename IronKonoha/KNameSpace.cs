@@ -373,6 +373,11 @@ namespace IronKonoha
 					StmtTyCheck = TyCheck.StmtTyCheck.Import,
 					TopStmtTyCheck = TyCheck.StmtTyCheck.Import,
 				},
+				new KDEFINE_SYNTAX(){
+					name = "new",
+					ParseExpr = ParseExpr_new,
+					kw = KeywordType.New,
+				},
 			};
 			defineSyntax(syntaxes);
 			//this.GetSyntax(KeywordType.Void).Type = KType.Void;
@@ -784,6 +789,36 @@ namespace IronKonoha
 			}
 			if (c + 1 < e) c++;
 			return new ConsExpr(ctx, syn, tls[c], ReportLevel.ERR, "expected field name: not " + tls[c].Text);
+		}
+
+		private static KonohaExpr ParseExpr_new(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int s, int c, int e)
+		{
+			Debug.Assert(s == c);
+			Token tkNEW = tls[s];
+			if(s + 2 < tls.Count) {
+				Token tk1 = tls[s+1];
+				Token tk2 = tls[s+2];
+				if(tk1.IsType)
+				{
+					// new C(...)
+					if(tk1.IsType && tk2.TokenType == TokenType.AST_PARENTHESIS) {
+						//var syn = SYN_(kStmt_ks(stmt), KW_ExprMethodCall);
+						var newsyn = stmt.ks.GetSyntax(KeyWordTable.ExprMethodCall);
+						var expr = new CreateInstanceExpr(tk1.Type, null) { syn = syn, tk = tk1 };
+						return expr;
+					}
+					// new C [...]
+					if(tk1.IsType && tk2.TokenType == TokenType.AST_BRACKET) {
+						throw new NotImplementedException();
+						//ksyntax_t *syn = SYN_(kStmt_ks(stmt), KW_new);
+						//kclass_t *ct = CT_p0(_ctx, CT_Array, TK_type(tk1));
+						//kToken_setmn(tkNEW, MN_("newArray"), MNTYPE_method);
+						//var expr = SUGAR new_ConsExpr(_ctx, syn, tkNEW, NewExpr(_ctx, syn, tk1, ct->cid, 0));
+						//return expr;
+					}
+				}
+			}
+			throw new InvalidOperationException();
 		}
 
 		public int packid { get; set; }

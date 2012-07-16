@@ -473,9 +473,10 @@ namespace IronKonoha
 		{
 			var expr = (KonohaExpr)Cons[0];
 			var tk = expr.tk;
+			Debug.Assert(tk != null);
 			var funcName = tk.Text;//ksymbolA(tk.Text, tk.Text.Length, gma.ks.Symbols.Noname);
-			// I can't find what these codes doing...
 			/*
+			// search local variabls.
 			for (int i = gma.lvar.Count - 1; i >= 0; i--)
 			{
 				if (gma.lvarlst[i].fn == funcName && gma.lvar[i].ty == KonohaType.Func)
@@ -484,6 +485,7 @@ namespace IronKonoha
 					return null;
 				}
 			}
+			// search field variables
 			for (int i = genv->f.varsize - 1; i >= 0; i--)
 			{
 				if (gma.fvar[i].fn == funcName && gma.lvar[i].ty == KonohaType.Func)
@@ -492,6 +494,7 @@ namespace IronKonoha
 					return null;
 				}
 			}
+			// search "this"'s fields (fvar[0] is "this")
 			if (gma.fvar[0].ty != KonohaType.Void)
 			{
 				Debug.Assert(gma.this_cid == gma.fvar[0].ty);
@@ -518,32 +521,40 @@ namespace IronKonoha
 				}
 			}
 			 * */
+			// search namespace-level functions
+			/*
+			var cid = gma.ks.scrobj.cid;
+			KFunc mtd = gma.ks.getMethodN(cid, funcName);
+			if (mtd != null)
 			{
-				/*
-				var cid = gma.ks.scrobj.cid;
-				KFunc mtd = gma.ks.getMethodN(cid, funcName);
-				if (mtd != null)
-				{
-					Cons[1] = new_ConstValue(cid, gma.ks.scrobj);
-					return mtd;
-				}
-				mtd = gma.ks.getGetterMethod(ctx, cid, funcName);
-				if (mtd != null && mtd.ReturnType == KonohaType.Func)
-				{
-					Cons[0] = new_GetterExpr(ctx, tk, mtd, new_ConstValue(cid, gma.ks.scrobj));
-					return null;
-				}
-				*/
-				// if System class has searching method, call it.
-				var sys = gma.ks.Classes["System"];
-				var mtd = gma.ks.getMethod(sys, funcName);
-				if (mtd != null)
-				{
-					//Cons[1] = new_Variable(null, KonohaType.System, 0, gma);
-					Cons[1] = new ConstExpr<KonohaType>(sys);
-				}
+				Cons[1] = new_ConstValue(cid, gma.ks.scrobj);
 				return mtd;
 			}
+			mtd = gma.ks.getGetterMethod(ctx, cid, funcName);
+			if (mtd != null && mtd.ReturnType == KonohaType.Func)
+			{
+				Cons[0] = new_GetterExpr(ctx, tk, mtd, new_ConstValue(cid, gma.ks.scrobj));
+				return null;
+			}
+			*/
+			// search global functions:
+			// if System class has searching method, call it.
+			var sys = gma.ks.Classes["System"];
+			var mtd = gma.ks.getMethod(sys, funcName);
+			if (mtd != null)
+			{
+				//Cons[1] = new_Variable(null, KonohaType.System, 0, gma);
+				Cons[1] = new ConstExpr<KonohaType>(sys);
+			}
+			if (mtd != null)
+			{
+				return mtd;
+			}
+			if (Cons[1] is ConstExpr<KonohaType>)
+			{
+				throw new InvalidOperationException(string.Format("undefined function or method: {0}.{1}", ((ConstExpr<KonohaType>)Cons[1]).Data.Name, funcName));
+			}
+			throw new InvalidOperationException(string.Format("undefined function or method: {0}", funcName));
 		}
 
 		internal KonohaExpr tyCheckCallParams(Context context, KStatement stmt, KonohaExpr expr, object mtd, KGamma gma, KonohaType reqty)
@@ -587,7 +598,7 @@ namespace IronKonoha
 				//ksymbol_t fn = ksymbolA(S_text(tk->text), S_size(tk->text), SYM_NEWID);
 				//int index = addGammaStack(_ctx, &gma->genv->l, ty, fn);
 				//kExpr_setVariable(expr, LOCAL_, ty, index, gma);
-				gma.vars.Add(new FuncParam(tk.Text, ty));
+				gma.lvar.Add(new FuncParam(tk.Text, ty));
 				return true;
 			}
 			return false;
@@ -668,6 +679,36 @@ namespace IronKonoha
 		}
 	}
 
+	/// <summary>
+	/// named 'NewExpr' in CKonoha
+	/// </summary>
+	public class CreateInstanceExpr : KonohaExpr
+	{
+		public ConsExpr paramExpr { get; set; }
+		public CreateInstanceExpr(KonohaType type, ConsExpr param)
+		{
+			this.ty = type;
+			this.paramExpr = param;
+		}
+
+		public override string GetDebugView(int indent)
+		{
+			var builder = new StringBuilder();
+			for (int i = 1; i < indent; ++i)
+			{
+				builder.Append(' ');
+			}
+			builder.Append("new ");
+			builder.Append(ty.Name);
+			if (paramExpr != null)
+			{
+				builder.Append(System.Environment.NewLine);
+				builder.Append(paramExpr.GetDebugView(indent + 4));
+			}
+			return builder.ToString();
+		}
+	}
+
 	public class BlockExpr : KonohaExpr
 	{
 		/// <summary>
@@ -723,7 +764,7 @@ namespace IronKonoha
 		public bool TyCheckAll(Context ctx, KGamma gma)
 		{
 			bool result = true;
-			int lvarsize = gma.vars.Count;
+			int lvarsize = gma.lvar.Count;
 			for (int i = 0; i < blocks.Count; i++)
 			{
 				var stmt = blocks[i];

@@ -161,7 +161,7 @@ namespace IronKonoha
 			Debug.WriteLine("### Konoha AST Dump (tychecked) ###");
 			Debug.WriteLine(kblock.GetDebugView());
 
-			var localVarExprs = environment.Gamma.vars
+			var localVarExprs = environment.Gamma.lvar
 				.Skip(outerVariableSize)
 				.Select(v => Expression.Parameter(v.Type.Type, v.Name));
 			if (environment.Locals == null)
@@ -303,6 +303,15 @@ namespace IronKonoha
 		public Expression MakeExpression<T>(ConstExpr<T> kexpr, FunctionEnvironment environment)
 		{
 			return Expression.Constant(kexpr.Data);
+		}
+
+		public Expression MakeExpression(CreateInstanceExpr kexpr, FunctionEnvironment environment)
+		{
+			return Expression.Dynamic(
+				new Runtime.KonohaCreateInstanceBinder(new CallInfo(0/*argsize + 1*/)), // FIXME: must impl ctor with args.
+ 				typeof(object),
+				Expression.Constant(kexpr.ty));
+
 		}
 
 		public Expression MakeExpression(ParamExpr kexpr, FunctionEnvironment environment)

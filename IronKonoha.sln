@@ -16,6 +16,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DLRTest", "DLRTest\DLRTest.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KonohaTest", "KonohaTest\KonohaTest.csproj", "{DDD9BFC4-311E-46A3-8CD4-2CDCEF07BA9A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KonohaLibrary", "KonohaLibrary\KonohaLibrary.csproj", "{BAE2508A-E950-4D8F-AA5B-B74B6095D08D}"
+EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = IronKonoha.vsmdi
@@ -69,6 +71,16 @@ Global
 		{DDD9BFC4-311E-46A3-8CD4-2CDCEF07BA9A}.Release|Mixed Platforms.Build.0 = Release|x86
 		{DDD9BFC4-311E-46A3-8CD4-2CDCEF07BA9A}.Release|x86.ActiveCfg = Release|x86
 		{DDD9BFC4-311E-46A3-8CD4-2CDCEF07BA9A}.Release|x86.Build.0 = Release|x86
+		{BAE2508A-E950-4D8F-AA5B-B74B6095D08D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAE2508A-E950-4D8F-AA5B-B74B6095D08D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAE2508A-E950-4D8F-AA5B-B74B6095D08D}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{BAE2508A-E950-4D8F-AA5B-B74B6095D08D}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{BAE2508A-E950-4D8F-AA5B-B74B6095D08D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BAE2508A-E950-4D8F-AA5B-B74B6095D08D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAE2508A-E950-4D8F-AA5B-B74B6095D08D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BAE2508A-E950-4D8F-AA5B-B74B6095D08D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{BAE2508A-E950-4D8F-AA5B-B74B6095D08D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{BAE2508A-E950-4D8F-AA5B-B74B6095D08D}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

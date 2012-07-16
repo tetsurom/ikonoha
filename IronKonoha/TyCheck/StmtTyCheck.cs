@@ -125,7 +125,7 @@ namespace IronKonoha.TyCheck
 				}
 				if (lexpr.toVariable(ctx, stmt, gma, ty))
 				{
-					((ConsExpr)expr).Cons[1] = new ParamExpr(gma.vars.Last());
+					((ConsExpr)expr).Cons[1] = new ParamExpr(gma.lvar.Last());
 					if (expr.tyCheckAt(ctx, stmt, 2, gma, ty, 0) != null)
 					{
 						return appendAssignmentStmt(ctx, expr, lastStmtRef);
