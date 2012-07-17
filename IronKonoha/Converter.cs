@@ -163,7 +163,7 @@ namespace IronKonoha
 
 			var localVarExprs = environment.Gamma.lvar
 				.Skip(outerVariableSize)
-				.Select(v => Expression.Parameter(v.Type.Type, v.Name));
+				.Select(v => Expression.Parameter(v.Type.Type ?? typeof(object), v.Name));
 			if (environment.Locals == null)
 			{
 				environment.Locals = localVarExprs.ToList();
@@ -389,7 +389,15 @@ namespace IronKonoha
 				Token tk = expr.Cons[0] as Token ?? ((KonohaExpr)expr.Cons[0]).tk;
 				var argsize = expr.Cons.Count - 2;
 
-				var paramThis = new[] { Expression.Constant((expr.Cons[1] as ConstExpr<KonohaType>).Data) };
+				Expression[] paramThis = null;
+				if (expr.Cons[1] is ConstExpr<KonohaType>)
+				{
+					paramThis = new[] { Expression.Constant(((ConstExpr<KonohaType>)expr.Cons[1]).Data) };
+				}
+				else
+				{
+					paramThis = new[] { MakeExpression((ParamExpr)expr.Cons[1], environment) };
+				}
 				var param = expr.Cons.Skip(2).Select(c => MakeExpression((KonohaExpr)c, environment));
 
 				return Expression.Dynamic(

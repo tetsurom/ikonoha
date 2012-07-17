@@ -139,12 +139,18 @@ namespace IronKonoha.TyCheck
 		}
 		internal static KonohaExpr MethodCall(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)
 		{
-			var texpr = expr.tyCheckAt(gma.ks.ctx, stmt, 1, gma, KonohaType.Var, 0) as ConstExpr<KonohaType>;
-			if (texpr != null)
+			var texpr = expr.tyCheckAt(gma.ks.ctx, stmt, 1, gma, KonohaType.Var, 0);
+			if (texpr is ConstExpr<KonohaType> && texpr != null)
 			{
-				var this_cid = texpr.Data;
+				var this_cid = ((ConstExpr<KonohaType>)texpr).Data;
 				return expr.lookupMethod(gma.ks.ctx, stmt, this_cid, gma, reqty);
 			}
+			if (texpr is ParamExpr)
+			{
+				var this_cid = texpr.ty;
+				return expr.lookupMethod(gma.ks.ctx, stmt, this_cid, gma, reqty);
+			}
+
 			throw new NotImplementedException();
 		}
 

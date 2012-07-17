@@ -157,6 +157,7 @@ namespace IronKonoha
 			{
 				//throw new InvalidOperationException(string.Format("undefined Type: {0}", this.Text));
 				this.Type = ks.Classes[this.Text];
+				this.TokenType = TokenType.TYPE;
 				this.Keyword = KeyWordTable.Type;
 				return true;
 			}
