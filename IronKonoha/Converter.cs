@@ -95,7 +95,8 @@ namespace IronKonoha
 				{KeywordType.GTE ,ExpressionType.GreaterThanOrEqual},
 				{KeywordType.AND ,ExpressionType.And},
 				{KeywordType.OR  ,ExpressionType.Or},
-				{KeywordType.MOD ,ExpressionType.Modulo}
+				{KeywordType.MOD ,ExpressionType.Modulo},
+				{KeywordType.LET ,ExpressionType.Assign},
 			};
 		//internal static readonly Expression KEmptyString = Expression.Constant(null,typeof(KString));
 
