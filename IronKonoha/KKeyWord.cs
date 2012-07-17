@@ -53,6 +53,7 @@ namespace IronKonoha
 		If,
 		Else,
 		Return,
+		While,
 		Import,
 		New,
 	}
@@ -159,6 +160,7 @@ namespace IronKonoha
 		public static readonly KKeyWord If = new KKeyWord("if", KeywordType.If);
 		public static readonly KKeyWord Else = new KKeyWord("else", KeywordType.Else);
 		public static readonly KKeyWord Return = new KKeyWord("return", KeywordType.Return);
+		public static readonly KKeyWord While = new KKeyWord("while", KeywordType.While);
 
 		public static List<KKeyWord> Map = new List<KKeyWord>(){
 			Err,
@@ -205,7 +207,8 @@ namespace IronKonoha
 			False,
 			If,
 			Else,
-			Return
+			Return,
+			While
 		};
 	}
 }

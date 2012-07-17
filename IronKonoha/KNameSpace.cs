@@ -378,6 +378,13 @@ namespace IronKonoha
 					ParseExpr = ParseExpr_new,
 					kw = KeywordType.New,
 				},
+				new KDEFINE_SYNTAX(){
+					name = "while",
+					kw = KeywordType.While,
+					rule = "\"while\" \"(\" $expr \")\" $block",
+					StmtTyCheck = TyCheck.StmtTyCheck.While,
+					TopStmtTyCheck = TyCheck.StmtTyCheck.While,
+				},
 			};
 			defineSyntax(syntaxes);
 			//this.GetSyntax(KeywordType.Void).Type = KType.Void;

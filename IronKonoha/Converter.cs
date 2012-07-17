@@ -198,6 +198,10 @@ namespace IronKonoha
 			{
 				return MakeIfExpression(st.map, environment);
 			}
+			if (st.syn != null && st.syn.KeyWord == KeyWordTable.While || st.build == StmtType.LOOP)
+			{
+				return MakeWhileExpression(st.map, environment);
+			}
 			if (st.syn != null && st.syn.KeyWord == KeyWordTable.StmtMethodDecl)
 			{
 				return Expression.Empty();//MakeFuncDeclExpression(st.map);
@@ -356,6 +360,17 @@ namespace IronKonoha
 				return Expression.IfThen(cond, onTrue);
 			}
 			return Expression.IfThenElse(cond, onTrue, MakeBlockExpression(map[Symbols.Else], environment));
+		}
+
+		public LoopExpression MakeWhileExpression (Dictionary<dynamic, KonohaExpr> map, FunctionEnvironment environment)
+		{
+			Expression cond = MakeExpression(map[Symbols.Expr], environment);
+			if(cond.Type != typeof(bool)){
+				cond = Expression.Convert(cond, typeof(bool));
+			}
+			var label = Expression.Label();
+			var block = MakeBlockExpression(map[Symbols.Block], environment);
+			return Expression.Loop(Expression.IfThenElse(cond,block,Expression.Break(label)),label);
 		}
 
 		public Expression MakeConsExpression(ConsExpr expr, FunctionEnvironment environment)

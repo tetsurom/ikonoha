@@ -157,5 +157,18 @@ namespace IronKonoha.TyCheck
 			stmt.done();
 			return declType(stmt, expr, gma, stk.tk.Type, stmt);
 		}
+
+		internal static bool While(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			Debug.WriteLine("while statement ...");
+			bool ret = false;
+			Context ctx = gma.ks.ctx;
+			if(stmt.tyCheckExpr(ctx,KeywordType.Expr,gma, KonohaType.Boolean, 0)) {
+				BlockExpr bk = stmt.toBlock(ctx,ctx.Symbols.Block,null);
+				ret = bk.TyCheckAll(gma.ks.ctx,gma);
+				stmt.done();
+			}
+			return ret;
+		}
 	}
 }
