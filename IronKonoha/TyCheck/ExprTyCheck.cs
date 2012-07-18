@@ -199,9 +199,11 @@ namespace IronKonoha.TyCheck
 
 			var classes = gma.ks.Classes;
 			if(classes.ContainsKey(name)){
+				expr.tk.TokenType = TokenType.TYPE;
+				expr.tk.Keyword = KeyWordTable.Type;
 				return new ConstExpr<KonohaType>(classes[name])
 				{
-					syn = expr.syn,
+					syn = gma.ks.GetSyntax(KeyWordTable.Type),
 					tk = expr.tk,
 					build = expr.build,
 					parent = expr.parent
@@ -280,6 +282,14 @@ namespace IronKonoha.TyCheck
 				// FIXME: I can't find it is right way to make createinstance tree. But it's looked works.
 				if (expr0 is CreateInstanceExpr)
 				{
+					var newExpr = (CreateInstanceExpr)expr0;
+					if (newExpr.ty == null && newExpr.TypeName != null)
+					{
+						KonohaType cls = null;
+						if(gma.ks.Classes.TryGetValue(newExpr.TypeName, out cls)){
+							newExpr.ty = cls;
+						}
+					}
 					return expr0;
 				}
 				var mtd = expr.lookUpFuncOrMethod(gma.ks.ctx, gma, reqty);

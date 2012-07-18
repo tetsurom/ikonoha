@@ -76,6 +76,7 @@ namespace KFibo {
 			Assert(@"int fibo(int n){ if(n < 3){ return 1; }else{ return fibo(n-1) + fibo(n-2); }}; fibo(10);", 55);
 			Assert("int h(){ System s = new System(); s.p(\"a\"); return 0; }; h();", 0);
 			Assert("int whiletest(int n){ while( n > 0 ){  n = n - 1; }; return n; }; whiletest(10);", 0);
+			Assert(konoha.Eval(@"class EmptyClass{}; new EmptyClass();") is IronKonoha.KonohaInstance);
 			/*
 			konoha.Eval(@"
                 int fibo(int n){

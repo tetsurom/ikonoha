@@ -816,14 +816,22 @@ namespace IronKonoha
 			if(s + 2 < tls.Count) {
 				Token tk1 = tls[s+1];
 				Token tk2 = tls[s+2];
-				if(tk1.IsType)
+				if(/*tk1.IsType*/ true)
 				{
 					// new C(...)
-					if(tk1.IsType && tk2.TokenType == TokenType.AST_PARENTHESIS) {
+					if(/*tk1.IsType && */tk2.TokenType == TokenType.AST_PARENTHESIS) {
 						//var syn = SYN_(kStmt_ks(stmt), KW_ExprMethodCall);
 						var newsyn = stmt.ks.GetSyntax(KeyWordTable.ExprMethodCall);
-						var expr = new CreateInstanceExpr(tk1.Type, null) { syn = syn, tk = tk1 };
-						return expr;
+						if (tk1.IsType)
+						{
+							var expr = new CreateInstanceExpr(tk1.Type, null) { syn = syn, tk = tk1 };
+							return expr;
+						}
+						else
+						{
+							var expr = new CreateInstanceExpr(tk1.Text, null) { syn = syn, tk = tk1 };
+							return expr;
+						}
 					}
 					// new C [...]
 					if(tk1.IsType && tk2.TokenType == TokenType.AST_BRACKET) {
@@ -835,8 +843,10 @@ namespace IronKonoha
 						//return expr;
 					}
 				}
+				throw new InvalidOperationException(string.Format("{0} is not Type.", tls[s + 1].Text));
 			}
 			throw new InvalidOperationException();
+
 		}
 
 		public int packid { get; set; }

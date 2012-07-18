@@ -685,9 +685,17 @@ namespace IronKonoha
 	public class CreateInstanceExpr : KonohaExpr
 	{
 		public ConsExpr paramExpr { get; set; }
+		public string TypeName { get; private set; }
+
 		public CreateInstanceExpr(KonohaType type, ConsExpr param)
 		{
 			this.ty = type;
+			this.paramExpr = param;
+		}
+		public CreateInstanceExpr(string typename, ConsExpr param)
+		{
+			this.ty = null;
+			this.TypeName = typename;
 			this.paramExpr = param;
 		}
 
@@ -699,7 +707,7 @@ namespace IronKonoha
 				builder.Append(' ');
 			}
 			builder.Append("new ");
-			builder.Append(ty.Name);
+			builder.Append(ty == null ? tk.Text : ty.Name);
 			if (paramExpr != null)
 			{
 				builder.Append(System.Environment.NewLine);
