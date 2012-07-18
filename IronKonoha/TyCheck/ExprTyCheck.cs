@@ -264,7 +264,9 @@ namespace IronKonoha.TyCheck
 		{
 			//Debug.Assert(expr.tk.isType);
 			//return kExpr_setVariable(expr, NULL, expr.tk.ty, 0, gma);
-			throw new NotImplementedException();
+			//throw new NotImplementedException();
+			// FIXME: I don't know it is right way.....
+			return Symbol(stmt, expr, gma, reqty);
 		}
 
 		internal static KonohaExpr FuncStyleCall(KStatement stmt, KonohaExpr expr, KGamma gma, KonohaType reqty)

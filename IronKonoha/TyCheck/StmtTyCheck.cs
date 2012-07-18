@@ -170,5 +170,41 @@ namespace IronKonoha.TyCheck
 			}
 			return ret;
 		}
+
+		internal static bool Class(KStatement stmt, Syntax syn, KGamma gma)
+		{
+			Debug.WriteLine("class decl ...");
+			Token tkC = stmt.map[stmt.ks.Symbols.SYMBOL].tk;
+			var extendsExpr = stmt.Expr(stmt.ks.Symbols.Extends);
+			Token tkE = extendsExpr != null ? extendsExpr.tk : null;
+			int cflag = 0;
+			KonohaType supct = null;
+			if (tkE != null) {
+				Debug.Assert(tkE.Keyword == KeyWordTable.Usymbol);
+				supct = tkE.Type;
+				throw new NotImplementedException("Class extending has not supported yet.");
+				//if(supct.isFinal) {
+				//    throw new InvalidOperationException(string.Format("{0} is final", supct.Name));
+				//    return false;
+				//}
+				//if(!supct.isDefined) {
+				//    //SUGAR Stmt_p(_ctx, stmt, null, ERR_, "%s has undefined field(s)", CT_t(supct));
+				//    throw new InvalidOperationException(string.Format("{0} has undefined field(s)", supct.Name));
+				//    return false;
+				//}
+			}
+			KonohaType ct = gma.ks.defineClassName(cflag, tkC.Text, supct, stmt.ULine);
+			tkC.Keyword = KeyWordTable.Type;
+			tkC.Type = ct;
+			//stmt.parseClassBlock(tkC);
+			BlockExpr bk = stmt.Block(stmt.ks.Symbols.Block);
+			//ct.setField(ctx, ct, supct, checkFieldSize(ctx, bk));
+			//if(!ct.addClassFields(ctx, ct, gma, bk, stmt.ULine)) {
+			//    return false;
+			//}
+			stmt.done();
+			//ct.checkMethodDecl(ctx, tkC, bk, stmt);
+			return true;
+		}
 	}
 }

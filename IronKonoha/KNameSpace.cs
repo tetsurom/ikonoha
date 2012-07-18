@@ -309,7 +309,7 @@ namespace IronKonoha
 				},
 				new KDEFINE_SYNTAX(){
 					name = "void",
-					rule = "$type [$USYMBOL \".\"] $SYMBOL $params [$block]",
+					rule = "$type [$SYMBOL \".\"] $SYMBOL $params [$block]",
 					PatternMatch = PatternMatch.Type,
 					TopStmtTyCheck = TyCheck.TopStmtTyCheck.MethodDecl,
 					kw = KeywordType.StmtMethodDecl,
@@ -384,6 +384,17 @@ namespace IronKonoha
 					rule = "\"while\" \"(\" $expr \")\" $block",
 					StmtTyCheck = TyCheck.StmtTyCheck.While,
 					TopStmtTyCheck = TyCheck.StmtTyCheck.While,
+				},
+				new KDEFINE_SYNTAX(){
+					name = "extends",
+					kw = KeywordType.Extends,
+					rule = "\"extends\" $SYMBOL",
+				},
+				new KDEFINE_SYNTAX(){
+					name = "class",
+					kw = KeywordType.Class,
+					rule = "\"class\" $SYMBOL [\"extends\" extends: $SYMBOL] $block",
+					TopStmtTyCheck = TyCheck.StmtTyCheck.Class,
 				},
 			};
 			defineSyntax(syntaxes);
@@ -862,6 +873,17 @@ namespace IronKonoha
 			var mt = klass.GetMethod(name);
 			var param = mt.GetParameters().Select(p => new FuncParam(p.Name, new TypeWrapper(p.ParameterType))).ToList();
 			return new KFunc(this, KFuncFlag.Public, klass, name, param, null);
+		}
+
+		internal KonohaType defineClassName(int cflag, string name, KonohaType superclass, LineInfo lineInfo)
+		{
+			if (superclass is TypeWrapper)
+			{
+				throw new NotSupportedException("Extending CLR-Class has not supported yet.");
+			}
+			var cls = new KonohaClass(name, superclass as KonohaClass);
+			Classes.Add(cls.Name, cls);
+			return cls;
 		}
 	}
 }

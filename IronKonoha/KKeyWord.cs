@@ -56,6 +56,8 @@ namespace IronKonoha
 		While,
 		Import,
 		New,
+		Class,
+		Extends,
 	}
 
 	[System.Diagnostics.DebuggerDisplay("{Type} {Name}")]
@@ -161,6 +163,8 @@ namespace IronKonoha
 		public static readonly KKeyWord Else = new KKeyWord("else", KeywordType.Else);
 		public static readonly KKeyWord Return = new KKeyWord("return", KeywordType.Return);
 		public static readonly KKeyWord While = new KKeyWord("while", KeywordType.While);
+		public static readonly KKeyWord Class = new KKeyWord("class", KeywordType.Class);
+		public static readonly KKeyWord Extends = new KKeyWord("extends", KeywordType.Extends);
 
 		public static List<KKeyWord> Map = new List<KKeyWord>(){
 			Err,
@@ -208,7 +212,8 @@ namespace IronKonoha
 			If,
 			Else,
 			Return,
-			While
+			While,
+			Extends
 		};
 	}
 }

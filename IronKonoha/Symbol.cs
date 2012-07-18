@@ -80,6 +80,7 @@ namespace IronKonoha
 		public readonly Symbol SYMBOL;
 		public readonly Symbol Params;
 		public readonly Symbol Type;
+		public readonly Symbol Extends;
 		public readonly Symbol Noname;
 
 		internal SymbolConst(Context ctx)
@@ -91,6 +92,7 @@ namespace IronKonoha
 			SYMBOL = Symbol.Get(ctx, "SYMBOL");
 			Params = Symbol.Get(ctx, "params");
 			Type = Symbol.Get(ctx, "type");
+			Extends = Symbol.Get(ctx, "extends");
 			Noname = null;
 		}
 

@@ -207,6 +207,10 @@ namespace IronKonoha
 			{
 				return Expression.Empty();//MakeFuncDeclExpression(st.map);
 			}
+			if (st.syn != null && st.syn.KeyWord == KeyWordTable.Class)
+			{
+				return Expression.Empty();//MakeFuncDeclExpression(st.map);
+			}
 			if (st.syn != null && st.syn.KeyWord == KeyWordTable.Type)
 			{
 				var cons = st.Expr(ctx, ctx.Symbols.Expr);

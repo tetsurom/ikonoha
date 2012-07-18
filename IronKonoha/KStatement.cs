@@ -445,6 +445,10 @@ namespace IronKonoha
 		/// <param name="ctx"></param>
 		/// <param name="kw"></param>
 		/// <returns></returns>
+		public BlockExpr Block(Symbol kw)
+		{
+			return Expr(this.ks.ctx, kw, null) as BlockExpr;
+		}
 		public BlockExpr Block(Context ctx, Symbol kw)
 		{
 			return Expr(ctx, kw, null) as BlockExpr;
@@ -455,6 +459,10 @@ namespace IronKonoha
 		/// <param name="ctx"></param>
 		/// <param name="kw"></param>
 		/// <returns></returns>
+		public KonohaExpr Expr(Symbol kw)
+		{
+			return Expr(this.ks.ctx, kw, null);
+		}
 		public KonohaExpr Expr(Context ctx, Symbol kw)
 		{
 			return Expr(ctx, kw, null);
