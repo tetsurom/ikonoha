@@ -90,8 +90,8 @@ namespace IronKonoha
 		public static bool import(string name)
 		{
 			Console.WriteLine("importing {0} ...", name);
-			//FIXME return Package.load(ns, name);
-			return false;
+			//FIXME return Package.load(this, name);
+			return true;
 		}
 		// sugar.c
 		// static void defineDefaultSyntax(CTX, kKonohaSpace *ks)
@@ -882,12 +882,15 @@ namespace IronKonoha
 			 * */
 		}
 
-		public KFunc getMethod(KonohaType klass, string name)
+		public KFunc getMethod (KonohaType klass, string name)
 		{
-			klass = klass ?? Classes["System"];
-			var mt = klass.GetMethod(name);
-			var param = mt.GetParameters().Select(p => new FuncParam(p.Name, new TypeWrapper(p.ParameterType))).ToList();
-			return new KFunc(this, KFuncFlag.Public, klass, name, param, null);
+			klass = klass ?? Classes ["System"];
+			var mt = klass.GetMethod (name);
+			if (mt != null) {
+				var param = mt.GetParameters ().Select (p => new FuncParam (p.Name, new TypeWrapper (p.ParameterType))).ToList ();
+				return new KFunc (this, KFuncFlag.Public, klass, name, param, null);
+			}
+			return null;
 		}
 
 		internal KonohaType defineClassName(int cflag, string name, KonohaType superclass, LineInfo lineInfo)

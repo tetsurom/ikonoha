@@ -90,7 +90,7 @@ namespace IronKonoha.TyCheck
 				gma.ks.ctx,
 				gma.ks.GetSyntax(KeyWordTable.DOT),
 				new Token(TokenType.SYMBOL, "import", 0),
-				new ConstExpr<KonohaType>(new TypeWrapper(typeof(IronKonoha.Runtime.K))) { tk = new Token(TokenType.SYMBOL, "K", 0), build = ExprType.CONST },
+				new ConstExpr<KonohaType>(new TypeWrapper(typeof(IronKonoha.KNameSpace))) { tk = new Token(TokenType.SYMBOL, "K", 0), build = ExprType.CONST },
 				new ConstExpr<string>(packageName)) {
 					tk = new Token(TokenType.TEXT, packageName, 0),
 					build = ExprType.CONST,

@@ -6,7 +6,7 @@ namespace IronKonoha
 {
 	public class Package
 	{
-		static void load (KNameSpace ns, string pkgname)
+		public static bool load (KNameSpace ns, string pkgname)
 		{
 			Assembly asm = Assembly.LoadFile (pkgname);
 			if (pkgname.EndsWith (".*")) {
@@ -15,7 +15,7 @@ namespace IronKonoha
 			string clsName = pkgname.Split('.').Last();
     	    Type class1 = asm.GetType("KonohaLibrary."+clsName);
 	        MethodInfo myMethod = class1.GetMethod("import");
-			myMethod.Invoke(null, new object[] {ns});
+			return (bool) myMethod.Invoke(null, new object[] {ns});
 		}
 	}
 	public interface IKonohaPackageLoadable {
