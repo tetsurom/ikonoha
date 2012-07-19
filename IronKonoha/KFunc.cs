@@ -31,6 +31,7 @@ namespace IronKonoha
 		public string Name { get; private set; }
 		public string Body { get; private set; }
 		public KonohaType ReturnType { get; set; }
+		public KonohaType Class { get; set; }
 		private IEnumerable<FuncParam> param { get; set; }
 		public KFuncFlag flag { get; set; }
 		public IEnumerable<string> paramNames

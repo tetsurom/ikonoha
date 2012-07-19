@@ -794,5 +794,10 @@ namespace IronKonoha
 			//}
 			return result;
 		}
+
+		internal void insertAfter(KStatement target, KStatement stmt)
+		{
+			this.blocks.Insert(this.blocks.IndexOf(target) + 1, stmt);
+		}
 	}
 }

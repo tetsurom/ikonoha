@@ -193,17 +193,17 @@ namespace IronKonoha.TyCheck
 				//    return false;
 				//}
 			}
-			KonohaType ct = gma.ks.defineClassName(cflag, tkC.Text, supct, stmt.ULine);
+			KonohaClass ct = gma.ks.defineClassName(cflag, tkC.Text, supct, stmt.ULine);
 			tkC.Keyword = KeyWordTable.Type;
 			tkC.Type = ct;
-			//stmt.parseClassBlock(tkC);
+			stmt.parseClassBlock(tkC);
 			BlockExpr bk = stmt.Block(stmt.ks.Symbols.Block);
 			//ct.setField(ctx, ct, supct, checkFieldSize(ctx, bk));
 			//if(!ct.addClassFields(ctx, ct, gma, bk, stmt.ULine)) {
 			//    return false;
 			//}
 			stmt.done();
-			//ct.checkMethodDecl(ctx, tkC, bk, stmt);
+			ct.checkMethodDecl(gma.ks.ctx, tkC, bk, stmt);
 			return true;
 		}
 	}

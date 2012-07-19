@@ -547,5 +547,36 @@ namespace IronKonoha
 			return def;
 		}
 
+		internal void parseClassBlock(IronKonoha.Token tkC)
+		{
+			Token tkP = this.map[this.ks.Symbols.Block].tk;
+			if(tkP != null && tkP.TokenType == TokenType.CODE) {
+				//var a = ctxsugar.tokens;
+				//size_t atop = kArray_size(a), s, i;
+				var a = this.ks.tokenize(tkP.Text);//, tkP.uline, a);
+				var tgt = new List<Token>();
+				var cname = tkC.Text;
+				foreach(Token tk in a) {
+					Debug.WriteLine("cname='{0}'", cname);
+					if(tk.Text[0] == '(' && tkP.TokenType == TokenType.SYMBOL && cname == tkP.Text) {
+						Token tkNEW = new Token(TokenType.SYMBOL, "new", 0)
+						{
+							ULine = tkP.ULine,
+						};
+						tgt.Add(tkNEW);
+					}
+					tgt.Add(tk);
+					tkP = tk;
+				}
+				var bk = new Parser(ks.ctx, ks).CreateBlock(this, tgt, 0, a.Count, ';');
+				foreach (var methodDecl in bk.blocks)
+				{
+					if(methodDecl.syn.KeyWord == KeyWordTable.StmtMethodDecl) {
+						methodDecl.map[ks.Symbols.USYMBOL] = new TermExpr(){ tk = tkC };
+					}
+				}
+				map[ks.Symbols.Block] = bk;
+			}
+		}
 	}
 }

@@ -16,12 +16,20 @@ namespace IronKonoha.TyCheck
 			//kmethodn_t mn = Stmt_getmn(_ctx, stmt, ks, KW_Symbol, MN_new);
 			string name = stmt.map[ks.Symbols.SYMBOL].tk.Text;
 			string body = stmt.map[ks.Symbols.Block].tk.Text;
+			string klass = null;
+			if (stmt.map.ContainsKey(ks.Symbols.USYMBOL))
+			{
+				klass = stmt.map[ks.Symbols.USYMBOL].tk.Text;
+			}
 			//kParam* pa = Stmt_newMethodParamNULL(_ctx, stmt, gma);
 			var pa = (stmt.map[ks.Symbols.Params] as BlockExpr).blocks;
 			//if (TY_isSingleton(cid)) flag |= kMethod_Static;
 			if (pa != null)
 			{
-				var mtd = new KFunc(ks, flag, cid, name, pa, body);
+				var mtd = new KFunc(ks, flag, cid, name, pa, body)
+				{
+					Class = ks.Classes.ContainsKey(klass) ? ks.Classes[klass] : null,
+				};
 				if (ks.DefineMethod(mtd, stmt.ULine))
 				{
 					r = true;

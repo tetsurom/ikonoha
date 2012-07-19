@@ -747,7 +747,8 @@ namespace IronKonoha
 
 			object cache = Activator.CreateInstance(fctype, new Converter(ctx, this), mtd.Body, args, mtd);
 			Type type = cache.GetType();
-			((KonohaClass)Classes["System"]).Methods[mtd.Name] = type.GetProperty("Invoke").GetValue(cache, null);
+			KonohaClass Class = mtd.Class as KonohaClass ?? ((KonohaClass)Classes["System"]);
+			Class.Methods[mtd.Name] = type.GetProperty("Invoke").GetValue(cache, null);
 
 			//type.GetProperty("Scope").SetValue()
 			//cache.Scope = this.Scope;
@@ -893,7 +894,7 @@ namespace IronKonoha
 			return null;
 		}
 
-		internal KonohaType defineClassName(int cflag, string name, KonohaType superclass, LineInfo lineInfo)
+		internal KonohaClass defineClassName(int cflag, string name, KonohaType superclass, LineInfo lineInfo)
 		{
 			if (superclass is TypeWrapper)
 			{

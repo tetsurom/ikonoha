@@ -265,6 +265,20 @@ namespace IronKonoha
 			return ((Delegate)Methods[name]).Method;
 		}
 
+
+		internal void checkMethodDecl(Context ctx, Token tkC, BlockExpr bk, KStatement lastStmt)
+		{
+			foreach(KStatement stmt in bk.blocks) {
+				if(stmt.syn.KeyWord == KeyWordTable.StmtTypeDecl) continue;
+				if(stmt.syn.KeyWord == KeyWordTable.StmtMethodDecl) {
+					lastStmt.parent.insertAfter(lastStmt, stmt);
+					lastStmt = stmt;
+				}
+				else {
+					//Stmt_p(_ctx, stmt, NULL, WARN_, "%s is not available within the class clause", KW_t(stmt->syn->kw));
+				}
+			}
+		}
 	}
 
 	public class KonohaClassMetaObject : DynamicMetaObject

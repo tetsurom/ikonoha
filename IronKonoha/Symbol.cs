@@ -78,6 +78,7 @@ namespace IronKonoha
 		public readonly Symbol If;
 		public readonly Symbol Else;
 		public readonly Symbol SYMBOL;
+		public readonly Symbol USYMBOL;
 		public readonly Symbol Params;
 		public readonly Symbol Type;
 		public readonly Symbol Extends;
@@ -90,6 +91,7 @@ namespace IronKonoha
 			If = Symbol.Get(ctx, "if");
 			Else = Symbol.Get(ctx, "else");
 			SYMBOL = Symbol.Get(ctx, "SYMBOL");
+			USYMBOL = Symbol.Get(ctx, "USYMBOL");
 			Params = Symbol.Get(ctx, "params");
 			Type = Symbol.Get(ctx, "type");
 			Extends = Symbol.Get(ctx, "extends");
