@@ -71,7 +71,7 @@ namespace IronKonoha
 			Classes = new Dictionary<string, KonohaType>();
 
 			//Classes.Add("System", KonohaType.System);
-			Classes.Add("K", new TypeWrapper(typeof(IronKonoha.Runtime.K)));
+			Classes.Add("K", new TypeWrapper(typeof(KNameSpace)));
 			Classes.Add("Math", new TypeWrapper(typeof(System.Math)));
 
 			var system = new KonohaClass("System", null);
@@ -87,7 +87,12 @@ namespace IronKonoha
 		{
 			this.ctx = ctx;
 		}
-
+		public static bool import(string name)
+		{
+			Console.WriteLine("importing {0} ...", name);
+			//FIXME return Package.load(ns, name);
+			return false;
+		}
 		// sugar.c
 		// static void defineDefaultSyntax(CTX, kKonohaSpace *ks)
 		private void defineDefaultSyntax()

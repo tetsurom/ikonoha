@@ -47,7 +47,6 @@
     <Compile Include="KKeyWord.cs" />
     <Compile Include="KonohaClass.cs" />
     <Compile Include="Runtime\Binder.cs" />
-    <Compile Include="Runtime\K.cs" />
     <Compile Include="Runtime\System.cs" />
     <Compile Include="Runtime\Utilities.cs" />
     <Compile Include="TyCheck\ExprTyCheck.cs" />
