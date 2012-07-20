@@ -28,7 +28,7 @@ namespace IronKonoha.TyCheck
 			{
 				var mtd = new KFunc(ks, flag, cid, name, pa, body)
 				{
-					Class = ks.Classes.ContainsKey(klass) ? ks.Classes[klass] : null,
+					Class = klass != null && ks.Classes.ContainsKey(klass) ? ks.Classes[klass] : null,
 				};
 				if (ks.DefineMethod(mtd, stmt.ULine))
 				{
