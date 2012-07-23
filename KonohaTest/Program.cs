@@ -77,6 +77,8 @@ namespace KFibo {
 			Assert("int h(){ System s = new System(); s.p(\"a\"); return 0; }; h();", 0);
 			Assert("int whiletest(int n){ while( n > 0 ){  n = n - 1; }; return n; }; whiletest(10);", 0);
 			Assert(konoha.Eval(@"class EmptyClass{}; new EmptyClass();") is IronKonoha.KonohaInstance);
+			Assert("int N = 100;", 100);
+			Assert("N;", 100);
 			/*
 			konoha.Eval(@"
                 int fibo(int n){

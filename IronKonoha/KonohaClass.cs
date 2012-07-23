@@ -380,6 +380,29 @@ namespace IronKonoha
 		internal override object GetDefault(){
 			return null;
 		}
+
+		public object SetStaticFieldsEntry(string key, object value)
+		{
+			if (StaticFields.ContainsKey(key))
+			{
+				StaticFields[key] = value;
+			}
+			else
+			{
+				StaticFields.Add(key, value);
+			}
+			return value;
+		}
+
+		public object GetStaticFieldsEntry(string key)
+		{
+			object result = null;
+			if (StaticFields.ContainsKey(key))
+			{
+				result = StaticFields[key];
+			}
+			return result;
+		}
 	}
 
 	public class KonohaClassMetaObject : DynamicMetaObject
@@ -393,19 +416,73 @@ namespace IronKonoha
 
 		public override DynamicMetaObject BindGetMember(GetMemberBinder binder)
 		{
-			object val;
-			if(Class.TryFindMember(binder.Name, out val)){
-				return new DynamicMetaObject(
-					Expression.Constant(val),
-					this.Restrictions.Merge(
-						BindingRestrictions.GetInstanceRestriction(
-							this.Expression,
-							this.Value)
-					)
-				);
-			}
-			return binder.FallbackGetMember(this);
+			// Method call in the containing class:
+			string methodName = "GetStaticFieldsEntry";
+
+			// One parameter
+			Expression[] parameters = new Expression[]
+            {
+                Expression.Constant(binder.Name)
+            };
+
+			var methodCall = Expression.Call(
+				Expression.Convert(Expression, LimitType),
+				typeof(KonohaClass).GetMethod(methodName),
+				parameters);
+
+			DynamicMetaObject getFieldEntry = new DynamicMetaObject(
+				methodCall,
+				BindingRestrictions.GetTypeRestriction(Expression, LimitType));
+			return getFieldEntry;
 		}
+
+		public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
+		{
+			// Method to call in the containing class:
+			string methodName = "SetStaticFieldsEntry";
+
+			// setup the binding restrictions.
+			BindingRestrictions restrictions =
+				BindingRestrictions.GetTypeRestriction(Expression, LimitType);
+
+			// setup the parameters:
+			Expression[] args = new Expression[2];
+			// First parameter is the name of the property to Set
+			args[0] = Expression.Constant(binder.Name);
+			// Second parameter is the value
+			args[1] = Expression.Convert(value.Expression, typeof(object));
+
+			// Setup the 'this' reference
+			Expression self = Expression.Convert(Expression, LimitType);
+
+			// Setup the method call expression
+			Expression methodCall = Expression.Call(self,
+					typeof(KonohaClass).GetMethod(methodName),
+					args);
+
+			// Create a meta object to invoke Set later:
+			DynamicMetaObject setFieldsEntry = new DynamicMetaObject(
+				methodCall,
+				restrictions);
+			// return that dynamic object
+			return setFieldsEntry;
+		}
+
+		//public override DynamicMetaObject BindGetMember(GetMemberBinder binder)
+		//{
+		//    object val;
+		//    if(Class.TryFindMember(binder.Name, out val)){
+		//        return new DynamicMetaObject(
+		//            Expression.Constant(val),
+		//            this.Restrictions.Merge(
+		//                BindingRestrictions.GetInstanceRestriction(
+		//                    this.Expression,
+		//                    this.Value)
+		//            )
+		//        );
+		//    }
+		//    return binder.FallbackGetMember(this);
+		//}
 
 		public override DynamicMetaObject BindInvokeMember(
 			InvokeMemberBinder binder, DynamicMetaObject[] args)

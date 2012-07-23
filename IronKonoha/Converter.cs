@@ -214,10 +214,25 @@ namespace IronKonoha
 			if (st.syn != null && st.syn.KeyWord == KeyWordTable.Type)
 			{
 				var cons = st.Expr(ctx, ctx.Symbols.Expr);
-				var variable = MakeExpression(cons.GetConsAt<KonohaExpr>(1), environment);
-				var value = MakeExpression(cons.GetConsAt<KonohaExpr>(2), environment);
-				Debug.Assert(variable is ParameterExpression);
-				return Expression.Assign(variable, value);
+				try
+				{
+					// local variable decl;
+					var variable = MakeExpression(cons.GetConsAt<KonohaExpr>(1), environment);
+					var value = MakeExpression(cons.GetConsAt<KonohaExpr>(2), environment);
+					Debug.Assert(variable is ParameterExpression);
+					return Expression.Assign(variable, value);
+				}
+				catch (InvalidOperationException)
+				{
+					// grobal variable;
+					var name = cons.GetConsAt<ParamExpr>(1).Name;
+					var value = MakeExpression(cons.GetConsAt<KonohaExpr>(2), environment);
+					return Expression.Dynamic(
+						new Runtime.KonohaSetMemberBinder(name),
+						typeof(object),
+						Expression.Constant(ks.Classes["System"]),
+						value);
+				}
 			}
 			if (st.syn != null && st.syn.KeyWord == KeyWordTable.Return || st.build == StmtType.RETURN)
 			{
@@ -326,7 +341,7 @@ namespace IronKonoha
 		public Expression MakeExpression(ParamExpr kexpr, FunctionEnvironment environment)
 		{
 			// search local variables
-			if (environment.Locals != null)
+			if (environment != null && environment.Locals != null)
 			{
 				foreach (var p in environment.Locals.Reverse<ParameterExpression>())
 				{
@@ -336,12 +351,20 @@ namespace IronKonoha
 					}
 				}
 			}
-			if (kexpr.Order < 0)
+			// check it is parameter or not.
+			if (kexpr.Order >= 0)
 			{
-				throw new InvalidOperationException(string.Format("undefined local variable or parameter: {0}",  kexpr.Name));
+				// add 1 because params[0] is 'this' object.
+				return environment.Params[kexpr.Order + 1];
 			}
-			// add 1 because params[0] is 'this' object.
-			return environment.Params[kexpr.Order + 1];
+			// search grobal variables.
+			object val;
+			if (((KonohaClass)ks.Classes["System"]).Fields.TryGetValue(kexpr.Name, out val))
+			{
+				return Expression.Constant(val);
+			}
+
+			throw new InvalidOperationException(string.Format("undefined field, grobal/local variable or parameter: {0}", kexpr.Name));
 		}
 
 		public Expression MakeExpression(KonohaExpr kexpr, FunctionEnvironment environment)

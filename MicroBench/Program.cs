@@ -27,12 +27,12 @@ namespace MicroBench
 			var ret = string.Format("PASSED {0}", program);
 			try
 			{
-				ret = konoha.Eval(program);
+				konoha.Eval(program);
 			}
-			/*catch (Exception e)
+			catch (Exception e)
 			{
-				ret = string.Format("FAILED {0} {1}", program, e.ToString());
-			}*/
+				ret = string.Format("FAILED {0}"/* {1}"*/, program);//, e.ToString());
+			}
 			finally { }
 			Console.WriteLine(ret);
 		}
