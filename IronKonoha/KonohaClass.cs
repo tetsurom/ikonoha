@@ -5,6 +5,7 @@ using System.Text;
 using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Diagnostics;
 
 namespace IronKonoha
 {
@@ -38,6 +39,9 @@ namespace IronKonoha
 		public abstract DynamicMetaObject GetMetaObject(Expression parameter);
 
 		public abstract MethodInfo GetMethod(string name);
+		public abstract int GetFieldSize();
+
+		internal abstract object GetDefault();
 	}
 
 
@@ -96,6 +100,15 @@ namespace IronKonoha
 			return !(a == b);
 		}
 
+		internal override object GetDefault()
+		{
+			return Type.IsValueType ? Activator.CreateInstance(Type) : null;
+		}
+
+		public override int GetFieldSize()
+		{
+			return Type.GetFields().Length;
+		}
 	}
 
 	public class TypeWrapperMetaObject : DynamicMetaObject
@@ -209,6 +222,9 @@ namespace IronKonoha
 		}
 	}
 
+	[Flags]
+	enum KFieldFlag { Getter, Setter };
+
 	[System.Diagnostics.DebuggerDisplay("KonohaClass: {Name}")]
 	public class KonohaClass : KonohaType
 	{
@@ -265,6 +281,10 @@ namespace IronKonoha
 			return ((Delegate)Methods[name]).Method;
 		}
 
+		public override int GetFieldSize()
+		{
+			return Fields.Count();
+		}
 
 		internal void checkMethodDecl(Context ctx, Token tkC, BlockExpr bk, KStatement lastStmt)
 		{
@@ -278,6 +298,87 @@ namespace IronKonoha
 					//Stmt_p(_ctx, stmt, NULL, WARN_, "%s is not available within the class clause", KW_t(stmt->syn->kw));
 				}
 			}
+		}
+
+		[Obsolete("this method is not necessary in C#.", true)]
+		internal void setField(Context ctx, KonohaType supct, int fctsize)
+		{
+			throw new NotImplementedException();
+		}
+
+		internal bool addClassFields(Context ctx, KGamma gma, BlockExpr bk, LineInfo pline)
+		{
+			foreach (KStatement stmt in bk.blocks)
+			{
+				if (stmt.syn.KeyWord == KeyWordTable.StmtTypeDecl)
+				{
+					Debug.Assert(stmt.map.ContainsKey(ctx.Symbols.Type));
+					Debug.Assert(stmt.map.ContainsKey(ctx.Symbols.Expr));
+					KFieldFlag flag = KFieldFlag.Getter | KFieldFlag.Setter;
+					var tk = stmt.map[ctx.Symbols.Type].tk;
+					var expr = stmt.map[ctx.Symbols.Expr];
+					if (!this.declType(ctx, gma, stmt, expr, flag, tk.Type, pline))
+					{
+						return false;
+					}
+				}
+			}
+			//DBG_ASSERT(ct->fsize == ct->fallocsize);
+			//DBG_P("all fields are set");
+			//KLIB2_setGetterSetter(ctx, ct);
+			return true;
+		}
+
+		private bool declType(Context ctx, KGamma gma, KStatement stmt, KonohaExpr expr, KFieldFlag flag, KonohaType ty, LineInfo pline)
+		{
+			if(expr is TermExpr) {
+				var name = expr.tk.Text;
+				this.defineField(ctx, flag, ty, name, ty.GetDefault(), 0);
+				return true;
+			}
+			else if(expr.syn.KeyWord == KeyWordTable.LET) {
+				var lexpr = expr.GetConsAt(1);
+				if(lexpr is TermExpr) {
+					var vexpr = expr.tyCheckAt(ctx, stmt, 2, gma, ty, 0);
+					if(vexpr == null) {
+						return false;
+					}
+					var name = expr.tk.Text;
+					if(vexpr.build == ExprType.CONST) {
+						this.defineField(ctx, flag, ty, name, vexpr.Data, 0);
+					}
+					else if(vexpr.build == ExprType.NCONST) {
+						this.defineField(ctx, flag, ty, name, vexpr.Data, 0);
+					}
+					else if(vexpr.build == ExprType.NULL) {
+						this.defineField(ctx, flag, ty, name, ty.GetDefault(), 0);
+					}
+					else {
+						//SUGAR Stmt_p(_ctx, stmt, NULL, ERR_, "const value is expected as the field initial value: %s", S_text(name));
+						return false;
+					}
+					return true;
+				}
+			}
+			else if (expr.syn.KeyWord == KeyWordTable.COMMA)
+			{
+				ConsExpr cons = (ConsExpr)expr;
+				foreach(var con in cons.Cons){
+					if(!this.declType(ctx, gma, stmt, (KonohaExpr)con, flag, ty, pline)) return false;
+				}
+				return true;
+			}
+			//Stmt_p(_ctx, stmt, NULL, ERR_, "field name is expected");
+			return false;
+		}
+
+		private void defineField(Context ctx, KFieldFlag flag, KonohaType ty, string name, object defaultValue, int p_2)
+		{
+			Fields[name] = defaultValue;
+		}
+
+		internal override object GetDefault(){
+			return null;
 		}
 	}
 
@@ -383,6 +484,29 @@ namespace IronKonoha
 		{
 			return new KonohaInstanceMetaObject(parameter, this);
 		}
+
+		public object SetFieldsEntry(string key, object value)
+		{
+			if (Fields.ContainsKey(key))
+			{
+				Fields[key] = value;
+			}
+			else
+			{
+				Fields.Add(key, value);
+			}
+			return value;
+		}
+
+		public object GetFieldsEntry(string key)
+		{
+			object result = null;
+			if (Fields.ContainsKey(key))
+			{
+				result = Fields[key];
+			}
+			return result;
+		}
 	}
 
 	public class KonohaInstanceMetaObject : DynamicMetaObject
@@ -399,7 +523,7 @@ namespace IronKonoha
 		{
 			this.Instance = instance;
 		}
-
+		/*
 		public override DynamicMetaObject BindGetMember(GetMemberBinder binder)
 		{
 			object val;
@@ -416,9 +540,63 @@ namespace IronKonoha
 			}
 			return binder.FallbackGetMember(this);
 		}
+		 * */
 
-		public override DynamicMetaObject BindInvokeMember(
-			InvokeMemberBinder binder, DynamicMetaObject[] args)
+		public override DynamicMetaObject BindGetMember(GetMemberBinder binder)
+		{
+			// Method call in the containing class:
+			string methodName = "GetFieldsEntry";
+
+			// One parameter
+			Expression[] parameters = new Expression[]
+            {
+                Expression.Constant(binder.Name)
+            };
+
+			var methodCall = Expression.Call(
+				Expression.Convert(Expression, LimitType),
+				typeof(KonohaInstance).GetMethod(methodName),
+				parameters);
+
+			DynamicMetaObject getFieldEntry = new DynamicMetaObject(
+				methodCall,
+				BindingRestrictions.GetTypeRestriction(Expression, LimitType));
+			return getFieldEntry;
+		}
+
+		public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
+		{
+			// Method to call in the containing class:
+			string methodName = "SetFieldsEntry";
+
+			// setup the binding restrictions.
+			BindingRestrictions restrictions =
+				BindingRestrictions.GetTypeRestriction(Expression, LimitType);
+
+			// setup the parameters:
+			Expression[] args = new Expression[2];
+			// First parameter is the name of the property to Set
+			args[0] = Expression.Constant(binder.Name);
+			// Second parameter is the value
+			args[1] = Expression.Convert(value.Expression, typeof(object));
+
+			// Setup the 'this' reference
+			Expression self = Expression.Convert(Expression, LimitType);
+
+			// Setup the method call expression
+			Expression methodCall = Expression.Call(self,
+					typeof(KonohaInstance).GetMethod(methodName),
+					args);
+
+			// Create a meta object to invoke Set later:
+			DynamicMetaObject setFieldsEntry = new DynamicMetaObject(
+				methodCall,
+				restrictions);
+			// return that dynamic object
+			return setFieldsEntry;
+		}
+
+		public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
 		{
 			if (Class.Methods.ContainsKey(binder.Name))
 			{

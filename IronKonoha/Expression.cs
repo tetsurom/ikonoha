@@ -244,6 +244,14 @@ namespace IronKonoha
 		{
 			throw new NotSupportedException("toVariable is supported only on TermExpr");
 		}
+
+		public virtual object Data
+		{
+			get
+			{
+				throw new NotSupportedException("data property is supported only on ConstExpr");
+			}
+		}
 	}
 
 	[System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
@@ -552,7 +560,7 @@ namespace IronKonoha
 			}
 			if (Cons[1] is ConstExpr<KonohaType>)
 			{
-				throw new InvalidOperationException(string.Format("undefined function or method: {0}.{1}", ((ConstExpr<KonohaType>)Cons[1]).Data.Name, funcName));
+				throw new InvalidOperationException(string.Format("undefined function or method: {0}.{1}", ((ConstExpr<KonohaType>)Cons[1]).TypedData.Name, funcName));
 			}
 			throw new InvalidOperationException(string.Format("undefined function or method: {0}", funcName));
 		}
@@ -628,10 +636,10 @@ namespace IronKonoha
 	{
 		public ConstExpr(T data)
 		{
-			Data = data;
+			TypedData = data;
 			ty = new TypeWrapper(typeof(T));
 		}
-		public T Data { get; set; }
+		public T TypedData { get; set; }
 
 		public override string GetDebugView(int indent)
 		{
@@ -640,7 +648,7 @@ namespace IronKonoha
 			{
 				builder.Append(' ');
 			}
-			builder.Append(Data.ToString());
+			builder.Append(TypedData.ToString());
 			return builder.ToString();
 		}
 		public override string GetSourceView(int indent)
@@ -650,8 +658,15 @@ namespace IronKonoha
 			{
 				builder.Append(' ');
 			}
-			builder.Append(Data.ToString());
+			builder.Append(TypedData.ToString());
 			return builder.ToString();
+		}
+		public override object Data
+		{
+			get
+			{
+				return TypedData;
+			}
 		}
 	}
 
@@ -798,6 +813,33 @@ namespace IronKonoha
 		internal void insertAfter(KStatement target, KStatement stmt)
 		{
 			this.blocks.Insert(this.blocks.IndexOf(target) + 1, stmt);
+		}
+
+		internal int checkFieldSize(Context ctx)
+		{
+			int c = 0;
+			foreach (var stmt in blocks)
+			{
+				Debug.WriteLine("stmt->kw={0}", stmt.syn.KeyWord);
+				if (stmt.syn.KeyWord == KeyWordTable.StmtTypeDecl)
+				{
+					ConsExpr expr = stmt.Expr(ctx.Symbols.Expr) as ConsExpr;
+					if (expr != null)
+					{
+						if (expr.syn.KeyWord == KeyWordTable.COMMA)
+						{
+							// int a,b,c,...;
+							c += (expr.Cons.Count - 1);
+						}
+						else if (expr.syn.KeyWord == KeyWordTable.LET || stmt.Expr(ctx.Symbols.Expr) is TermExpr)
+						{
+							// int a = 1; or int a;
+							c++;
+						}
+					}
+				}
+			}
+			return c;
 		}
 	}
 }

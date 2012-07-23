@@ -198,10 +198,11 @@ namespace IronKonoha.TyCheck
 			tkC.Type = ct;
 			stmt.parseClassBlock(tkC);
 			BlockExpr bk = stmt.Block(stmt.ks.Symbols.Block);
-			//ct.setField(ctx, ct, supct, checkFieldSize(ctx, bk));
-			//if(!ct.addClassFields(ctx, ct, gma, bk, stmt.ULine)) {
-			//    return false;
-			//}
+			//ct.setField(gma.ks.ctx, supct, bk.checkFieldSize(gma.ks.ctx));
+			if (!ct.addClassFields(gma.ks.ctx, gma, bk, stmt.ULine))
+			{
+			    return false;
+			}
 			stmt.done();
 			ct.checkMethodDecl(gma.ks.ctx, tkC, bk, stmt);
 			return true;

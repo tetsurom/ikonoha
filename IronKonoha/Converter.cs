@@ -311,7 +311,7 @@ namespace IronKonoha
 
 		public Expression MakeExpression<T>(ConstExpr<T> kexpr, FunctionEnvironment environment)
 		{
-			return Expression.Constant(kexpr.Data);
+			return Expression.Constant(kexpr.TypedData);
 		}
 
 		public Expression MakeExpression(CreateInstanceExpr kexpr, FunctionEnvironment environment)
@@ -325,6 +325,7 @@ namespace IronKonoha
 
 		public Expression MakeExpression(ParamExpr kexpr, FunctionEnvironment environment)
 		{
+			// search local variables
 			if (environment.Locals != null)
 			{
 				foreach (var p in environment.Locals.Reverse<ParameterExpression>())
@@ -335,11 +336,11 @@ namespace IronKonoha
 					}
 				}
 			}
-			// add 1 because params[0] is 'this' object.
 			if (kexpr.Order < 0)
 			{
 				throw new InvalidOperationException(string.Format("undefined local variable or parameter: {0}",  kexpr.Name));
 			}
+			// add 1 because params[0] is 'this' object.
 			return environment.Params[kexpr.Order + 1];
 		}
 
@@ -383,10 +384,39 @@ namespace IronKonoha
 			if (expr.syn.KeyWord == KeyWordTable.DOT)
 			{
 				Token tk = expr.Cons[0] as Token;
+				var typeexpr = (expr.Cons[1] as ConstExpr<KonohaType>);
+				if (typeexpr != null)
+				{
+					// static field access
+					var klass = typeexpr.TypedData.Type;
+					return Expression.Dynamic(
+						new Runtime.KonohaGetMemberBinder(tk.Text),
+						typeof(object),
+						Expression.Constant(klass)
+					);
+				}
+				else
+				{
+					// instance field access
+					var obj = MakeExpression((KonohaExpr)expr.Cons[1], environment);
+					return Expression.Dynamic(
+						new Runtime.KonohaGetMemberBinder(tk.Text),
+						typeof(object),
+						obj);
+				}
+
+			}
+			else if (expr.syn.KeyWord == KeyWordTable.LET && expr.Cons[1] is ConsExpr)
+			{
+				ConsExpr cons = (ConsExpr)expr.Cons[1];
+				string fieldName = (cons.GetConsAt<Token>(0)).Text;
+				Expression obj = MakeExpression(cons.GetConsAt<KonohaExpr>(1), environment);
+				Expression val = MakeExpression(expr.GetConsAt<KonohaExpr>(1), environment);
 				return Expression.Dynamic(
-					new Runtime.KonohaGetMemberBinder(tk.Text),
+					new Runtime.KonohaSetMemberBinder(fieldName),
 					typeof(object),
-					Expression.Constant((expr.Cons[1] as ConstExpr<KonohaType>).Data)
+					obj,
+					val
 				);
 			}
 			else if (expr.syn.KeyWord == KeyWordTable.Params || expr.syn.KeyWord == KeyWordTable.Parenthesis)
@@ -397,7 +427,7 @@ namespace IronKonoha
 				Expression[] paramThis = null;
 				if (expr.Cons[1] is ConstExpr<KonohaType>)
 				{
-					paramThis = new[] { Expression.Constant(((ConstExpr<KonohaType>)expr.Cons[1]).Data) };
+					paramThis = new[] { Expression.Constant(((ConstExpr<KonohaType>)expr.Cons[1]).TypedData) };
 				}
 				else
 				{

@@ -142,7 +142,7 @@ namespace IronKonoha.TyCheck
 			var texpr = expr.tyCheckAt(gma.ks.ctx, stmt, 1, gma, KonohaType.Var, 0);
 			if (texpr is ConstExpr<KonohaType> && texpr != null)
 			{
-				var this_cid = ((ConstExpr<KonohaType>)texpr).Data;
+				var this_cid = ((ConstExpr<KonohaType>)texpr).TypedData;
 				return expr.lookupMethod(gma.ks.ctx, stmt, this_cid, gma, reqty);
 			}
 			if (texpr is ParamExpr)
