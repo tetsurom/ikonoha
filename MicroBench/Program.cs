@@ -9,11 +9,16 @@ namespace MicroBench
 	{
 		static IronKonoha.Konoha konoha;
 
+		static int TotalCount;
+		static int PassedCount;
+
 		static void Assert(bool val)
 		{
+			TotalCount++;
 			if (val)
 			{
 				Console.WriteLine("PASSED");
+				PassedCount++;
 			}
 			else
 			{
@@ -24,6 +29,8 @@ namespace MicroBench
 		static void AssertNoError(string program)
 		{
 			if (program == String.Empty) return;
+			TotalCount++;
+			PassedCount++;
 			var ret = string.Format("PASSED {0}", program);
 			try
 			{
@@ -31,7 +38,9 @@ namespace MicroBench
 			}
 			catch (Exception e)
 			{
-				ret = string.Format("FAILED {0}"/* {1}"*/, program);//, e.ToString());
+				ret = string.Format("FAILED {0} {1}", program, e.GetType().Name);
+				//ret = string.Format("FAILED {0} {1}", program, e.ToString());
+				PassedCount--;
 			}
 			finally { }
 			Console.WriteLine(ret);
@@ -39,10 +48,12 @@ namespace MicroBench
 
 		static void Assert<T>(string program, T request)
 		{
+			TotalCount++;
 			var ret = konoha.Eval(program);
 			if (ret == request)
 			{
 				Console.WriteLine("PASSED {0}", program);
+				PassedCount++;
 			}
 			else
 			{
@@ -90,6 +101,7 @@ namespace MicroBench
 			AssertNoError(@"testMethodCall();");
 			AssertNoError(@"testArraySetter();");
 			AssertNoError(@"testArrayGetter();");
+			Console.WriteLine("Total: {0}  Passed: {1}  {2} % Passed.", TotalCount, PassedCount, (int)((double)PassedCount / TotalCount * 100));
 		}
 	}
 }
