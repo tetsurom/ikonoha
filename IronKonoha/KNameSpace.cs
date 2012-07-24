@@ -742,7 +742,12 @@ namespace IronKonoha
 			argtypes.Add(retType);
 			argtypes.Insert(0, KonohaType.Object);
 			Type ftype = Expression.GetDelegateType(argtypes.Select(t => t.Type).ToArray());
-			Type fctype = typeof(FuncCache<,>).MakeGenericType(ftype, retType.Type);
+			Type rtype = retType.Type;
+			if (rtype == typeof(void))
+			{
+				rtype = typeof(object);
+			}
+			Type fctype = typeof(FuncCache<,>).MakeGenericType(ftype, rtype);
 
 			var args = mtd.Parameters.ToList();
 			args.Insert(0, new FuncParam("this", KonohaType.Object));
