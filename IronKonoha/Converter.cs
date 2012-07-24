@@ -451,7 +451,11 @@ namespace IronKonoha
 				if (BinaryOperationType[tk.Keyword.Type] == ExpressionType.Assign)
 				{
 					// Expression.Assign cannot be created by Expression.MakeBinary
-					return Expression.Assign(param[0], param[1]);
+					var rval = param[1];
+					if(param[0].Type != rval.Type){
+						rval = Expression.Convert(rval, param[0].Type);
+					}
+					return Expression.Assign(param[0], rval);
 				}
 				switch (tk.TokenType)
 				{
