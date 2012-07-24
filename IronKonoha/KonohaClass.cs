@@ -270,6 +270,7 @@ namespace IronKonoha
 			Methods = new Dictionary<string, object>();
 			StaticFields = new Dictionary<string, object>();
 			Fields = new Dictionary<string, object>();
+			Type = typeof(object);
 		}
 
 		public override DynamicMetaObject GetMetaObject(Expression parameter)
