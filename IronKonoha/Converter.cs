@@ -448,6 +448,11 @@ namespace IronKonoha
 			{
 				Token tk = (Token)expr.Cons[0];
 				var param = expr.Cons.Skip(1).Select(p => MakeExpression(p as KonohaExpr, environment)).ToArray();
+				if (BinaryOperationType[tk.Keyword.Type] == ExpressionType.Assign)
+				{
+					// Expression.Assign cannot be created by Expression.MakeBinary
+					return Expression.Assign(param[0], param[1]);
+				}
 				switch (tk.TokenType)
 				{
 					case TokenType.OPERATOR:
