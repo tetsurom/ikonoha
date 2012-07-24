@@ -79,6 +79,9 @@ namespace KFibo {
 			Assert(konoha.Eval(@"class EmptyClass{}; new EmptyClass();") is IronKonoha.KonohaInstance);
 			Assert("int N = 100;", 100);
 			Assert("N;", 100);
+			Assert("class MethodTest{ int mtd(){ return 1111; }; }; int mts(){ MethodTest mt = new MethodTest(); return mt.mtd(); }; mts();", 1111);
+			Assert("class Hoge{ int n = 10; }; int f(){ Hoge h = new Hoge(); return h.n; }; f();", 10);
+			Assert("class Fuga{ int n; }; int g(){ Fuga fg = new Fuga(); fg.n = 20; return fg.n; }; g();", 20);
 			/*
 			konoha.Eval(@"
                 int fibo(int n){
