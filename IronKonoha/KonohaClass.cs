@@ -239,6 +239,7 @@ namespace IronKonoha
 			{
 				((dynamic)Methods[Name])(ins);
 			}
+			Debug.Assert(ins != null);
 			return ins;
 		}
 
@@ -310,7 +311,7 @@ namespace IronKonoha
 		{
 			foreach (KStatement stmt in bk.blocks)
 			{
-				if (stmt.syn.KeyWord == KeyWordTable.StmtTypeDecl)
+				if (stmt.syn.KeyWord == KeyWordTable.Type)
 				{
 					Debug.Assert(stmt.map.ContainsKey(ctx.Symbols.Type));
 					Debug.Assert(stmt.map.ContainsKey(ctx.Symbols.Expr));
@@ -337,13 +338,13 @@ namespace IronKonoha
 				return true;
 			}
 			else if(expr.syn.KeyWord == KeyWordTable.LET) {
-				var lexpr = expr.GetConsAt(1);
-				if(lexpr is TermExpr) {
+				var lexpr = expr.GetConsAt(1) as TermExpr;
+				if(lexpr != null) {
 					var vexpr = expr.tyCheckAt(ctx, stmt, 2, gma, ty, 0);
 					if(vexpr == null) {
 						return false;
 					}
-					var name = expr.tk.Text;
+					var name = lexpr.tk.Text;
 					if(vexpr.build == ExprType.CONST) {
 						this.defineField(ctx, flag, ty, name, vexpr.Data, 0);
 					}
@@ -581,6 +582,10 @@ namespace IronKonoha
 			if (Fields.ContainsKey(key))
 			{
 				result = Fields[key];
+			}
+			else
+			{
+				throw new MemberAccessException(string.Format("undefined field: {0}#{1}", Klass.Name, key));
 			}
 			return result;
 		}

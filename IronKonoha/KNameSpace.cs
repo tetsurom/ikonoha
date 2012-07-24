@@ -73,6 +73,8 @@ namespace IronKonoha
 			//Classes.Add("System", KonohaType.System);
 			Classes.Add("K", new TypeWrapper(typeof(KNameSpace)));
 			Classes.Add("Math", new TypeWrapper(typeof(System.Math)));
+			Classes.Add("String", new TypeWrapper(typeof(System.String)));
+			Classes.Add("float", new TypeWrapper(typeof(System.Double)));
 
 			var system = new KonohaClass("System", null);
 			system.StaticFields["fuga"] = "foo";

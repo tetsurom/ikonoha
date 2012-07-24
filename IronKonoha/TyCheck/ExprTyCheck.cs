@@ -201,6 +201,7 @@ namespace IronKonoha.TyCheck
 			if(classes.ContainsKey(name)){
 				expr.tk.TokenType = TokenType.TYPE;
 				expr.tk.Keyword = KeyWordTable.Type;
+				expr.syn = gma.ks.GetSyntax(KeyWordTable.Type);
 				return new ConstExpr<KonohaType>(classes[name])
 				{
 					syn = gma.ks.GetSyntax(KeyWordTable.Type),

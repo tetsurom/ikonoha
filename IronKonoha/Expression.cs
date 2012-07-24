@@ -628,7 +628,7 @@ namespace IronKonoha
 		public SingleTokenExpr(Token tk)
 		{
 			this.tk = tk;
-		}
+	}
 	}
 
 	[System.Diagnostics.DebuggerDisplay("{Data} [{ty}]")]
@@ -692,6 +692,48 @@ namespace IronKonoha
 			ty = param.Type;
 			Name = param.Name;
 		}
+		public override string GetDebugView(int indent)
+		{
+			var builder = new StringBuilder();
+			for (int i = 1; i < indent; ++i)
+			{
+				builder.Append(' ');
+			}
+			if (Order >= 0)
+			{
+				builder.Append('$');
+				builder.Append(Order);
+				builder.Append('(');
+				builder.Append(Name);
+				builder.Append(')');
+			}
+			else
+			{
+				builder.Append(Name);
+			}
+			return builder.ToString();
+		}
+		public override string GetSourceView(int indent)
+		{
+			var builder = new StringBuilder();
+			for (int i = 1; i < indent; ++i)
+			{
+				builder.Append(' ');
+			}
+			if (Order >= 0)
+			{
+				builder.Append('$');
+				builder.Append(Order);
+				builder.Append('(');
+				builder.Append(Name);
+				builder.Append(')');
+			}
+			else
+			{
+				builder.Append(Name);
+			}
+			return builder.ToString();
+		}
 	}
 
 	/// <summary>
@@ -729,6 +771,11 @@ namespace IronKonoha
 				builder.Append(paramExpr.GetDebugView(indent + 4));
 			}
 			return builder.ToString();
+		}
+
+		public override string ToString()
+		{
+			return "new " + ty == null ? tk.Text : ty.Name;
 		}
 	}
 

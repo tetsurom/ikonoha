@@ -191,27 +191,31 @@ namespace IronKonoha
 
 		public Expression KStatementToExpr(KStatement st, FunctionEnvironment environment)
 		{
-			if (st.syn != null && st.syn.KeyWord == KeyWordTable.Err)
+			if (st.syn == null || st.syn.KeyWord == KeyWordTable.Expr)
+			{
+				return MakeExpression(st.map.Values.First(), environment);
+			}
+			if (st.syn.KeyWord == KeyWordTable.Err)
 			{
 				throw new ArgumentException("invalid statement");
 			}
-			if (st.syn != null && st.syn.KeyWord == KeyWordTable.If || st.build == StmtType.IF)
+			if (st.syn.KeyWord == KeyWordTable.If || st.build == StmtType.IF)
 			{
 				return MakeIfExpression(st.map, environment);
 			}
-			if (st.syn != null && st.syn.KeyWord == KeyWordTable.While || st.build == StmtType.LOOP)
+			if (st.syn.KeyWord == KeyWordTable.While || st.build == StmtType.LOOP)
 			{
 				return MakeWhileExpression(st.map, environment);
 			}
-			if (st.syn != null && st.syn.KeyWord == KeyWordTable.StmtMethodDecl)
+			if (st.syn.KeyWord == KeyWordTable.StmtMethodDecl)
 			{
 				return Expression.Empty();//MakeFuncDeclExpression(st.map);
 			}
-			if (st.syn != null && st.syn.KeyWord == KeyWordTable.Class)
+			if (st.syn.KeyWord == KeyWordTable.Class)
 			{
 				return Expression.Empty();//MakeFuncDeclExpression(st.map);
 			}
-			if (st.syn != null && st.syn.KeyWord == KeyWordTable.Type)
+			if (st.syn.KeyWord == KeyWordTable.Type)
 			{
 				var cons = st.Expr(ctx, ctx.Symbols.Expr);
 				try
@@ -234,7 +238,7 @@ namespace IronKonoha
 						value);
 				}
 			}
-			if (st.syn != null && st.syn.KeyWord == KeyWordTable.Return || st.build == StmtType.RETURN)
+			if (st.syn.KeyWord == KeyWordTable.Return || st.build == StmtType.RETURN)
 			{
 				var exp = MakeExpression(st.map.Values.First(), environment);
 				if (exp.Type != environment.ReturnLabel.Type)
@@ -243,7 +247,7 @@ namespace IronKonoha
 				}
 				return Expression.Return(environment.ReturnLabel, exp);
 			}
-			return MakeExpression(st.map.Values.First(), environment);
+			throw new InvalidOperationException(string.Format("unknown statement: {0}", st.GetSourceView()));
 		}
 
         public IEnumerable<Expression> ConvertToExprList(BlockExpr block, FunctionEnvironment environment)
@@ -297,33 +301,6 @@ namespace IronKonoha
 			return MakeConsExpression(kexpr, environment);
 		}
 
-		public Expression MakeExpression(TermExpr kexpr, FunctionEnvironment environment)
-		{
-			var text = kexpr.tk.Text;
-			switch (kexpr.tk.TokenType)
-			{
-				case TokenType.INT:
-					return Expression.Constant(long.Parse(text));
-				case TokenType.FLOAT:
-					return Expression.Constant(double.Parse(text));
-				case TokenType.TEXT:
-					return Expression.Constant(text);
-				case TokenType.SYMBOL:
-					if (environment != null)
-					{
-						for (int i = 0; i < environment.Params.Length; ++i)
-						{
-							if (environment.Params[i].Name == text)
-							{
-								return environment.Params[i];
-							}
-						}
-					}
-					return KNull;
-			}
-			return KNull;
-		}
-
 		public Expression MakeExpression<T>(ConstExpr<T> kexpr, FunctionEnvironment environment)
 		{
 			return Expression.Constant(kexpr.TypedData);
@@ -358,10 +335,12 @@ namespace IronKonoha
 				return environment.Params[kexpr.Order + 1];
 			}
 			// search grobal variables.
-			object val;
-			if (((KonohaClass)ks.Classes["System"]).Fields.TryGetValue(kexpr.Name, out val))
+			if (((KonohaClass)ks.Classes["System"]).Fields.ContainsKey(kexpr.Name))
 			{
-				return Expression.Constant(val);
+				return Expression.Dynamic(
+					new Runtime.KonohaSetMemberBinder(kexpr.Name),
+					typeof(object),
+					Expression.Constant(ks.Classes["System"]));
 			}
 
 			throw new InvalidOperationException(string.Format("undefined field, grobal/local variable or parameter: {0}", kexpr.Name));
@@ -434,7 +413,7 @@ namespace IronKonoha
 				ConsExpr cons = (ConsExpr)expr.Cons[1];
 				string fieldName = (cons.GetConsAt<Token>(0)).Text;
 				Expression obj = MakeExpression(cons.GetConsAt<KonohaExpr>(1), environment);
-				Expression val = MakeExpression(expr.GetConsAt<KonohaExpr>(1), environment);
+				Expression val = MakeExpression(expr.GetConsAt<KonohaExpr>(2), environment);
 				return Expression.Dynamic(
 					new Runtime.KonohaSetMemberBinder(fieldName),
 					typeof(object),
