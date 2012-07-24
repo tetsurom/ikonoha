@@ -459,8 +459,8 @@ namespace IronKonoha
 
 			// Setup the method call expression
 			Expression methodCall = Expression.Call(self,
-					typeof(KonohaClass).GetMethod(methodName),
-					args);
+				typeof(KonohaClass).GetMethod(methodName),
+				args);
 
 			// Create a meta object to invoke Set later:
 			DynamicMetaObject setFieldsEntry = new DynamicMetaObject(

@@ -16,6 +16,12 @@ namespace IronKonoha
 		DEBUG,
 	}
 
+	public enum TypingMode
+	{
+		Static,
+		Dynamic
+	}
+
 	public class KPackage
 	{
 
@@ -442,6 +448,7 @@ namespace IronKonoha
 		public uint KErrorNo { get; private set; }
 		public CTXSugar ctxsugar { get { return modlocal[(int)ModID.Sugar] as CTXSugar; } }
 		public KModSugar kmodsugar { get { return modshare[(int)ModID.Sugar] as KModSugar; } }
+		public static TypingMode TypingMode { get; set; }
 
 		public readonly SymbolConst Symbols;
 
@@ -462,6 +469,8 @@ namespace IronKonoha
 
 			share = new KShare();
 			Symbols = new SymbolConst(this);
+
+			Context.TypingMode = TypingMode.Static;
 		}
 
 		public string GetErrorTypeString(ReportLevel pe)
