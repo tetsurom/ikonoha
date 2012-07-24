@@ -18,11 +18,16 @@ namespace KFibo {
 			}
 		}
 
+		static int TotalCount;
+		static int PassedCount;
+
 		static void Assert(bool val)
 		{
+			TotalCount++;
 			if (val)
 			{
 				Console.WriteLine("PASSED");
+				PassedCount++;
 			}
 			else
 			{
@@ -30,12 +35,34 @@ namespace KFibo {
 			}
 		}
 
+		static void AssertNoError(string program)
+		{
+			if (program == String.Empty) return;
+			TotalCount++;
+			PassedCount++;
+			var ret = string.Format("PASSED {0}", program);
+			try
+			{
+				konoha.Eval(program);
+			}
+			catch (Exception e)
+			{
+				ret = string.Format("FAILED {0} {1}", program, e.GetType().Name);
+				//ret = string.Format("FAILED {0} {1}", program, e.ToString());
+				PassedCount--;
+			}
+			finally { }
+			Console.WriteLine(ret);
+		}
+
 		static void Assert<T>(string program, T request)
 		{
+			TotalCount++;
 			var ret = konoha.Eval(program);
 			if (ret == request)
 			{
 				Console.WriteLine("PASSED {0}", program);
+				PassedCount++;
 			}
 			else
 			{
@@ -72,6 +99,7 @@ namespace KFibo {
 			Assert(@"15 >=  5", true);
 			Assert(@"11 >= 11", true);
 			Assert(@"10 >= 13", false);
+			AssertNoError("void hello(){ p(\"hello!\");};hello();");
 			Assert(@"int f(){ int a = 1; return a; }; f();", 1);
 			Assert(@"int fibo(int n){ if(n < 3){ return 1; }else{ return fibo(n-1) + fibo(n-2); }}; fibo(10);", 55);
 			Assert("int h(){ System s = new System(); s.p(\"a\"); return 0; }; h();", 0);
