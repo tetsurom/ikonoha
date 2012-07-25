@@ -441,8 +441,7 @@ namespace IronKonoha
 		public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
 		{
 			// setup the binding restrictions.
-			BindingRestrictions restrictions =
-				BindingRestrictions.GetTypeRestriction(Expression, LimitType);
+			var restrictions = BindingRestrictions.GetTypeRestriction(Expression, LimitType);
 
 			// setup the parameters:
 			Expression[] args = new Expression[2];
@@ -455,14 +454,10 @@ namespace IronKonoha
 			Expression self = Expression.Convert(Expression, LimitType);
 
 			// Setup the method call expression
-			Expression methodCall = Expression.Call(self,
-				KonohaClass.SetStaticFieldsEntryMethodInfo,
-				args);
+			Expression methodCall = Expression.Call(self, KonohaClass.SetStaticFieldsEntryMethodInfo, args);
 
 			// Create a meta object to invoke Set later:
-			DynamicMetaObject setFieldsEntry = new DynamicMetaObject(
-				methodCall,
-				restrictions);
+			DynamicMetaObject setFieldsEntry = new DynamicMetaObject(methodCall, restrictions);
 			// return that dynamic object
 			return setFieldsEntry;
 		}
@@ -488,7 +483,9 @@ namespace IronKonoha
 		{
 			if (Class.Methods.ContainsKey(binder.Name))
 			{
-				var paramInfos = ((Delegate)Class.Methods[binder.Name]).Method.GetParameters();
+				var methodDelegate = (Delegate)Class.Methods[binder.Name];
+
+				var paramInfos = methodDelegate.Method.GetParameters();
 				if (paramInfos[0].ParameterType == typeof(System.Runtime.CompilerServices.Closure))
 				{
 					paramInfos = paramInfos.Skip(1).ToArray();
@@ -498,11 +495,16 @@ namespace IronKonoha
 				var param = args.Select(a => a.Expression).ToList();
 				param.Insert(0, @this);
 
+
+				var invokeExpr = Expression.Invoke(
+					Expression.Constant(methodDelegate),
+					Runtime.Utilities.ConvertArguments(param.ToArray(), paramInfos));
+
+				var retType = methodDelegate.Method.ReturnType;
+				retType = Context.TypingMode == TypingMode.Static ? retType : typeof(object);
+
 				return new DynamicMetaObject(
-					Runtime.Utilities.EnsureObjectResult(
-						Expression.Invoke(
-							Expression.Constant(Class.Methods[binder.Name]),
-							Runtime.Utilities.ConvertArguments(param.ToArray(), paramInfos))),
+					Runtime.Utilities.EnsureObjectResult(invokeExpr, retType),
 					this.Restrictions.Merge(
 						BindingRestrictions.GetInstanceRestriction(
 							this.Expression,
@@ -690,11 +692,15 @@ namespace IronKonoha
 				var param = args.Select(a => a.Expression).ToList();
 				param.Insert(0, @this);
 
+				var invokeExpr = Expression.Invoke(
+					Expression.Constant(Class.Methods[binder.Name]),
+					Runtime.Utilities.ConvertArguments(param.ToArray(), paramInfos));
+
+				var retType = ((Delegate)Class.Methods[binder.Name]).Method.ReturnType;
+				retType = Context.TypingMode == TypingMode.Static ? retType : typeof(object);
+
 				return new DynamicMetaObject(
-					Runtime.Utilities.EnsureObjectResult(
-						Expression.Invoke(
-							Expression.Constant(Class.Methods[binder.Name]),
-							Runtime.Utilities.ConvertArguments(param.ToArray(), paramInfos))),
+					Runtime.Utilities.EnsureObjectResult(invokeExpr, retType),
 					this.Restrictions.Merge(
 						BindingRestrictions.GetInstanceRestriction(
 							this.Expression,

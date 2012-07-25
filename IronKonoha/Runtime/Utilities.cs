@@ -86,8 +86,7 @@ namespace IronKonoha.Runtime
 			return restrictions;
 		}
 
-		public static Expression[] ConvertArguments(
-										 DynamicMetaObject[] args, ParameterInfo[] ps)
+		public static Expression[] ConvertArguments(DynamicMetaObject[] args, ParameterInfo[] ps)
 		{
 			Debug.Assert(args.Length == ps.Length);
 			Expression[] callArgs = new Expression[args.Length];
@@ -105,8 +104,7 @@ namespace IronKonoha.Runtime
 			return callArgs;
 		}
 
-		public static Expression[] ConvertArguments(
-								 Expression[] args, ParameterInfo[] ps)
+		public static Expression[] ConvertArguments(Expression[] args, ParameterInfo[] ps)
 		{
 			Debug.Assert(args.Length == ps.Length);
 			for (int i = 0; i < args.Length; i++)
@@ -121,13 +119,27 @@ namespace IronKonoha.Runtime
 
 		public static Expression EnsureObjectResult(Expression expr)
 		{
+			return EnsureObjectResult(expr, typeof(object));
+		}
+
+		public static Expression EnsureObjectResult(Expression expr, Type type)
+		{
 			if (!expr.Type.IsValueType)
+			{
 				return expr;
+			}
 			if (expr.Type == typeof(void))
-				return Expression.Block(
-						   expr, Expression.Default(typeof(object)));
+			{
+				return Expression.Block(expr, Expression.Default(type));
+			}
 			else
-				return Expression.Convert(expr, typeof(object));
+			{
+				if (expr.Type != type)
+				{
+					expr = Expression.Convert(expr, type);
+				}
+				return expr;
+			}
 		}
 
 		public static DynamicMetaObject CreateThrow
