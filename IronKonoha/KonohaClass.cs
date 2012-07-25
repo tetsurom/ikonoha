@@ -233,6 +233,9 @@ namespace IronKonoha
 		public Dictionary<string, object> Fields { get; private set; }
 		public KonohaClass Parent { get; private set; }
 
+		public static readonly MethodInfo SetStaticFieldsEntryMethodInfo = typeof(KonohaClass).GetMethod("SetStaticFieldsEntry");
+		public static readonly MethodInfo GetStaticFieldsEntryMethodInfo = typeof(KonohaClass).GetMethod("GetStaticFieldsEntry");
+
 		public KonohaInstance Instanciate(){
 			var ins = new KonohaInstance(this);
 			if (Methods.ContainsKey(Name))
@@ -418,9 +421,6 @@ namespace IronKonoha
 
 		public override DynamicMetaObject BindGetMember(GetMemberBinder binder)
 		{
-			// Method call in the containing class:
-			string methodName = "GetStaticFieldsEntry";
-
 			// One parameter
 			Expression[] parameters = new Expression[]
             {
@@ -429,7 +429,7 @@ namespace IronKonoha
 
 			var methodCall = Expression.Call(
 				Expression.Convert(Expression, LimitType),
-				typeof(KonohaClass).GetMethod(methodName),
+				KonohaClass.GetStaticFieldsEntryMethodInfo,
 				parameters);
 
 			DynamicMetaObject getFieldEntry = new DynamicMetaObject(
@@ -440,9 +440,6 @@ namespace IronKonoha
 
 		public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
 		{
-			// Method to call in the containing class:
-			string methodName = "SetStaticFieldsEntry";
-
 			// setup the binding restrictions.
 			BindingRestrictions restrictions =
 				BindingRestrictions.GetTypeRestriction(Expression, LimitType);
@@ -459,7 +456,7 @@ namespace IronKonoha
 
 			// Setup the method call expression
 			Expression methodCall = Expression.Call(self,
-				typeof(KonohaClass).GetMethod(methodName),
+				KonohaClass.SetStaticFieldsEntryMethodInfo,
 				args);
 
 			// Create a meta object to invoke Set later:

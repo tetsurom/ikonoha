@@ -391,7 +391,7 @@ namespace IronKonoha
 			if (expr.Cons[1] is ConstExpr<KonohaType>)
 			{
 				KonohaType ktype = ((ConstExpr<KonohaType>)expr.Cons[1]).TypedData;
-				paramThis = new[] { Expression.Constant(ktype, ktype.Type) };
+				paramThis = new[] { Expression.Constant(ktype) };
 			}
 			else
 			{
@@ -428,17 +428,28 @@ namespace IronKonoha
 			var typeexpr = (expr.Cons[1] as ConstExpr<KonohaType>);
 			if (typeexpr != null)
 			{
-				// static field access
-				var klass = typeexpr.TypedData.Type;
-				return Expression.Dynamic(
-					new Runtime.KonohaGetMemberBinder(tk.Text),
-					typeof(object),
-					Expression.Constant(klass)
-				);
+				// static field get access
+				if (Context.TypingMode == TypingMode.Static && typeexpr.TypedData is KonohaClass)
+				{
+					var klass = (KonohaClass)typeexpr.TypedData;
+					return Expression.Call(
+						Expression.Constant(klass),
+						KonohaClass.GetStaticFieldsEntryMethodInfo,
+						Expression.Constant(tk.Text));
+				}
+				else
+				{
+					var klass = typeexpr.TypedData.Type;
+					return Expression.Dynamic(
+						new Runtime.KonohaGetMemberBinder(tk.Text),
+						typeof(object),
+						Expression.Constant(klass)
+					);
+				}
 			}
 			else
 			{
-				// instance field access
+				// instance field get access
 				var obj = MakeExpression((KonohaExpr)expr.Cons[1], environment);
 				if (Context.TypingMode == TypingMode.Static)
 				{
