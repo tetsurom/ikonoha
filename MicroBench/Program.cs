@@ -12,6 +12,9 @@ namespace MicroBench
 		static int TotalCount;
 		static int PassedCount;
 
+		enum Mode { Full, TimeOnly };
+		static Mode mode = Mode.Full;
+
 		static void Assert(bool val)
 		{
 			TotalCount++;
@@ -31,6 +34,7 @@ namespace MicroBench
 			if (program == String.Empty) return;
 			TotalCount++;
 			PassedCount++;
+			var beforeTime = DateTime.Now;
 			var ret = string.Format("PASSED {0}", program);
 			try
 			{
@@ -43,7 +47,10 @@ namespace MicroBench
 				PassedCount--;
 			}
 			finally { }
-			Console.WriteLine(ret);
+			var afterTime = DateTime.Now;
+			var diffTime = afterTime - beforeTime;
+			if(mode == Mode.Full) Console.WriteLine(ret);
+			Console.WriteLine(diffTime.TotalMilliseconds);
 		}
 
 		static void Assert<T>(string program, T request)
@@ -64,7 +71,9 @@ namespace MicroBench
 		static void Main(string[] args)
 		{
 			konoha = new IronKonoha.Konoha();
-			AssertNoError(@"int N=10000;");
+			int N = 1000000;
+			mode = Mode.TimeOnly;
+			AssertNoError(string.Format(@"int N={0};", N));
 			AssertNoError(@"int testSimpleLoop() { int i = 0; while (i < N) { i = i + 1; }; return i; }");
 			AssertNoError(@"int testLocalVariable() { int y = 0; int i = 0; while (i < N) { y = i; i = i + 1; } return y; }");
 			//AssertNoError(@"int global_x = 0;");
@@ -101,7 +110,26 @@ namespace MicroBench
 			AssertNoError(@"testMethodCall();");
 			AssertNoError(@"testArraySetter();");
 			AssertNoError(@"testArrayGetter();");
-			Console.WriteLine("Total: {0}  Passed: {1}  {2} % Passed.", TotalCount, PassedCount, (int)((double)PassedCount / TotalCount * 100));
+			for (int i = 0; i < 20; ++i)
+			{
+				Console.Clear();
+				AssertNoError(@"testSimpleLoop();");
+				AssertNoError(@"testLocalVariable();");
+				//AssertNoError(@"testGlobalVariable();");
+				AssertNoError(@"testStringAssignment();");
+				AssertNoError(@"testIntegerOperation();");
+				AssertNoError(@"testFloatOperation();");
+				AssertNoError(@"testFunctionCall();");
+				AssertNoError(@"testFunctionReturn();");
+				AssertNoError(@"testMathFabs();");
+				//AssertNoError(@"testCallFunctionObject();");
+				AssertNoError(@"testObjectCreation();");
+				AssertNoError(@"testFieldVariable();");
+				AssertNoError(@"testMethodCall();");
+				AssertNoError(@"testArraySetter();");
+				AssertNoError(@"testArrayGetter();");
+			}
+			if (mode == Mode.Full) Console.WriteLine("Total: {0}  Passed: {1}  {2} % Passed.", TotalCount, PassedCount, (int)((double)PassedCount / TotalCount * 100));
 		}
 	}
 }
