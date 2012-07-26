@@ -538,6 +538,12 @@ namespace IronKonoha
 	{
 		public KonohaClass Klass{ get; private set; }
 		public Dictionary<string, object> Fields { get; private set; }
+
+		public static readonly MethodInfo SetFieldsEntryMethodInfo = typeof(KonohaInstance).GetMethod("SetFieldsEntry");
+		public static readonly MethodInfo GetFieldsEntryMethodInfo = typeof(KonohaInstance).GetMethod("GetFieldsEntry");
+		public static readonly MethodInfo SetFieldsEntryAsMethodInfo = typeof(KonohaInstance).GetMethod("SetFieldsEntryAs");
+		public static readonly MethodInfo GetFieldsEntryAsMethodInfo = typeof(KonohaInstance).GetMethod("GetFieldsEntryAs");
+
 		public KonohaInstance(KonohaClass klass)
 		{
 			this.Klass = klass;
@@ -582,6 +588,33 @@ namespace IronKonoha
 			if (Fields.ContainsKey(key))
 			{
 				result = Fields[key];
+			}
+			else
+			{
+				throw new MemberAccessException(string.Format("undefined field: {0}#{1}", Klass.Name, key));
+			}
+			return result;
+		}
+
+		public T SetFieldsEntryAs<T>(string key, T value)
+		{
+			if (Fields.ContainsKey(key))
+			{
+				Fields[key] = value;
+			}
+			else
+			{
+				Fields.Add(key, value);
+			}
+			return value;
+		}
+
+		public T GetFieldsEntryAs<T>(string key)
+		{
+			T result = default(T);
+			if (Fields.ContainsKey(key))
+			{
+				result = (T)Fields[key];
 			}
 			else
 			{

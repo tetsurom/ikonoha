@@ -476,6 +476,39 @@ namespace IronKonoha
 			}
 		}
 
+		public Expression MakeFieldSetExpression(ConsExpr expr, FunctionEnvironment environment)
+		{
+			// instance field set access
+			// ex) a.b = c; [= c (a, b)]
+			ConsExpr cons = (ConsExpr)expr.Cons[1];
+			string fieldName = (cons.GetConsAt<Token>(0)).Text;
+			Expression obj = MakeExpression(cons.GetConsAt<KonohaExpr>(1), environment);
+			Expression val = MakeExpression(expr.GetConsAt<KonohaExpr>(2), environment);
+
+			if (Context.TypingMode == TypingMode.Static)
+			{
+				var klass = ((KonohaExpr)cons.Cons[1]).ty as KonohaClass;
+				if (klass != null)
+				{
+					var valueType = expr.GetConsAt<KonohaExpr>(2).ty.Type;
+					var setmethodinfo = KonohaInstance.SetFieldsEntryAsMethodInfo.MakeGenericMethod(valueType);
+					return Expression.Call(
+						Expression.Convert(obj, typeof(KonohaInstance)),
+						setmethodinfo,
+						Expression.Constant(fieldName),
+						val
+					);
+				}
+			}
+
+			return Expression.Dynamic(
+				new Runtime.KonohaSetMemberBinder(fieldName),
+				typeof(object),
+				obj,
+				val
+			);
+		}
+
 		public Expression MakeConsExpression(ConsExpr expr, FunctionEnvironment environment)
 		{
 			if (expr.syn.KeyWord == KeyWordTable.DOT)
@@ -484,17 +517,7 @@ namespace IronKonoha
 			}
 			else if (expr.syn.KeyWord == KeyWordTable.LET && expr.Cons[1] is ConsExpr)
 			{
-				// a.b = c; [= c (a, b)]
-				ConsExpr cons = (ConsExpr)expr.Cons[1];
-				string fieldName = (cons.GetConsAt<Token>(0)).Text;
-				Expression obj = MakeExpression(cons.GetConsAt<KonohaExpr>(1), environment);
-				Expression val = MakeExpression(expr.GetConsAt<KonohaExpr>(2), environment);
-				return Expression.Dynamic(
-					new Runtime.KonohaSetMemberBinder(fieldName),
-					typeof(object),
-					obj,
-					val
-				);
+				return MakeFieldSetExpression(expr, environment);
 			}
 			else if (expr.syn.KeyWord == KeyWordTable.Params || expr.syn.KeyWord == KeyWordTable.Parenthesis)
 			{
