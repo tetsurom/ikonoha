@@ -150,6 +150,10 @@ namespace IronKonoha.TyCheck
 				var this_cid = texpr.ty;
 				return expr.lookupMethod(gma.ks.ctx, stmt, this_cid, gma, reqty);
 			}
+			if (expr is CreateArrayExpr || expr is ArrayOperatorExpr)
+			{
+				return expr; //TODO
+			}
 
 			throw new NotImplementedException();
 		}

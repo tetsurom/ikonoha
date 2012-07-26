@@ -325,6 +325,24 @@ namespace IronKonoha
 				Expression.Constant(kexpr.ty));
 		}
 
+		public Expression MakeExpression(CreateArrayExpr kexpr, FunctionEnvironment environment)
+		{
+			return Expression.NewArrayBounds(((KonohaType)kexpr.Cons[0]).Type, MakeExpression(kexpr.Cons[1] as KonohaExpr, environment));
+		}
+
+		public Expression MakeExpression(ArrayOperatorExpr kexpr, FunctionEnvironment environment)
+		{
+			var expr = MakeExpression(kexpr.Cons[1] as KonohaExpr, environment);
+			var arrayexpr = Expression.Dynamic(
+				new Runtime.KonohaGetMemberBinder(((KonohaExpr)kexpr.Cons[0]).tk.Text),
+				typeof(object),
+				Expression.Constant(ks.Classes["System"]));
+				//Type t = Type.GetType("System.object[]");
+				return Expression.ArrayIndex(
+					Expression.Convert(arrayexpr,typeof(Int64[])),
+					Expression.Convert(expr, typeof(Int32)));
+		}
+
 		public Expression MakeExpression(ParamExpr kexpr, FunctionEnvironment environment)
 		{
 			// search local variables
@@ -481,6 +499,18 @@ namespace IronKonoha
 			if (expr.syn.KeyWord == KeyWordTable.DOT)
 			{
 				return MakeDotExpression(expr, environment);
+			}
+			else if(expr.syn.KeyWord == KeyWordTable.LET && expr.Cons[1] is ArrayOperatorExpr)
+			{
+				var cons = (ConsExpr)expr.Cons[1];
+				var lexpr = Expression.Convert(MakeExpression(cons.Cons[1] as KonohaExpr, environment),typeof(Int32));
+				var arrayexpr = Expression.Convert(Expression.Dynamic(
+					new Runtime.KonohaGetMemberBinder(((KonohaExpr)cons.Cons[1]).tk.Text),
+						typeof(object),
+						Expression.Constant(ks.Classes["System"])),typeof(Int64[]));
+
+				return Expression.Dynamic(new Runtime.KonohaSetIndexBinder(new CallInfo(3))
+												,typeof(object),new[]{arrayexpr,lexpr,MakeExpression(expr.Cons[2] as KonohaExpr,environment)});
 			}
 			else if (expr.syn.KeyWord == KeyWordTable.LET && expr.Cons[1] is ConsExpr)
 			{

@@ -778,6 +778,17 @@ namespace IronKonoha
 			return "new " + ty == null ? tk.Text : ty.Name;
 		}
 	}
+	public class CreateArrayExpr : ConsExpr
+	{
+		public CreateArrayExpr(Context ctx, Syntax syn, params object[] param)
+			: base(ctx, syn, param){}
+	}
+
+	public class ArrayOperatorExpr : ConsExpr
+	{
+		public ArrayOperatorExpr(Context ctx, Syntax syn, params object[] param)
+			: base(ctx, syn, param){}
+	}
 
 	public class BlockExpr : KonohaExpr
 	{

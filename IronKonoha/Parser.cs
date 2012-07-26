@@ -279,6 +279,7 @@ namespace IronKonoha
 					{
 						tkB = abuf[atop];
 						tk.ResolveGenerics(this.ctx, tkB);
+						dst.Add(tkB); //Fix me
 					}
 				}
 			}

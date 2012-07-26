@@ -170,6 +170,7 @@ namespace IronKonoha
 				new KDEFINE_SYNTAX(){
 					name = "[]",
 					kw = KeywordType.Bracket,
+					ParseExpr = ParseExpr_Bracket,
 					priority_op2 = 16,
 					flag = SynFlag.ExprPostfixOp2,
 				},
@@ -824,6 +825,36 @@ namespace IronKonoha
 			return new ConsExpr(ctx, syn, tls[c], ReportLevel.ERR, "expected field name: not " + tls[c].Text);
 		}
 
+		private static KonohaExpr ParseExpr_Bracket(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int s, int c, int e)
+		{
+			Token tk = tls[c];
+			if(s == c) // TODO in CKonoha
+			{
+				KonohaExpr expr = stmt.newExpr2(ctx,tk.Sub,0,tk.Sub.Count);
+				return KModSugar.Expr_rightJoin(ctx,expr,stmt,tls,s+1,c+1,e);
+			}else {
+				KonohaExpr lexpr = stmt.newExpr2(ctx,tls,s,c);
+				if(lexpr.syn == null) //What's nulValNul?
+				{
+					lexpr.syn = stmt.ks.GetSyntax(lexpr.tk.Keyword);
+				}
+				if(lexpr.syn.KeyWord.Type == KeywordType.New)
+				{
+					lexpr.syn = stmt.ks.GetSyntax(KeyWordTable.ExprMethodCall);
+					stmt.addExprParams(ctx,lexpr,tk.Sub,0,tk.Sub.Count,false);
+				}
+				else {
+					//Token tkN = new Token(TokenType.MethodName, "Getter",0);
+					//tkN->mn = MN_toGETTER(0);
+					//tkN.ULine = tk.ULine;
+					Syntax syntax = stmt.ks.GetSyntax(KeyWordTable.ExprMethodCall);
+					lexpr = new ArrayOperatorExpr(ctx,syntax,lexpr);
+					stmt.addExprParams(ctx,lexpr,tk.Sub,0,tk.Sub.Count,true);
+				}
+					return KModSugar.Expr_rightJoin(ctx,lexpr,stmt,tls,s+1,c+1,e);
+			}
+		}
+
 		private static KonohaExpr ParseExpr_new(Context ctx, Syntax syn, KStatement stmt, IList<Token> tls, int s, int c, int e)
 		{
 			Debug.Assert(s == c);
@@ -850,12 +881,13 @@ namespace IronKonoha
 					}
 					// new C [...]
 					if(tk1.IsType && tk2.TokenType == TokenType.AST_BRACKET) {
-						throw new NotImplementedException();
+						//throw new NotImplementedException();
 						//ksyntax_t *syn = SYN_(kStmt_ks(stmt), KW_new);
 						//kclass_t *ct = CT_p0(_ctx, CT_Array, TK_type(tk1));
 						//kToken_setmn(tkNEW, MN_("newArray"), MNTYPE_method);
 						//var expr = SUGAR new_ConsExpr(_ctx, syn, tkNEW, NewExpr(_ctx, syn, tk1, ct->cid, 0));
-						//return expr;
+						var expr = new CreateArrayExpr(ctx,syn,tk1.Type);
+						return expr;
 					}
 				}
 				throw new InvalidOperationException(string.Format("{0} is not Type.", tls[s + 1].Text));

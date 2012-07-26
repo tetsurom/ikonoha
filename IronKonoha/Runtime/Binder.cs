@@ -369,5 +369,48 @@ namespace IronKonoha.Runtime
 			   restrictions);
 		}
 	}
+	
+	public class KonohaSetIndexBinder : SetIndexBinder
+	{
+		public KonohaSetIndexBinder(CallInfo callInfo)
+			: base(callInfo)
+		{
+		}
 
+		public override DynamicMetaObject FallbackSetIndex (
+			DynamicMetaObject target, DynamicMetaObject[] indexes,
+			DynamicMetaObject value,  DynamicMetaObject errorSuggestion)
+		{
+			if (!target.HasValue || indexes.Any((a) => !a.HasValue) || !value.HasValue)
+			{
+				var deferArgs = new DynamicMetaObject[indexes.Length + 2];
+				for (int i = 0; i < indexes.Length; i++)
+				{
+					deferArgs[i + 1] = indexes[i];
+				}
+				deferArgs[0] = target;
+				deferArgs[indexes.Length + 1] = value;
+				return Defer(deferArgs);
+			}
+			var valueExpr = value.Expression;
+			Expression setIndexExpr;
+			List<Expression> args = new List<Expression>();
+			args.Add(
+				Expression.Convert(
+					target.Expression,
+					target.LimitType)
+				);
+			var indexExpressions = indexes.Select(
+                i => Expression.Convert(i.Expression, i.LimitType))
+                .ToArray();
+			setIndexExpr =  Expression.ArrayAccess(
+				Expression.Convert(target.Expression,
+				target.LimitType),
+				indexExpressions);
+			args.Add(Expression.Convert(indexes[0].Expression, indexes[0].LimitType));
+				args.Add(Expression.Convert(valueExpr, typeof(object)));
+				BindingRestrictions restrictions = Runtime.Utilities.GetTargetArgsRestrictions(target, indexes, false);
+				return new DynamicMetaObject(Runtime.Utilities.EnsureObjectResult(setIndexExpr),restrictions);
+		}
+	}
 }
