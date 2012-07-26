@@ -78,8 +78,8 @@ namespace IronKonoha
 		private Context ctx;
 		private KNameSpace ks;
 		internal static readonly Expression KNull = Expression.Constant(null);
-		internal static readonly Expression KTrue = Expression.Constant(true);
-		internal static readonly Expression KFalse = Expression.Constant(false);
+		internal static readonly Expression KTrue = Expression.Constant(true, typeof(bool));
+		internal static readonly Expression KFalse = Expression.Constant(false, typeof(bool));
 		internal static readonly Dictionary<KeywordType,ExpressionType> BinaryOperationType
 			 = new Dictionary<KeywordType, ExpressionType>()
 			{
@@ -232,11 +232,12 @@ namespace IronKonoha
 					// global variable;
 					var name = cons.GetConsAt<ParamExpr>(1).Name;
 					var value = MakeExpression(cons.GetConsAt<KonohaExpr>(2), environment);
-					return Expression.Dynamic(
-						new Runtime.KonohaSetMemberBinder(name),
-						typeof(object),
-						Expression.Constant(ks.Classes["System"]),
-						value);
+					return Expression.Assign(
+						Expression.Property(
+							Expression.Constant(((KonohaClass)ks.Classes["System"]).StaticFields),
+							"Item",
+							Expression.Constant(name, typeof(string))),
+						Expression.Convert(value, typeof(object)));
 				}
 			}
 			if (st.syn.KeyWord == KeyWordTable.Return || st.build == StmtType.RETURN)
@@ -437,12 +438,12 @@ namespace IronKonoha
 				if (Context.TypingMode == TypingMode.Static && typeexpr.TypedData is KonohaClass)
 				{
 					var klass = (KonohaClass)typeexpr.TypedData;
-					return Expression.Convert(Expression.Call(
-							Expression.Constant(klass),
-							KonohaClass.GetStaticFieldsEntryMethodInfo,
-							Expression.Constant(tk.Text)),
-						klass.Fields[tk.Text].GetType()
-						);
+					return Expression.Convert(
+						Expression.Property(
+							Expression.Constant(klass.StaticFields),
+							"Item",
+							Expression.Constant(tk.Text, typeof(string))),
+						klass.StaticFields[tk.Text].GetType());
 				}
 				else
 				{
@@ -457,22 +458,22 @@ namespace IronKonoha
 			else
 			{
 				// instance field get access
-				var obj = MakeExpression((KonohaExpr)expr.Cons[1], environment);
 				if (Context.TypingMode == TypingMode.Static)
 				{
-					Console.WriteLine(((KonohaExpr)expr.Cons[1]).ty.Type);
-					return Expression.Dynamic(
-						new Runtime.KonohaGetMemberBinder(tk.Text),
-						typeof(object),
-						obj);
+					var instance = expr.GetConsAt<ConstExpr<KonohaInstance>>(1).TypedData;
+					if (instance != null)
+					{
+						return Expression.Property(
+							Expression.Constant(instance.Fields),
+							"Item",
+							Expression.Constant(tk.Text, typeof(string)));
+					}
 				}
-				else
-				{
-					return Expression.Dynamic(
-						new Runtime.KonohaGetMemberBinder(tk.Text),
-						typeof(object),
-						obj);
-				}
+				var obj = MakeExpression((KonohaExpr)expr.Cons[1], environment);
+				return Expression.Dynamic(
+					new Runtime.KonohaGetMemberBinder(tk.Text),
+					typeof(object),
+					obj);
 			}
 		}
 
@@ -490,14 +491,12 @@ namespace IronKonoha
 				var klass = ((KonohaExpr)cons.Cons[1]).ty as KonohaClass;
 				if (klass != null)
 				{
-					var valueType = expr.GetConsAt<KonohaExpr>(2).ty.Type;
-					var setmethodinfo = KonohaInstance.SetFieldsEntryAsMethodInfo.MakeGenericMethod(valueType);
-					return Expression.Call(
-						Expression.Convert(obj, typeof(KonohaInstance)),
-						setmethodinfo,
-						Expression.Constant(fieldName),
-						val
-					);
+					return Expression.Assign(
+						Expression.Property(
+							Expression.Constant(klass.Fields),
+							"Item",
+							Expression.Constant(fieldName, typeof(string))),
+						Expression.Convert(val, typeof(object)));
 				}
 			}
 
