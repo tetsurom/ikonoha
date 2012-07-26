@@ -556,7 +556,7 @@ namespace IronKonoha
 			return null;
 		}
 
-		public dynamic GetBinaryBinder(ExpressionType et)
+		public CallSiteBinder GetBinaryBinder(ExpressionType et)
 		{
 			return Microsoft.CSharp.RuntimeBinder.Binder.BinaryOperation(
 				CSharpBinderFlags.None, et, typeof(Converter),

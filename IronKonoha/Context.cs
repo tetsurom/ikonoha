@@ -470,7 +470,7 @@ namespace IronKonoha
 			share = new KShare();
 			Symbols = new SymbolConst(this);
 
-			Context.TypingMode = TypingMode.Static;
+			Context.TypingMode = TypingMode.Dynamic;
 		}
 
 		public string GetErrorTypeString(ReportLevel pe)
