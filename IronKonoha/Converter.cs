@@ -320,6 +320,10 @@ namespace IronKonoha
 
 		public Expression MakeExpression(CreateInstanceExpr kexpr, FunctionEnvironment environment)
 		{
+			if (Context.TypingMode == TypingMode.Static && kexpr.ty is KonohaClass)
+			{
+				return Expression.Call(Expression.Constant(kexpr.ty), typeof(KonohaClass).GetMethod("Instanciate"));
+			}
 			return Expression.Dynamic(
 				new Runtime.KonohaCreateInstanceBinder(new CallInfo(0/*argsize + 1*/)), // FIXME: must impl ctor with args.
 				kexpr.ty.Type,
